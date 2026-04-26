@@ -1,0 +1,19 @@
+# IDE 忽略文件
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Claude Code 忽略文件
+.memory/
+.claude/
+
+# 通用忽略文件
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.DS_Store
+.env
+*.log

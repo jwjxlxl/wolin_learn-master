@@ -1,0 +1,30 @@
+# RAG 教学示例 - 依赖列表
+# 安装命令：pip install -r requirements.txt
+
+# Milvus 相关
+pymilvus>=2.4.0          # Milvus Python 客户端
+# milvus-lite>=2.4.0     # 轻量级 Milvus（本地测试用，Windows 不支持，需手动部署 Milvus 服务）
+
+# Embedding 模型
+sentence-transformers>=2.2.0  # 文本向量化模型
+
+# 阿里云百炼 API（可选，用于 Embedding 和 LLM 调用）
+dashscope>=1.14.0        # 阿里云百炼 SDK
+openai>=1.0.0            # OpenAI 兼容 API 客户端（用于调用阿里云百炼等兼容接口）
+
+# 文本处理
+jieba>=0.42.0            # 中文分词
+rank-bm25>=0.2.0         # BM25 算法实现
+
+# LangChain（可选，用于部分示例）
+langchain>=0.3.0
+langchain-text-splitters>=0.3.0
+
+# 工具库
+numpy>=1.24.0            # 数值计算
+tqdm>=4.65.0             # 进度条
+python-dotenv>=1.0.0     # 环境变量管理（加载 .env 文件）
+
+# RAG 完整流程（可选，用于 rag_full_pipeline.py）
+# pip install FlagEmbedding  # Rerank 重排序
+# pip install ollama         # 本地 LLM 调用

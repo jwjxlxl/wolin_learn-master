@@ -21,8 +21,8 @@
 
 # Milvus 连接 URI
 # 方案 1: Docker Milvus（推荐，已运行）
-MILVUS_URI = "http://192.168.142.128:19530"
-
+# MILVUS_URI = "http://192.168.142.128:19530"
+MILVUS_URI = "http://47.115.57.130:19530"
 # 方案 2: Milvus Lite（本地文件模式，需要 pip install milvus-lite）
 # MILVUS_URI = "milvus_demo.db"
 

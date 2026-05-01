@@ -13,7 +13,7 @@
 # 运行前检查
 # -----------------------------------------------------------------------------
 # 1. 已安装 Ollama 服务
-# 2. 已下载模型：ollama pull qwen3:4b
+# 2. 已下载模型：ollama pull qwen3.5:2b
 # -----------------------------------------------------------------------------
 
 # 设置 UTF-8 编码（Windows 专用）
@@ -79,7 +79,7 @@ def review_pipeline():
 
     # 创建 Chain
     prompt = PromptTemplate.from_template("请用一句话解释{topic}。")
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     parser = StrOutputParser()
 
     chain = prompt | model | parser
@@ -120,7 +120,7 @@ def translation_chain():
 
 译文：""")
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     parser = StrOutputParser()
 
     chain = prompt | model | parser
@@ -167,7 +167,7 @@ def joke_generator_chain():
 
 冷笑话：""")
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     parser = StrOutputParser()
 
     chain = prompt | model | parser
@@ -208,7 +208,7 @@ def poem_chain():
 
 短诗：""")
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     parser = StrOutputParser()
 
     chain = prompt | model | parser
@@ -261,7 +261,7 @@ def reusable_chain_function():
 
 译文：""")
 
-        model = ChatOllama(model="qwen3:4b")
+        model = ChatOllama(model="qwen3.5:2b")
         parser = StrOutputParser()
 
         return prompt | model | parser
@@ -294,7 +294,7 @@ if __name__ == '__main__':
 
     print("【运行前检查】")
     print("  1. 已安装 Ollama 服务")
-    print("  2. 已下载模型：ollama pull qwen3:4b")
+    print("  2. 已下载模型：ollama pull qwen3.5:2b")
     print()
 
     # 运行示例

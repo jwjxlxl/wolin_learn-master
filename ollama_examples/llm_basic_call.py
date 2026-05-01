@@ -41,7 +41,7 @@ sys.stdout = io.TextIOWrapper(
 #
 # 前置要求：
 #   - 已安装 Ollama 服务 (https://ollama.ai)
-#   - 已下载模型，例如：ollama pull qwen3:4b
+#   - 已下载模型，例如：ollama pull qwen3.5:2b
 # -----------------------------------------------------------------------------
 
 import ollama
@@ -49,7 +49,7 @@ import ollama
 # 创建 Ollama 客户端，禁用环境变量代理（避免 localhost 被代理出去）
 client = ollama.Client(host='http://localhost:11434', trust_env=False)
 
-def ollama_chat(messages, model='qwen3:4b', stream=False, options=None):
+def ollama_chat(messages, model='qwen3.5:2b', stream=False, options=None):
     """
     封装 Ollama chat API 调用
 
@@ -93,7 +93,7 @@ def basic_chat_completion():
     # model: 指定使用的模型名称（需确保本地已下载该模型）
     # messages: 消息列表，每条消息包含 role 和 content
     response = ollama_chat(
-        model='qwen3:4b',  # 模型名称，可替换为 llama3.2、mistral 等
+        model='qwen3.5:2b',  # 模型名称，可替换为 llama3.2、mistral 等
         messages=[
             {
                 'role': 'user',      # 消息角色：'user'（用户）或 'assistant'（助手）
@@ -126,7 +126,7 @@ def streaming_chat():
     # stream=True 启用流式输出
     # ollama.chat() 返回一个可迭代的生成器，逐个获取响应块
     stream = ollama_chat(
-        model='qwen3:4b',
+        model='qwen3.5:2b',
         messages=[{'role': 'user', 'content': '请用 1000 字介绍人工智能。'}],
         stream=True  # 关键参数：启用流式模式
     )
@@ -162,7 +162,7 @@ def multi_turn_conversation():
 
     # 第一轮对话
 
-    response = ollama_chat(model='qwen3:4b', messages=messages)
+    response = ollama_chat(model='qwen3.5:2b', messages=messages)
     assistant_reply = response['message']['content']
     print(f"助手回复：{assistant_reply}")
 
@@ -175,7 +175,7 @@ def multi_turn_conversation():
         'content': '我叫什么名字？今年几岁？'
     })
 
-    response = ollama_chat(model='qwen3:4b', messages=messages)
+    response = ollama_chat(model='qwen3.5:2b', messages=messages)
     print(f"助手回复：{response['message']['content']}")
     print()
 
@@ -197,7 +197,7 @@ def chat_with_options():
     print("=" * 60)
 
     response = ollama_chat(
-        model='qwen3:4b',
+        model='qwen3.5:2b',
         messages=[
             {
                 'role': 'user',
@@ -264,7 +264,7 @@ def chat_with_error_handling():
 
     try:
         response = ollama_chat(
-            model='qwen3:4b',
+            model='qwen3.5:2b',
             messages=[{'role': 'user', 'content': '测试消息'}]
         )
         print(response['message']['content'])
@@ -300,7 +300,7 @@ if __name__ == '__main__':
     # 提示：运行前请确保
     print("【运行前检查】")
     print("  1. 已安装 Ollama 服务")
-    print("  2. 已下载模型：ollama pull qwen3:4b（当前本地模型）")
+    print("  2. 已下载模型：ollama pull qwen3.5:2b（当前本地模型）")
     print("  3. Ollama 服务正在运行")
     print()
 

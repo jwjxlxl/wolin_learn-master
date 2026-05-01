@@ -13,7 +13,7 @@
 # 运行前检查
 # -----------------------------------------------------------------------------
 # 1. 已安装 Ollama 服务
-# 2. 已下载模型：ollama pull qwen3:4b
+# 2. 已下载模型：ollama pull qwen3.5:2b
 # -----------------------------------------------------------------------------
 
 # 设置 UTF-8 编码（Windows 专用）
@@ -84,7 +84,7 @@ def simplest_template():
 
     # 调用模型
     from langchain_ollama import ChatOllama
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     response = model.invoke(formatted)
     print(f"AI 回复：{response.content}")
     print()
@@ -139,7 +139,7 @@ def complex_template():
 
     # 调用模型
     from langchain_ollama import ChatOllama
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     response = model.invoke(formatted)
     print(f"AI 回复：{response.content}")
     print()
@@ -203,7 +203,7 @@ def translation_assistant():
 译文：""")
 
     # 使用模板
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     # 翻译示例 1
     formatted = translate_prompt.format(
@@ -261,7 +261,7 @@ def code_review_assistant():
 审查结果：""")
 
     # 使用模板
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     code = """
 def calculate_average(numbers):
@@ -291,7 +291,7 @@ if __name__ == '__main__':
 
     print("【运行前检查】")
     print("  1. 已安装 Ollama 服务")
-    print("  2. 已下载模型：ollama pull qwen3:4b")
+    print("  2. 已下载模型：ollama pull qwen3.5:2b")
     print()
 
     # 运行示例

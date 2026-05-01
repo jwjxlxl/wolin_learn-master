@@ -22,8 +22,8 @@ ollama_examples/
 在终端执行以下命令下载模型：
 
 ```bash
-# 下载 qwen3:4b 模型（当前本地已安装）
-ollama pull qwen3:4b
+# 下载 qwen3.5:2b 模型（当前本地已安装）
+ollama pull qwen3.5:2b
 ```
 
 ### 3. 安装 Python 库
@@ -80,7 +80,7 @@ print(response['message']['content'])
 
 | 模型名称 | 大小 | 特点 | 适用场景 |
 |---------|------|------|---------|
-| qwen3:4b | 4B | 中文支持好，最新一代 | 通用对话、文本生成 |
+| qwen3.5:2b | 4B | 中文支持好，最新一代 | 通用对话、文本生成 |
 | llama3.2:3b | 3B | 轻量快速 | 资源受限环境 |
 | mistral:7b | 7B | 代码能力强 | 编程辅助 |
 | gemma2:9b | 9B | 推理能力强 | 逻辑推理任务 |

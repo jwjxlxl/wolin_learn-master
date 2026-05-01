@@ -14,7 +14,7 @@
 # 运行前检查
 # -----------------------------------------------------------------------------
 # 1. 已安装 Ollama 服务
-# 2. 已下载模型：ollama pull qwen3:4b
+# 2. 已下载模型：ollama pull qwen3.5:2b
 # 3. 已完成前面章节的学习
 # -----------------------------------------------------------------------------
 
@@ -74,7 +74,7 @@ class SimpleDocQnABot:
         from langchain_core.documents import Document
 
         self.documents = []
-        self.model = ChatOllama(model="qwen3:4b")
+        self.model = ChatOllama(model="qwen3.5:2b")
 
         # RAG 提示模板
         self.rag_prompt = PromptTemplate.from_template("""
@@ -303,7 +303,7 @@ class VectorDocQnABot:
             self.vectorstore = None
             self.documents = []
 
-            self.model = ChatOllama(model="qwen3:4b")
+            self.model = ChatOllama(model="qwen3.5:2b")
 
             self.rag_prompt = PromptTemplate.from_template("""
 请基于以下参考资料回答问题。
@@ -487,7 +487,7 @@ class CustomerServiceBot:
         self.memory = ConversationBufferMemory(return_messages=True)
 
         # 模型
-        self.model = ChatOllama(model="qwen3:4b")
+        self.model = ChatOllama(model="qwen3.5:2b")
 
         # 提示模板
         self.prompt = PromptTemplate.from_template("""
@@ -594,7 +594,7 @@ if __name__ == '__main__':
 
     print("【运行前检查】")
     print("  1. 已安装 Ollama 服务")
-    print("  2. 已下载模型：ollama pull qwen3:4b")
+    print("  2. 已下载模型：ollama pull qwen3.5:2b")
     print("  3. 已完成前面章节的学习")
     print()
 

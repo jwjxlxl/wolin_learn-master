@@ -13,7 +13,7 @@
 # 运行前检查
 # -----------------------------------------------------------------------------
 # 1. 已安装 Ollama 服务
-# 2. 已下载模型：ollama pull qwen3:4b
+# 2. 已下载模型：ollama pull qwen3.5:2b
 # -----------------------------------------------------------------------------
 
 # 设置 UTF-8 编码（Windows 专用）
@@ -185,7 +185,7 @@ def conversation_chain():
     from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
     # 创建模型
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     # 创建记忆
     memory = ConversationBufferMemory(return_messages=True)
@@ -250,7 +250,7 @@ def customer_service_bot():
         ("human", "{input}"),
     ])
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     chain = prompt | model
 
     print("客服机器人已启动！")
@@ -293,7 +293,7 @@ if __name__ == '__main__':
 
     print("【运行前检查】")
     print("  1. 已安装 Ollama 服务")
-    print("  2. 已下载模型：ollama pull qwen3:4b")
+    print("  2. 已下载模型：ollama pull qwen3.5:2b")
     print()
 
     # 运行示例

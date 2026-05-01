@@ -13,7 +13,7 @@
 # 运行前检查
 # -----------------------------------------------------------------------------
 # 1. 已安装 Ollama 服务
-# 2. 已下载模型：ollama pull qwen3:4b
+# 2. 已下载模型：ollama pull qwen3.5:2b
 # -----------------------------------------------------------------------------
 
 # 设置 UTF-8 编码（Windows 专用）
@@ -67,7 +67,7 @@ def system_message_example():
     print("示例 1: SystemMessage - 设定 AI 人设")
     print("=" * 60)
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     # 不同的系统提示词，得到不同的回复风格
     print("【人设 1】严肃的科学家：")
@@ -112,7 +112,7 @@ def human_message_example():
     print("示例 2: HumanMessage - 用户提问")
     print("=" * 60)
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     # 简单用法
     messages = [
@@ -137,7 +137,7 @@ def multi_turn_conversation():
     print("示例 3: 多轮对话（使用 AIMessage）")
     print("=" * 60)
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     # 第一轮对话
     print("第一轮：")
@@ -182,7 +182,7 @@ def simplified_message_example():
     print("示例 4: 简化写法（元组形式）")
     print("=" * 60)
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     # 简化写法：使用元组 ("角色", "内容")
     # "system" = SystemMessage
@@ -217,7 +217,7 @@ def role_play_conversation():
     print("示例 5: 角色扮演 - 英语老师")
     print("=" * 60)
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     # 设定 AI 为英语老师
     messages = [
@@ -245,17 +245,13 @@ if __name__ == '__main__':
     print("  说明：SystemMessage, HumanMessage, AIMessage")
     print("=" * 70 + "\n")
 
-    print("【运行前检查】")
-    print("  1. 已安装 Ollama 服务")
-    print("  2. 已下载模型：ollama pull qwen3:4b")
-    print()
 
     # 运行示例
-    system_message_example()
-    human_message_example()
+    # system_message_example()
+    # human_message_example()
     multi_turn_conversation()
-    simplified_message_example()
-    role_play_conversation()
+    # simplified_message_example()
+    # role_play_conversation()
 
     print("=" * 70)
     print("  接下来学习：streaming_output.py（流式输出）")

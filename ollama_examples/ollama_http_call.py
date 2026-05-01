@@ -75,7 +75,7 @@ def http_chat_with_httpx():
 
     请求格式：
     {
-        "model": "qwen3:4b",
+        "model": "qwen3.5:2b",
         "messages": [
             {"role": "user", "content": "你好"}
         ],
@@ -84,7 +84,7 @@ def http_chat_with_httpx():
 
     响应格式：
     {
-        "model": "qwen3:4b",
+        "model": "qwen3.5:2b",
         "message": {
             "role": "assistant",
             "content": "你好！我是..."
@@ -99,7 +99,7 @@ def http_chat_with_httpx():
     # 请求地址和参数
     url = "http://localhost:11434/api/chat"
     payload = {
-        "model": "qwen3:4b",
+        "model": "qwen3.5:2b",
         "messages": [
             {"role": "user", "content": "你好，请用一句话介绍你自己。"}
         ],
@@ -147,7 +147,7 @@ def http_chat_with_urllib():
 
     url = "http://localhost:11434/api/chat"
     payload = {
-        "model": "qwen3:4b",
+        "model": "qwen3.5:2b",
         "messages": [
             {"role": "user", "content": "你好，请用一句话介绍你自己。"}
         ],
@@ -188,11 +188,11 @@ def http_streaming_chat():
     4. 客户端逐个接收并显示，形成打字机效果
 
     流式响应格式（多个 JSON 行）：
-    {"model":"qwen3:4b","message":{"role":"assistant","content":"你"},"done":false}
-    {"model":"qwen3:4b","message":{"role":"assistant","content":"好"},"done":false}
-    {"model":"qwen3:4b","message":{"role":"assistant","content":"！"},"done":false}
+    {"model":"qwen3.5:2b","message":{"role":"assistant","content":"你"},"done":false}
+    {"model":"qwen3.5:2b","message":{"role":"assistant","content":"好"},"done":false}
+    {"model":"qwen3.5:2b","message":{"role":"assistant","content":"！"},"done":false}
     ...
-    {"model":"qwen3:4b","done":true}  ← 最后一个块标记结束
+    {"model":"qwen3.5:2b","done":true}  ← 最后一个块标记结束
     """
     print("=" * 60)
     print("方式 3: HTTP 流式调用（打字机效果）")
@@ -200,7 +200,7 @@ def http_streaming_chat():
 
     url = "http://localhost:11434/api/chat"
     payload = {
-        "model": "qwen3:4b",
+        "model": "qwen3.5:2b",
         "messages": [
             {"role": "user", "content": "请用 500 字介绍人工智能。"}
         ],
@@ -254,7 +254,7 @@ def http_multi_turn_chat():
 
     # 第一轮对话
     payload = {
-        "model": "qwen3:4b",
+        "model": "qwen3.5:2b",
         "messages": messages,
         "stream": False
     }
@@ -272,7 +272,7 @@ def http_multi_turn_chat():
     messages.append({"role": "user", "content": "我叫什么名字？今年几岁？"})
 
     payload = {
-        "model": "qwen3:4b",
+        "model": "qwen3.5:2b",
         "messages": messages,
         "stream": False
     }
@@ -298,7 +298,7 @@ def http_list_models():
     响应格式：
     {
         "models": [
-            {"name": "qwen3:4b", "size": 2497293931, ...},
+            {"name": "qwen3.5:2b", "size": 2497293931, ...},
             {"name": "llama3.2", "size": ...}
         ]
     }
@@ -332,7 +332,7 @@ if __name__ == '__main__':
 
     print("【运行前检查】")
     print("  1. Ollama 服务已启动：ollama serve")
-    print("  2. 模型已下载：ollama pull qwen3:4b")
+    print("  2. 模型已下载：ollama pull qwen3.5:2b")
     print("  3. 安装依赖：pip install httpx")
     print()
 

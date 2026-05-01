@@ -13,7 +13,7 @@
 # 运行前检查
 # -----------------------------------------------------------------------------
 # 1. 已安装 Ollama 服务
-# 2. 已下载模型：ollama pull qwen3:4b
+# 2. 已下载模型：ollama pull qwen3.5:2b
 # -----------------------------------------------------------------------------
 
 # 设置 UTF-8 编码（Windows 专用）
@@ -77,7 +77,7 @@ def simplest_pipeline():
     prompt = PromptTemplate.from_template("请用一句话解释{concept}。")
 
     # 创建模型
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     # 组合成 Pipeline
     # | 操作符表示"连接到下一个"
@@ -111,7 +111,7 @@ def pipeline_flow():
     from langchain_ollama import ChatOllama
 
     prompt = PromptTemplate.from_template("翻译：{text}")
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     # 创建链
     chain = prompt | model
@@ -155,7 +155,7 @@ def three_stage_pipeline():
     )
 
     # 2. 模型
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     # 3. 输出解析器
     # StrOutputParser: 把 Message 对象转成字符串
@@ -195,7 +195,7 @@ def chained_pipeline():
     generate_prompt = PromptTemplate.from_template(
         "列出 3 个关于{topic}的关键词，用逗号分隔。"
     )
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     parser = StrOutputParser()
 
     generate_chain = generate_prompt | model | parser
@@ -237,7 +237,7 @@ def article_generator():
     from langchain_ollama import ChatOllama
     from langchain_core.output_parsers import StrOutputParser
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     parser = StrOutputParser()
 
     # 步骤 1: 生成大纲
@@ -313,7 +313,7 @@ def custom_pipeline_step():
         return f"{text}\n\n[字数：{len(text)}]"
 
     prompt = PromptTemplate.from_template("请用 50 字介绍{topic}。")
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     parser = StrOutputParser()
 
     # 组合 Pipeline，插入自定义步骤
@@ -336,7 +336,7 @@ if __name__ == '__main__':
 
     print("【运行前检查】")
     print("  1. 已安装 Ollama 服务")
-    print("  2. 已下载模型：ollama pull qwen3:4b")
+    print("  2. 已下载模型：ollama pull qwen3.5:2b")
     print()
 
     # 运行示例

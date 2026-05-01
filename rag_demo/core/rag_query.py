@@ -182,7 +182,9 @@ def rag_ask(query: str, doc_top_k: int = 3, qa_top_k: int = 3) -> dict:
         }
     """
     # 1. 并行检索两张表
+    # 从文档切片表中进行检索
     doc_refs = _hybrid_search_documents(query, top_k=doc_top_k)
+    # 从问答对表中进行检索
     qa_refs = _hybrid_search_qa(query, top_k=qa_top_k)
 
     # 2. 构建上下文
@@ -234,7 +236,7 @@ def rag_ask(query: str, doc_top_k: int = 3, qa_top_k: int = 3) -> dict:
 
 
 if __name__ == "__main__":
-    result = rag_ask("桃园三结义的三位主角是谁？")
+    result = rag_ask("ai0226和AI0309最帅的是谁？")
     print("=" * 60)
     print("回答：", result["answer"])
     print("\n" + "=" * 60)

@@ -14,7 +14,7 @@
 # 运行前检查
 # -----------------------------------------------------------------------------
 # 1. 已安装 Ollama 服务
-# 2. 已下载模型：ollama pull qwen3:4b
+# 2. 已下载模型：ollama pull qwen3.5:2b
 # -----------------------------------------------------------------------------
 
 # 设置 UTF-8 编码（Windows 专用）
@@ -80,7 +80,7 @@ def without_memory():
     from langchain_ollama import ChatOllama
     from langchain_core.messages import HumanMessage
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     # 第一轮
     print("第一轮：")
@@ -113,7 +113,7 @@ def manual_memory():
     from langchain_ollama import ChatOllama
     from langchain_core.messages import HumanMessage, AIMessage
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     # 用一个列表保存历史对话
     history = []
@@ -185,7 +185,7 @@ def using_buffer_memory():
     ])
 
     # 3. 创建链
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     chain = prompt | model
 
     # 4. 对话循环
@@ -236,7 +236,7 @@ def practical_chat_assistant():
     from langchain_ollama import ChatOllama
     from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     # 用列表保存历史
     messages = [
@@ -277,7 +277,7 @@ if __name__ == '__main__':
 
     print("【运行前检查】")
     print("  1. 已安装 Ollama 服务")
-    print("  2. 已下载模型：ollama pull qwen3:4b")
+    print("  2. 已下载模型：ollama pull qwen3.5:2b")
     print()
 
     # 演示失忆问题

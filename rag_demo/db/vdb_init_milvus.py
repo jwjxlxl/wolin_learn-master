@@ -284,9 +284,14 @@ def insert_qa_pairs(json_file_path: str, batch_size: int = 50):
 
 
 if __name__ == "__main__":
-    create_document_chunks_collection()
-    create_qa_pairs_collection()
+    # create_document_chunks_collection()
+    # create_qa_pairs_collection()
 
     data_dir = Path(__file__).parent.parent / "datas"
-    insert_document_chunks(str(data_dir / "三国演义.txt"))
-    insert_qa_pairs(str(data_dir / "qa_paris.json"))
+    # insert_document_chunks(str(data_dir / "三国演义.txt"))
+    insert_qa_pairs(str(data_dir / "qa_paris_additional.json"))
+
+    '''
+        向量库中的数据，可以提供一个接口进行更新
+        增量和全量数据的更新
+    '''

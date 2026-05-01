@@ -14,7 +14,7 @@
 # 运行前检查
 # -----------------------------------------------------------------------------
 # 1. 已安装 Ollama 服务
-# 2. 已下载模型：ollama pull qwen3:4b
+# 2. 已下载模型：ollama pull qwen3.5:2b
 # -----------------------------------------------------------------------------
 
 # 设置 UTF-8 编码（Windows 专用）
@@ -96,7 +96,7 @@ def simplest_few_shot():
 问：日本首都是哪里？
 答：""")
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     response = model.invoke(prompt.format())
     print(f"AI 回复：{response.content}")
     print()
@@ -140,7 +140,7 @@ def sentiment_classification():
 评论："{review}"
 情感：""")
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     # 测试不同评论
     reviews = [
@@ -200,7 +200,7 @@ def formatted_output():
 文本："{text}"
 输出：""")
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     text = "王芳今年 28 岁，她是一名小学老师。"
     formatted = prompt.format(text=text)
@@ -242,7 +242,7 @@ def style_imitation():
 问："{question}"
 答：""")
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     questions = [
         "你在做什么？",
@@ -305,7 +305,7 @@ def using_few_shot_prompt_template():
     )
 
     # 4. 使用
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     # 会自动把所有示例拼接成 prompt
     formatted = few_shot_prompt.format(question="日本首都是哪里？")
@@ -332,7 +332,7 @@ if __name__ == '__main__':
 
     print("【运行前检查】")
     print("  1. 已安装 Ollama 服务")
-    print("  2. 已下载模型：ollama pull qwen3:4b")
+    print("  2. 已下载模型：ollama pull qwen3.5:2b")
     print()
 
     # 运行示例

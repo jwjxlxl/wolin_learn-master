@@ -14,7 +14,7 @@
 # 运行前检查
 # -----------------------------------------------------------------------------
 # 1. 已安装 Ollama 服务
-# 2. 已下载模型：ollama pull qwen3:4b
+# 2. 已下载模型：ollama pull qwen3.5:2b
 # 3. 已完成前面章节的学习
 # -----------------------------------------------------------------------------
 
@@ -74,7 +74,7 @@ class SimpleSummarizer:
         from langchain_ollama import ChatOllama
         from langchain_core.output_parsers import StrOutputParser
 
-        self.model = ChatOllama(model="qwen3:4b")
+        self.model = ChatOllama(model="qwen3.5:2b")
 
         # 总结提示模板
         self.summary_prompt = PromptTemplate.from_template("""
@@ -210,7 +210,7 @@ class ResearchAssistant:
         from langchain_ollama import ChatOllama
         from langchain_core.output_parsers import StrOutputParser
 
-        self.model = ChatOllama(model="qwen3:4b")
+        self.model = ChatOllama(model="qwen3.5:2b")
 
         # 步骤 1: 定义问题
         self.define_prompt = PromptTemplate.from_template("""
@@ -376,7 +376,7 @@ class LearningPlanAssistant:
         from langchain_ollama import ChatOllama
         from langchain_core.output_parsers import StrOutputParser
 
-        self.model = ChatOllama(model="qwen3:4b")
+        self.model = ChatOllama(model="qwen3.5:2b")
 
         # 学习路径生成
         self.path_prompt = PromptTemplate.from_template("""
@@ -498,7 +498,7 @@ class ReportGenerator:
         from langchain_ollama import ChatOllama
         from langchain_core.output_parsers import StrOutputParser
 
-        self.model = ChatOllama(model="qwen3:4b")
+        self.model = ChatOllama(model="qwen3.5:2b")
 
         # 大纲生成
         self.outline_prompt = PromptTemplate.from_template("""
@@ -632,7 +632,7 @@ if __name__ == '__main__':
 
     print("【运行前检查】")
     print("  1. 已安装 Ollama 服务")
-    print("  2. 已下载模型：ollama pull qwen3:4b")
+    print("  2. 已下载模型：ollama pull qwen3.5:2b")
     print("  3. 已完成前面章节的学习")
     print()
 

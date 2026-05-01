@@ -13,7 +13,7 @@
 # 运行前检查
 # -----------------------------------------------------------------------------
 # 1. 已安装 Ollama 服务
-# 2. 已下载模型：ollama pull qwen3:4b
+# 2. 已下载模型：ollama pull qwen3.5:2b
 # -----------------------------------------------------------------------------
 
 # 设置 UTF-8 编码（Windows 专用）
@@ -72,7 +72,7 @@ def simple_if_else_router():
     from langchain_ollama import ChatOllama
     from langchain_core.output_parsers import StrOutputParser
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     parser = StrOutputParser()
 
     # 创建不同功能的 Chain
@@ -135,7 +135,7 @@ def intelligent_router():
     from langchain_ollama import ChatOllama
     from langchain_core.output_parsers import StrOutputParser
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     # 第 1 步：用 AI 判断输入类型
     router_prompt = PromptTemplate.from_template("""
@@ -212,7 +212,7 @@ def customer_service_router():
     from langchain_ollama import ChatOllama
     from langchain_core.output_parsers import StrOutputParser
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     # 路由判断
     router_prompt = PromptTemplate.from_template("""
@@ -320,7 +320,7 @@ def multilingual_assistant():
     from langchain_ollama import ChatOllama
     from langchain_core.output_parsers import StrOutputParser
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     # 语言识别
     lang_prompt = PromptTemplate.from_template("""
@@ -390,7 +390,7 @@ if __name__ == '__main__':
 
     print("【运行前检查】")
     print("  1. 已安装 Ollama 服务")
-    print("  2. 已下载模型：ollama pull qwen3:4b")
+    print("  2. 已下载模型：ollama pull qwen3.5:2b")
     print()
 
     # 运行示例

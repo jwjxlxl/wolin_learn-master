@@ -13,7 +13,7 @@
 # 运行前检查
 # -----------------------------------------------------------------------------
 # 1. 已安装 Ollama 服务
-# 2. 已下载模型：ollama pull qwen3:4b
+# 2. 已下载模型：ollama pull qwen3.5:2b
 # -----------------------------------------------------------------------------
 
 # 设置 UTF-8 编码（Windows 专用）
@@ -72,7 +72,7 @@ def manual_chain_chain():
     from langchain_ollama import ChatOllama
     from langchain_core.output_parsers import StrOutputParser
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     parser = StrOutputParser()
 
     # Chain 1: 生成大纲
@@ -125,7 +125,7 @@ def article_generator():
     from langchain_ollama import ChatOllama
     from langchain_core.output_parsers import StrOutputParser
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     parser = StrOutputParser()
 
     # 步骤 1: 生成大纲
@@ -192,7 +192,7 @@ def problem_analysis_chain():
     from langchain_ollama import ChatOllama
     from langchain_core.output_parsers import StrOutputParser
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     parser = StrOutputParser()
 
     # 步骤 1: 分析原因
@@ -246,7 +246,7 @@ def code_review_chain():
     from langchain_ollama import ChatOllama
     from langchain_core.output_parsers import StrOutputParser
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     parser = StrOutputParser()
 
     # 步骤 1: 找问题
@@ -317,7 +317,7 @@ if __name__ == '__main__':
 
     print("【运行前检查】")
     print("  1. 已安装 Ollama 服务")
-    print("  2. 已下载模型：ollama pull qwen3:4b")
+    print("  2. 已下载模型：ollama pull qwen3.5:2b")
     print()
 
     # 运行示例

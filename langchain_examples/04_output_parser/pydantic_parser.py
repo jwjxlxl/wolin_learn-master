@@ -13,7 +13,7 @@
 # 运行前检查
 # -----------------------------------------------------------------------------
 # 1. 已安装 Ollama 服务
-# 2. 已下载模型：ollama pull qwen3:4b
+# 2. 已下载模型：ollama pull qwen3.5:2b
 # -----------------------------------------------------------------------------
 
 # 设置 UTF-8 编码（Windows 专用）
@@ -148,7 +148,7 @@ JSON 输出：""")
     )
 
     # 5. 创建 Pipeline
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     chain = prompt_with_format | model | parser
 
     # 6. 调用
@@ -211,7 +211,7 @@ JSON 输出：""")
         format_instructions=parser.get_format_instructions()
     )
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     chain = prompt_with_format | model | parser
 
     result = chain.invoke({})
@@ -270,7 +270,7 @@ JSON 输出：""")
         format_instructions=parser.get_format_instructions()
     )
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     chain = prompt_with_format | model | parser
 
     result = chain.invoke({})
@@ -323,7 +323,7 @@ JSON 输出：""")
         format_instructions=parser.get_format_instructions()
     )
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     chain = prompt_with_format | model | parser
 
     try:
@@ -366,7 +366,7 @@ if __name__ == '__main__':
 
     print("【运行前检查】")
     print("  1. 已安装 Ollama 服务")
-    print("  2. 已下载模型：ollama pull qwen3:4b")
+    print("  2. 已下载模型：ollama pull qwen3.5:2b")
     print()
 
     # 运行示例

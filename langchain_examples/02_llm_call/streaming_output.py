@@ -13,7 +13,7 @@
 # 运行前检查
 # -----------------------------------------------------------------------------
 # 1. 已安装 Ollama 服务
-# 2. 已下载模型：ollama pull qwen3:4b
+# 2. 已下载模型：ollama pull qwen3.5:2b
 # -----------------------------------------------------------------------------
 
 # 设置 UTF-8 编码（Windows 专用）
@@ -68,7 +68,7 @@ def simplest_streaming():
 
     from langchain_ollama import ChatOllama
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     # 关键区别：
     # invoke()  → 等待完整回复，一次性返回
@@ -101,7 +101,7 @@ def streaming_vs_non_streaming():
     from langchain_ollama import ChatOllama
     import time
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     question = "请用三句话介绍你自己。"
 
     # 非流式
@@ -141,7 +141,7 @@ def collect_streaming_output():
 
     from langchain_ollama import ChatOllama
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     # 用列表收集所有内容块
     full_response = []
@@ -174,7 +174,7 @@ def streaming_with_error_handling():
 
     from langchain_ollama import ChatOllama
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     try:
         print("AI 正在输入：", end="", flush=True)
@@ -211,7 +211,7 @@ def chat_bot_with_streaming():
     from langchain_ollama import ChatOllama
     from langchain_core.messages import HumanMessage, AIMessage
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     messages = []
 
     while True:
@@ -248,13 +248,13 @@ if __name__ == '__main__':
 
     print("【运行前检查】")
     print("  1. 已安装 Ollama 服务")
-    print("  2. 已下载模型：ollama pull qwen3:4b")
+    print("  2. 已下载模型：ollama pull qwen3.5:2b")
     print()
 
     # 运行示例
     simplest_streaming()
-    streaming_vs_non_streaming()
-    collect_streaming_output()
+    # streaming_vs_non_streaming()
+    # collect_streaming_output()
 
     # 聊天机器人（交互式，按需运行）
     # chat_bot_with_streaming()

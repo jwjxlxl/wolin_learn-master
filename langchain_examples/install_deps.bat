@@ -30,7 +30,7 @@ echo ===========================================================================
 echo.
 echo 下一步：
 echo   1. 如果使用本地模型：安装 Ollama (https://ollama.ai)
-echo   2. 下载模型：ollama pull qwen3:4b
+echo   2. 下载模型：ollama pull qwen3.5:2b
 echo   3. 运行示例：python 01_introduction/first_chain.py
 echo.
 echo 如遇问题：

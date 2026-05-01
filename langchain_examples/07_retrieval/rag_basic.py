@@ -14,7 +14,7 @@
 # 运行前检查
 # -----------------------------------------------------------------------------
 # 1. 已安装 Ollama 服务
-# 2. 已下载模型：ollama pull qwen3:4b
+# 2. 已下载模型：ollama pull qwen3.5:2b
 # 3. 理解向量存储概念（学习过 vector_store.py）
 # -----------------------------------------------------------------------------
 
@@ -124,7 +124,7 @@ def simple_rag_example():
 
 回答：""")
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     rag_chain = rag_prompt | model | StrOutputParser()
 
     # 测试
@@ -207,7 +207,7 @@ def complete_rag_pipeline():
 
 回答：""")
 
-        model = ChatOllama(model="qwen3:4b")
+        model = ChatOllama(model="qwen3.5:2b")
 
         # 完整的 RAG 链
         rag_chain = (
@@ -270,7 +270,7 @@ def rag_qna_bot():
                 knowledge_base: 知识库文档列表
             """
             self.knowledge_base = knowledge_base
-            self.model = ChatOllama(model="qwen3:4b")
+            self.model = ChatOllama(model="qwen3.5:2b")
 
             # 创建 RAG 提示
             self.rag_prompt = PromptTemplate.from_template("""
@@ -420,7 +420,7 @@ def rag_with_citations():
 
 回答：""")
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     rag_chain = citation_prompt | model | StrOutputParser()
 
     # 测试
@@ -511,7 +511,7 @@ def interactive_rag_qna():
 
 回答：""")
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     rag_chain = rag_prompt | model | StrOutputParser()
 
     print("RAG 问答机器人已启动！")
@@ -549,7 +549,7 @@ if __name__ == '__main__':
 
     print("【运行前检查】")
     print("  1. 已安装 Ollama 服务")
-    print("  2. 已下载模型：ollama pull qwen3:4b")
+    print("  2. 已下载模型：ollama pull qwen3.5:2b")
     print("  3. 已学习向量存储概念（vector_store.py）")
     print()
 

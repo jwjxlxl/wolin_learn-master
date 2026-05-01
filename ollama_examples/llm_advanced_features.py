@@ -46,7 +46,7 @@ def chat_with_system_prompt():
     print("=" * 60)
 
     response = client.chat(
-        model='qwen3:4b',
+        model='qwen3.5:2b',
         messages=[
             # 系统提示词：设定助手的角色和行为
             {
@@ -107,7 +107,7 @@ def function_calling_example():
 
     # 用户请求
     response = client.chat(
-        model='qwen3:4b',
+        model='qwen3.5:2b',
         messages=[
             {'role': 'user', 'content': '帮我查一下北京明天的天气'}
         ],
@@ -155,7 +155,7 @@ def generate_embeddings():
 
     try:
         # 生成文本的向量表示
-        # 注意：qwen3:4b 不支持 embeddings，需使用专门模型
+        # 注意：qwen3.5:2b 不支持 embeddings，需使用专门模型
         # 安装方法：ollama pull nomic-embed-text
         response = client.embeddings(
             model='nomic-embed-text',  # 或使用 mxbai-embed-large
@@ -191,7 +191,7 @@ def generate_streaming():
     print("=" * 60)
 
     stream = client.generate(
-        model='qwen3:4b',
+        model='qwen3.5:2b',
         prompt='写一首关于春天的五言绝句：',
         stream=True
     )
@@ -217,7 +217,7 @@ def structured_json_output():
     print("=" * 60)
 
     response = client.chat(
-        model='qwen3:4b',
+        model='qwen3.5:2b',
         messages=[
             {
                 'role': 'user',
@@ -262,9 +262,9 @@ def show_model_info():
     print("=" * 60)
 
     # 获取指定模型的详细信息
-    info = client.show('qwen3:4b')
+    info = client.show('qwen3.5:2b')
 
-    print(f"模型：qwen3:4b")
+    print(f"模型：qwen3.5:2b")
     print(f"参数数量：{info.modelinfo.get('general.parameter_count', '未知')}")
     print(f"量化等级：{info.details.quantization_level}")
     print()
@@ -281,7 +281,7 @@ if __name__ == '__main__':
 
     print("【运行前检查】")
     print("  1. 已安装 Ollama 服务")
-    print("  2. 已下载模型：ollama pull qwen3:4b（当前本地模型）")
+    print("  2. 已下载模型：ollama pull qwen3.5:2b（当前本地模型）")
     print("  3. Ollama 服务正在运行")
     print()
 

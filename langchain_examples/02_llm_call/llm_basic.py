@@ -15,7 +15,7 @@
 # 运行前检查
 # -----------------------------------------------------------------------------
 # 1. 已安装 Ollama 服务（使用本地模型时）
-# 2. 已下载模型：ollama pull qwen3:4b
+# 2. 已下载模型：ollama pull qwen3.5:2b
 # 3. 已安装依赖：pip install -r requirements.txt
 # -----------------------------------------------------------------------------
 
@@ -76,7 +76,7 @@ def ollama_chat_example():
 
     # 创建 Chat Model 实例
     # model: 指定使用的模型名称（需与 Ollama 中的一致）
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     # 调用模型
     # invoke: 最基础的调用方法，传入消息内容
@@ -101,7 +101,7 @@ def ollama_with_messages_example():
     from langchain_ollama import ChatOllama
     from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     # 构建消息列表
     messages = [
@@ -244,7 +244,7 @@ def get_model(provider="ollama"):
     """
     if provider == "ollama":
         from langchain_ollama import ChatOllama
-        return ChatOllama(model="qwen3:4b")
+        return ChatOllama(model="qwen3.5:2b")
 
     elif provider == "qwen":
         from langchain_openai import ChatOpenAI
@@ -306,13 +306,13 @@ if __name__ == '__main__':
 
     print("【运行前检查】")
     print("  1. 已安装 Ollama 服务（使用本地模型时）")
-    print("  2. 已下载模型：ollama pull qwen3:4b")
+    print("  2. 已下载模型：ollama pull qwen3.5:2b")
     print("  3. 已安装依赖：pip install -r requirements.txt")
     print()
 
     # 运行示例
     ollama_chat_example()
-    ollama_with_messages_example()
+    # ollama_with_messages_example()
 
     # 云端 API 示例（有 API Key 可取消注释）
     # qwen_chat_example()

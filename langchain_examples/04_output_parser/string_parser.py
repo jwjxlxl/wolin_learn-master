@@ -13,7 +13,7 @@
 # 运行前检查
 # -----------------------------------------------------------------------------
 # 1. 已安装 Ollama 服务
-# 2. 已下载模型：ollama pull qwen3:4b
+# 2. 已下载模型：ollama pull qwen3.5:2b
 # -----------------------------------------------------------------------------
 
 # 设置 UTF-8 编码（Windows 专用）
@@ -72,7 +72,7 @@ def without_parser():
 
     from langchain_ollama import ChatOllama
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     # 调用模型
     response = model.invoke("请用一句话介绍 Python。")
@@ -100,7 +100,7 @@ def with_parser():
 
     # 创建 Pipeline：Prompt + Model + Parser
     prompt = PromptTemplate.from_template("请用一句话介绍{topic}。")
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     parser = StrOutputParser()
 
     chain = prompt | model | parser
@@ -150,7 +150,7 @@ def str_parser_details():
     print()
 
     # 在 Pipeline 中使用
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     chain = model | parser
 
     result = chain.invoke("什么是 AI？")
@@ -175,7 +175,7 @@ def batch_processing():
     from langchain_core.prompts import PromptTemplate
 
     prompt = PromptTemplate.from_template("用{num}个字介绍{topic}。")
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     parser = StrOutputParser()
 
     chain = prompt | model | parser
@@ -224,7 +224,7 @@ def extract_information():
 
 提取结果：""")
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     parser = StrOutputParser()
 
     chain = prompt | model | parser
@@ -260,7 +260,7 @@ def clean_output():
 问题：{question}
 答案：""")
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
     parser = StrOutputParser()
 
     chain = prompt | model | parser
@@ -284,7 +284,7 @@ if __name__ == '__main__':
 
     print("【运行前检查】")
     print("  1. 已安装 Ollama 服务")
-    print("  2. 已下载模型：ollama pull qwen3:4b")
+    print("  2. 已下载模型：ollama pull qwen3.5:2b")
     print()
 
     # 运行示例

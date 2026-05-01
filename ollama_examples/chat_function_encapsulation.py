@@ -45,7 +45,7 @@ def demo_repeated_code():
     # --- 第 1 次调用 ---
     print("\n>>> 第 1 次调用：打招呼")
     response1 = ollama.chat(
-        model='qwen3:4b',
+        model='qwen3.5:2b',
         messages=[{'role': 'user', 'content': '你好'}]
     )
     print(f"回复：{response1['message']['content'][:50]}...")
@@ -53,7 +53,7 @@ def demo_repeated_code():
     # --- 第 2 次调用 ---
     print("\n>>> 第 2 次调用：问天气")
     response2 = ollama.chat(
-        model='qwen3:4b',
+        model='qwen3.5:2b',
         messages=[{'role': 'user', 'content': '如何判断明天会不会下雨？'}]
     )
     print(f"回复：{response2['message']['content'][:50]}...")
@@ -61,7 +61,7 @@ def demo_repeated_code():
     # --- 第 3 次调用 ---
     print("\n>>> 第 3 次调用：问数学")
     response3 = ollama.chat(
-        model='qwen3:4b',
+        model='qwen3.5:2b',
         messages=[{'role': 'user', 'content': '1+1 等于几？'}]
     )
     print(f"回复：{response3['message']['content'][:50]}...")
@@ -90,7 +90,7 @@ def ask(message):
         message (str): 用户的问题
     """
     response = ollama.chat(
-        model='qwen3:4b',
+        model='qwen3.5:2b',
         messages=[{'role': 'user', 'content': message}]
     )
     return response['message']['content']
@@ -135,13 +135,13 @@ def demo_simple_encapsulation():
 # 🤔 引导：模型名称也在变，为什么不也把它变成参数？
 # =============================================================================
 
-def ask_v2(message, model='qwen3:4b'):
+def ask_v2(message, model='qwen3.5:2b'):
     """
     增强版：支持指定模型
 
     参数：
         message (str): 用户的问题
-        model (str): 模型名称，默认 qwen3:4b
+        model (str): 模型名称，默认 qwen3.5:2b
     """
     response = ollama.chat(
         model=model,
@@ -159,13 +159,13 @@ def demo_more_parameters():
     print("=" * 70)
 
     print("\n>>> 代码：")
-    print("    def ask_v2(message, model='qwen3:4b'):")
+    print("    def ask_v2(message, model='qwen3.5:2b'):")
     print("        # 模型名称也变成参数")
     print()
 
     print(">>> 使用：")
-    result1 = ask_v2('你好', model='qwen3:4b')
-    print(f"  ask_v2('你好', model='qwen3:4b') = {result1[:50]}...")
+    result1 = ask_v2('你好', model='qwen3.5:2b')
+    print(f"  ask_v2('你好', model='qwen3.5:2b') = {result1[:50]}...")
 
     # 默认参数可以省略
     result2 = ask_v2('1+1=?')
@@ -186,7 +186,7 @@ def demo_more_parameters():
 #      为什么不把整个对话历史都传给它？
 # =============================================================================
 
-def ask_v3(messages, model='qwen3:4b'):
+def ask_v3(messages, model='qwen3.5:2b'):
     """
     支持多轮对话：传入完整的消息历史
 
@@ -248,7 +248,7 @@ def demo_multi_turn():
 #      为什么不把错误处理也封装进函数？
 # =============================================================================
 
-def ask_v4(message, model='qwen3:4b'):
+def ask_v4(message, model='qwen3.5:2b'):
     """
     带错误处理的版本
 
@@ -319,13 +319,13 @@ def demo_error_handling():
 #      用 **kwargs 可以把"可能变化的参数"一起打包传入！
 # =============================================================================
 
-def ask_v5(message, model='qwen3:4b', stream=False, **options):
+def ask_v5(message, model='qwen3.5:2b', stream=False, **options):
     """
     终极版本：支持所有 ollama.chat 的参数
 
     参数：
         message (str): 用户的问题
-        model (str): 模型名称，默认 qwen3:4b
+        model (str): 模型名称，默认 qwen3.5:2b
         stream (bool): 是否流式输出，默认 False
         **options: 其他参数（如 temperature, num_predict 等）
 
@@ -410,7 +410,7 @@ class ChatBot:
     自动维护对话历史，支持重置对话、流式输出等
     """
 
-    def __init__(self, model='qwen3:4b'):
+    def __init__(self, model='qwen3.5:2b'):
         """
         初始化机器人
 
@@ -499,8 +499,8 @@ def demo_chatbot_class():
     print("=" * 70)
 
     print("\n>>> 创建机器人：")
-    bot = ChatBot(model='qwen3:4b')
-    print(f"  bot = ChatBot(model='qwen3:4b')")
+    bot = ChatBot(model='qwen3.5:2b')
+    print(f"  bot = ChatBot(model='qwen3.5:2b')")
 
     print("\n>>> 第 1 轮：")
     reply = bot.ask('我叫小明，记住了')

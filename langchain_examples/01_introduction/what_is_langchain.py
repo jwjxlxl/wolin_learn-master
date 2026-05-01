@@ -243,7 +243,7 @@ def preview_first_code():
     ┌─────────────────────────────────────────┐
     │ from langchain_ollama import ChatOllama │
     │                                         │
-    │ model = ChatOllama(model="qwen3:4b")   │
+    │ model = ChatOllama(model="qwen3.5:2b")   │
     │                                         │
     │ response = model.invoke("你好！")        │
     └─────────────────────────────────────────┘

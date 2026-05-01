@@ -14,7 +14,7 @@
 # 运行前检查
 # -----------------------------------------------------------------------------
 # 1. 已安装 Ollama 服务
-# 2. 已下载模型：ollama pull qwen3:4b
+# 2. 已下载模型：ollama pull qwen3.5:2b
 # 3. Ollama 服务正在运行
 #
 # 如果只想用云端 API，参考代码中的注释部分
@@ -58,7 +58,7 @@ def simplest_call():
     print("=" * 60)
 
     # 第 1 行：创建模型实例
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     # 第 2 行：调用模型
     response = model.invoke("你好，请用一句话介绍你自己。")
@@ -125,8 +125,8 @@ def cloud_api_call():
         def dynamic_model_selection(state: AgentState, runtime: Runtime) -> ModelResponse:
             """根据对话复杂性选择模型。"""
             print("hello !!!")
-            # print(request.state.get('messages'))
-            # message_count = len(request.state["messages"])
+            # print(state.get('messages'))
+            # message_count = len(state["messages"])
             #
             # if message_count > 2:
             #     # 对较长的对话使用高级模型
@@ -134,7 +134,7 @@ def cloud_api_call():
             # else:
             #     print("对话轮数 超过两轮， 请分发到 小参数的LLM")
             #
-            # request.model = cloud_model
+            # model = cloud_model
             return None
 
         agent = create_agent(
@@ -182,7 +182,7 @@ def streaming_call():
     print("=" * 60)
 
     # 创建模型实例
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     # 流式调用
     stream = model.stream("请用 50 字左右介绍人工智能。")
@@ -208,7 +208,7 @@ def call_with_error_handling():
     print("示例 4: 带错误处理的调用")
     print("=" * 60)
 
-    model = ChatOllama(model="qwen3:4b")
+    model = ChatOllama(model="qwen3.5:2b")
 
     try:
         response = model.invoke("测试消息")
@@ -219,7 +219,7 @@ def call_with_error_handling():
         print()
         print("可能的原因：")
         print("  1. Ollama 服务未启动（运行 'ollama serve'）")
-        print("  2. 模型未下载（运行 'ollama pull qwen3:4b'）")
+        print("  2. 模型未下载（运行 'ollama pull qwen3.5:2b'）")
         print("  3. 网络连接问题")
 
     print()
@@ -237,7 +237,7 @@ if __name__ == '__main__':
 
     print("【运行前检查】")
     print("  1. 已安装 Ollama 服务")
-    print("  2. 已下载模型：ollama pull qwen3:4b")
+    print("  2. 已下载模型：ollama pull qwen3.5:2b")
     print("  3. Ollama 服务正在运行")
     print()
 

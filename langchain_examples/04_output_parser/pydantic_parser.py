@@ -19,6 +19,9 @@
 # 设置 UTF-8 编码（Windows 专用）
 import sys
 import io
+
+from langchain_openai import ChatOpenAI
+
 sys.stdout = io.TextIOWrapper(
     sys.stdout.buffer,
     encoding='utf-8',
@@ -211,12 +214,34 @@ JSON 输出：""")
         format_instructions=parser.get_format_instructions()
     )
 
-    model = ChatOllama(model="qwen3.5:2b")
-    chain = prompt_with_format | model | parser
+    import os
+    from dotenv import load_dotenv
+
+    # 加载环境变量
+    load_dotenv()
+
+    # 检查是否有 API Key
+    # api_key = os.getenv("ALIYUN_API_KEY")
+    # if not api_key or api_key == "sk-your-aliyun-api-key-here":
+    #     print("未配置 API Key，跳过此示例")
+    #     print("提示：在 .env 文件中配置 ALIYUN_API_KEY")
+    #     print()
+    #     return
+    #
+    # # 创建云端模型实例
+    # cloud_model = ChatOpenAI(
+    #     model="qwen-plus",
+    #     api_key=api_key,
+    #     base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
+    # )
+
+    cloud_model = ChatOllama(model="qwen3.5:9b")
+
+    chain = prompt_with_format | cloud_model | parser
 
     result = chain.invoke({})
 
-    print(f"电影信息:")
+    print(f"电影信息:{result}")
     print(f"  名称：{result.title}")
     print(f"  年份：{result.year}")
     print(f"  导演：{result.director}")
@@ -270,7 +295,7 @@ JSON 输出：""")
         format_instructions=parser.get_format_instructions()
     )
 
-    model = ChatOllama(model="qwen3.5:2b")
+    model = ChatOllama(model="qwen3.5:9b")
     chain = prompt_with_format | model | parser
 
     result = chain.invoke({})
@@ -370,10 +395,10 @@ if __name__ == '__main__':
     print()
 
     # 运行示例
-    pydantic_basic()
-    pydantic_output_parser()
-    complex_data_model()
-    news_summary()
+    # pydantic_basic()
+    # pydantic_output_parser()
+    # complex_data_model()
+    # news_summary()
     error_handling_and_validation()
 
     print("=" * 70)

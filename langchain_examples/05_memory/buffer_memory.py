@@ -131,7 +131,7 @@ def window_memory_example():
 
     # k=2 表示只保留最近 2 轮对话
     memory = ConversationBufferWindowMemory(
-        k=2,
+        k=3,
         return_messages=True
     )
 
@@ -241,17 +241,20 @@ def customer_service_bot():
 3. 如果不知道具体信息，引导用户提供订单号"""
 
     # 创建记忆
-    memory = ConversationBufferMemory(return_messages=True)
+    memory = ConversationBufferMemory(
+        memory_key="chat_history",
+        return_messages=True
+    )
 
     # 创建 Prompt
     prompt = ChatPromptTemplate.from_messages([
         ("system", system_prompt),
+        # 使用 MessagesPlaceholder 注入历史对话
         MessagesPlaceholder(variable_name="chat_history"),
         ("human", "{input}"),
     ])
 
     model = ChatOllama(model="qwen3.5:2b")
-    chain = prompt | model
 
     print("客服机器人已启动！")
     print("可以问：我的订单到哪了？怎么退换货？etc.\n")
@@ -261,20 +264,20 @@ def customer_service_bot():
         if user_input.lower() == 'quit':
             break
 
-        # 获取历史
+        # 从记忆对象中获取历史的对话记录
         chat_history = memory.load_memory_variables({})["chat_history"]
 
-        # 调用
+        # 调用，带有完整记忆的调用
         messages = prompt.format_messages(
             chat_history=chat_history,
             input=user_input
         )
-        response = chain.invoke(messages)
+        response = model.invoke(messages)
 
         print(f"客服：{response.content}")
         print()
 
-        # 保存对话
+        # 当大模型最近一次返回内容后，把内保存到memory中
         memory.save_context(
             {"input": user_input},
             {"output": response.content}
@@ -297,11 +300,11 @@ if __name__ == '__main__':
     print()
 
     # 运行示例
-    buffer_memory_details()
-    window_memory_example()
+    # buffer_memory_details()
+    # window_memory_example()
 
     # 交互式示例（按需运行）
-    # conversation_chain()
+    conversation_chain()
     # customer_service_bot()
 
     print("=" * 70)

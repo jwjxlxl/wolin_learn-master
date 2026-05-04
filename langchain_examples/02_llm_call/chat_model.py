@@ -67,14 +67,15 @@ def system_message_example():
     print("示例 1: SystemMessage - 设定 AI 人设")
     print("=" * 60)
 
-    model = ChatOllama(model="qwen3.5:2b")
+    model = ChatOllama(model="qwen3.5:9b")
 
     # 不同的系统提示词，得到不同的回复风格
     print("【人设 1】严肃的科学家：")
     messages = [
         SystemMessage(content="你是一位严肃的科学家，说话严谨、准确。"),
-        HumanMessage(content="你好，请介绍一下你自己。"),
+        HumanMessage(content="你好，请介绍一下你自己。")
     ]
+
     response = model.invoke(messages)
     print(f"AI: {response.content}")
     print()
@@ -247,9 +248,9 @@ if __name__ == '__main__':
 
 
     # 运行示例
-    # system_message_example()
+    system_message_example()
     # human_message_example()
-    multi_turn_conversation()
+    # multi_turn_conversation()
     # simplified_message_example()
     # role_play_conversation()
 

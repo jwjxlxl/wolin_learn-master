@@ -101,7 +101,7 @@ def streaming_vs_non_streaming():
     from langchain_ollama import ChatOllama
     import time
 
-    model = ChatOllama(model="qwen3.5:2b")
+    model = ChatOllama(model="qwen3.5:9b")
     question = "请用三句话介绍你自己。"
 
     # 非流式
@@ -248,12 +248,12 @@ if __name__ == '__main__':
 
     print("【运行前检查】")
     print("  1. 已安装 Ollama 服务")
-    print("  2. 已下载模型：ollama pull qwen3.5:2b")
+    print("  2. 已下载模型：ollama pull qwen3.5:9b")
     print()
 
     # 运行示例
-    simplest_streaming()
-    # streaming_vs_non_streaming()
+    # simplest_streaming()
+    streaming_vs_non_streaming()
     # collect_streaming_output()
 
     # 聊天机器人（交互式，按需运行）

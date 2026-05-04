@@ -120,22 +120,19 @@ def cloud_api_call():
             """获取指定城市的天气。 """
             return f"{city}总是阳光明媚！"
 
-
-        @before_agent
-        def dynamic_model_selection(state: AgentState, runtime: Runtime) -> ModelResponse:
+        @wrap_model_call
+        def dynamic_model_selection(request: ModelRequest, handler) -> ModelResponse:
             """根据对话复杂性选择模型。"""
-            print("hello !!!")
-            # print(state.get('messages'))
-            # message_count = len(state["messages"])
-            #
-            # if message_count > 2:
-            #     # 对较长的对话使用高级模型
-            #     print("对话轮数 超过两轮， 请分发到 大参数的LLM")
-            # else:
-            #     print("对话轮数 超过两轮， 请分发到 小参数的LLM")
-            #
-            # model = cloud_model
-            return None
+            message_count = len(request.state["messages"])
+
+            if message_count > 10:
+                # 对较长的对话使用高级模型
+                print("使用高级模型")
+            else:
+                print("使用基础模型")
+
+            request.model = cloud_model
+            return handler(request)
 
         agent = create_agent(
             model=cloud_model,

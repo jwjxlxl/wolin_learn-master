@@ -19,6 +19,9 @@
 # 设置 UTF-8 编码（Windows 专用）
 import sys
 import io
+from langchain_core.prompts import PromptTemplate
+from langchain_ollama import ChatOllama
+
 sys.stdout = io.TextIOWrapper(
     sys.stdout.buffer,
     encoding='utf-8',
@@ -240,8 +243,7 @@ def code_review_assistant():
     print("示例 5: 代码审查助手（实用场景）")
     print("=" * 60)
 
-    from langchain_core.prompts import PromptTemplate
-    from langchain_ollama import ChatOllama
+
 
     # 创建代码审查模板
     review_prompt = PromptTemplate.from_template("""

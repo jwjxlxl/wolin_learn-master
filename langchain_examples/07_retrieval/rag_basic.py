@@ -21,6 +21,9 @@
 # 设置 UTF-8 编码（Windows 专用）
 import sys
 import io
+
+from langchain_community.embeddings import DashScopeEmbeddings
+
 sys.stdout = io.TextIOWrapper(
     sys.stdout.buffer,
     encoding='utf-8',
@@ -189,8 +192,12 @@ def complete_rag_pipeline():
         ]
 
         print("加载嵌入模型...")
-        embeddings = HuggingFaceEmbeddings(
-            model_name="paraphrase-multilingual-MiniLM-L12-v2"
+        # 使用qwen的embedding模型
+        import os
+        os.environ["DASHSCOPE_API_KEY"] = "<KEY>"
+        os.environ["DASHSCOPE_API_KEY"] = os.getenv("ALIYUN_API_KEY")
+        embeddings = DashScopeEmbeddings(
+            model="text-embedding-v3"
         )
 
         print("创建向量存储...")
@@ -554,10 +561,11 @@ if __name__ == '__main__':
     print()
 
     # 运行示例
-    simple_rag_example()
+    # simple_rag_example()
     # complete_rag_pipeline()  # 需要额外依赖，按需运行
-    rag_qna_bot()
-    rag_with_citations()
+    complete_rag_pipeline()
+    # rag_qna_bot()
+    # rag_with_citations()
 
     # interactive_rag_qna()  # 交互式，按需运行
 

@@ -288,11 +288,11 @@ if __name__ == '__main__':
     print()
 
     # 运行示例
-    without_parser()
-    with_parser()
-    str_parser_details()
-    batch_processing()
-    extract_information()
+    # without_parser()
+    # with_parser()
+    # str_parser_details()
+    # batch_processing()
+    # extract_information()
     clean_output()
 
     print("=" * 70)

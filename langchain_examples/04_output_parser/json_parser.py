@@ -19,12 +19,6 @@
 # 设置 UTF-8 编码（Windows 专用）
 import sys
 import io
-sys.stdout = io.TextIOWrapper(
-    sys.stdout.buffer,
-    encoding='utf-8',
-    errors='replace',
-    line_buffering=True
-)
 
 
 # =============================================================================
@@ -321,10 +315,10 @@ if __name__ == '__main__':
     print()
 
     # 运行示例
-    simplest_json_output()
-    using_json_output_parser()
-    with_json_schema()
-    product_review_analysis()
+    # simplest_json_output()
+    # using_json_output_parser()
+    # with_json_schema()
+    # product_review_analysis()
     error_handling()
 
     print("=" * 70)

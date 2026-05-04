@@ -21,6 +21,9 @@
 # 设置 UTF-8 编码（Windows 专用）
 import sys
 import io
+
+from langchain_community.embeddings import DashScopeEmbeddings
+
 sys.stdout = io.TextIOWrapper(
     sys.stdout.buffer,
     encoding='utf-8',
@@ -112,14 +115,11 @@ def understand_embedding():
 
 
 # =============================================================================
-# 示例 2: 使用 HuggingFace 生成 Embedding
+# 示例 2: 使用 DashScope 模型 生成 Embedding
 # =============================================================================
 
 def generate_embeddings():
     """
-    使用 HuggingFace 模型生成真实的 Embedding
-
-    需要安装：pip install sentence-transformers
     """
     print("=" * 60)
     print("示例 2: 生成真实的 Embedding")
@@ -183,7 +183,7 @@ def faiss_vector_store():
     print("=" * 60)
 
     try:
-        import faiss
+        import faiss, os
         import numpy as np
         from langchain_huggingface import HuggingFaceEmbeddings
         from langchain_core.documents import Document
@@ -200,8 +200,16 @@ def faiss_vector_store():
         ]
 
         print("加载嵌入模型...")
-        embeddings = HuggingFaceEmbeddings(
-            model_name="paraphrase-multilingual-MiniLM-L12-v2"
+        # embeddings = HuggingFaceEmbeddings(
+        #     model_name="paraphrase-multilingual-MiniLM-L12-v2"
+        # )
+
+        # 从.env文件中读取API密钥
+        # 把秘钥写入环境变量
+        # 实例化一个DashScopeEmbeddings对象
+        os.environ["DASHSCOPE_API_KEY"] = os.getenv("ALIYUN_API_KEY")
+        embeddings = DashScopeEmbeddings(
+            model="text-embedding-v3"
         )
 
         print("创建向量存储...")
@@ -223,12 +231,12 @@ def faiss_vector_store():
 
         # 保存和加载
         print("保存向量库到本地...")
-        vectorstore.save_local("faiss_index")
-        print("已保存到 faiss_index/ 目录\n")
+        vectorstore.save_local("faiss_demo")
+        print("已保存到 faiss_demo/ 目录\n")
 
         print("从本地加载向量库...")
         loaded_store = FAISS.load_local(
-            "faiss_index",
+            "faiss_demo",
             embeddings,
             allow_dangerous_deserialization=True
         )
@@ -385,11 +393,13 @@ if __name__ == '__main__':
     print()
 
     # 运行示例
-    understand_embedding()
+    # understand_embedding()
     # generate_embeddings()  # 需要依赖可取消注释
     # faiss_vector_store()   # 需要依赖可取消注释
-    vector_vs_keyword_search()
-    practical_vector_search()
+    # vector_vs_keyword_search()
+    # practical_vector_search()
+
+    faiss_vector_store()
 
     print("=" * 70)
     print("  接下来学习：rag_basic.py（RAG 基础示例）")

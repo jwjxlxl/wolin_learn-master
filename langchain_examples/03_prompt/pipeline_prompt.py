@@ -88,7 +88,9 @@ def simplest_pipeline():
     # 1. 用输入填充 Prompt
     # 2. 调用 Model
     # 3. 返回结果
+    # 需要使用传入一个字典，包含所有需要的参数
     response = chain.invoke({"concept": "人工智能"})
+
 
     # response 是 Message 对象，.content 获取文本
     print(f"AI 回复：{response.content}")
@@ -147,7 +149,7 @@ def three_stage_pipeline():
 
     from langchain_core.prompts import PromptTemplate
     from langchain_ollama import ChatOllama
-    from langchain_core.output_parsers import StrOutputParser
+    from langchain_core.output_parsers import StrOutputParser, JsonOutputParser, PydanticOutputParser
 
     # 1. Prompt 模板
     prompt = PromptTemplate.from_template(
@@ -340,12 +342,12 @@ if __name__ == '__main__':
     print()
 
     # 运行示例
-    simplest_pipeline()
-    pipeline_flow()
+    # simplest_pipeline()
+    # pipeline_flow()
     three_stage_pipeline()
-    chained_pipeline()
-    article_generator()
-    custom_pipeline_step()
+    # chained_pipeline()
+    # article_generator()
+    # custom_pipeline_step()
 
     print("=" * 70)
     print("  接下来学习：04_output_parser/string_parser.py")

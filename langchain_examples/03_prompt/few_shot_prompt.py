@@ -14,7 +14,7 @@
 # 运行前检查
 # -----------------------------------------------------------------------------
 # 1. 已安装 Ollama 服务
-# 2. 已下载模型：ollama pull qwen3.5:2b
+# 2. 已下载模型：ollama pull qqwen3.5:9b
 # -----------------------------------------------------------------------------
 
 # 设置 UTF-8 编码（Windows 专用）
@@ -96,7 +96,7 @@ def simplest_few_shot():
 问：日本首都是哪里？
 答：""")
 
-    model = ChatOllama(model="qwen3.5:2b")
+    model = ChatOllama(model="qwen3.5:9b")
     response = model.invoke(prompt.format())
     print(f"AI 回复：{response.content}")
     print()
@@ -156,6 +156,18 @@ def sentiment_classification():
         print(f"情感：{response.content}")
         print()
 
+'''
+"query": "深圳是一个经济特区"，
+"out_put": "深圳市"
+
+"西安是一个历史悠久的"
+"out_put": "西安市"
+'''
+
+'''
+"query": "北京今天在下雨"
+"out_put": "北京市"
+'''
 
 # =============================================================================
 # 示例 3: 格式化输出
@@ -336,10 +348,10 @@ if __name__ == '__main__':
     print()
 
     # 运行示例
-    simplest_few_shot()
-    sentiment_classification()
-    formatted_output()
-    style_imitation()
+    # simplest_few_shot()
+    # sentiment_classification()
+    # formatted_output()
+    # style_imitation()
     using_few_shot_prompt_template()
 
     print("=" * 70)

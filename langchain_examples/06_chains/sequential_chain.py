@@ -322,8 +322,8 @@ if __name__ == '__main__':
 
     # 运行示例
     manual_chain_chain()
-    article_generator()
-    problem_analysis_chain()
+    # article_generator()
+    # problem_analysis_chain()
     # code_review_chain()  # 需要代码审查可取消注释
 
     print("=" * 70)

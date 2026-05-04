@@ -281,13 +281,13 @@ if __name__ == '__main__':
     print()
 
     # 演示失忆问题
-    without_memory()
+    # without_memory()
 
     # 演示手动记忆
-    manual_memory()
+    # manual_memory()
 
     # 交互式示例（取消注释运行）
-    # using_buffer_memory()
+    using_buffer_memory()
     # practical_chat_assistant()
 
     print("=" * 70)

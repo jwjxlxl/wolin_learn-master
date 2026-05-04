@@ -72,6 +72,7 @@ def simple_if_else_router():
     from langchain_ollama import ChatOllama
     from langchain_core.output_parsers import StrOutputParser
 
+    # 创建模型和解析器
     model = ChatOllama(model="qwen3.5:2b")
     parser = StrOutputParser()
 
@@ -394,10 +395,10 @@ if __name__ == '__main__':
     print()
 
     # 运行示例
-    simple_if_else_router()
-    intelligent_router()
+    # simple_if_else_router()
+    # intelligent_router()
     customer_service_router()
-    multilingual_assistant()
+    # multilingual_assistant()
 
     print("=" * 70)
     print("  接下来学习：07_retrieval/document_loader.py")

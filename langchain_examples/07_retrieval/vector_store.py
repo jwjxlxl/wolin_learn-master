@@ -21,8 +21,12 @@
 # 设置 UTF-8 编码（Windows 专用）
 import sys
 import io
+import ssl
 
 from langchain_community.embeddings import DashScopeEmbeddings
+
+# 禁用 SSL 验证（解决 SSL 连接问题）
+ssl._create_default_https_context = ssl._create_unverified_context
 
 sys.stdout = io.TextIOWrapper(
     sys.stdout.buffer,
@@ -213,9 +217,12 @@ def faiss_vector_store():
         )
 
         print("创建向量存储...")
-        vectorstore = FAISS.from_documents(documents, embeddings)
-
-        print(f"已存储 {len(documents)} 个文档\n")
+        try:
+            vectorstore = FAISS.from_documents(documents, embeddings)
+            print(f"已存储 {len(documents)} 个文档\n")
+        except Exception as e:
+            print(f"创建向量存储时出错: {e}")
+            return
 
         # 相似度搜索
         query = "人工智能相关的技术"

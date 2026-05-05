@@ -66,7 +66,6 @@ from utils import model_untils
 
 def bind_tools_demo():
     """
-    使用 model.bind_tools() 让模型感知工具
 
     这是 Agent 的基础能力：模型能知道有哪些工具可用
     """
@@ -470,7 +469,7 @@ def react_agent_demo():
 if __name__ == '__main__':
 
     # 运行示例
-    bind_tools_demo()
-    # create_agent_demo()
+    # bind_tools_demo()
+    create_agent_demo()
     # dynamic_model_selection_demo()
     # react_agent_demo()

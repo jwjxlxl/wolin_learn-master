@@ -180,10 +180,9 @@ def simple_memory_demo():
 
 
 # =============================================================================
-# 示例 2: 自定义 Agent 记忆 - 扩展 AgentState
+# 示例 3: 自定义 Agent 记忆 - 扩展 AgentState
 # =============================================================================
-
-def customizing_memory_demo():
+def customizing_memory_demo1():
     """
     自定义 Agent 记忆：扩展 AgentState 添加额外字段
 
@@ -205,10 +204,11 @@ def customizing_memory_demo():
         preferences: dict      # 用户偏好
 
     @tool
-    def get_user_info(runtime) -> str:
-        """查询用户信息。"""
-        # 通过 runtime 访问自定义状态
-        return f"查询到用户信息"
+    def get_user_info(state: CustomAgentState) -> str:
+        """查询用户信息（从自定义状态中读取）。"""
+        user_id = state.get("user_id", "未知")
+        prefs = state.get("preferences", {})
+        return f"用户ID: {user_id}, 偏好: {prefs}"
 
     @tool
     def get_weather(city: str) -> str:
@@ -270,6 +270,146 @@ def customizing_memory_demo():
     print(f"{'─' * 50}")
     print("【第 2 轮】自定义状态持久化（无需再次传入）")
     result_2 = agent.invoke(
+        {"messages": [HumanMessage(content="我的上一个问题是什么？")]},
+        config,
+    )
+    print(f"  用户: 我的上一个问题是什么？")
+    print(f"  Agent: {result_2['messages'][-1].content}")
+    print(f"  [状态] preferences: {result_2.get('preferences', 'N/A')}")
+    print()
+
+# =============================================================================
+# 示例 3: 自定义 Agent 记忆 - 扩展 AgentState
+# =============================================================================
+
+def customizing_memory_demo2():
+    """
+    自定义 Agent 记忆：扩展 AgentState 添加额外字段
+
+    AgentState 是一个字典类型的结构，用于存储和管理 Agent 在运行过程中的所有状态信息
+    默认包含 messages 键，用于存储对话历史消息
+
+    默认 Agent 使用 AgentState 管理短期记忆，主要通过 messages 键管理会话历史。
+    可以扩展 AgentState 添加自定义字段（如 user_id、preferences 等）。
+
+    自定义状态模式通过 state_schema 参数传递给 create_agent。
+
+    ⚠️ 关键注意点：
+    自定义状态字段会被 checkpointer 持久化，但 LLM 默认只能看到 messages。
+    需要通过 @before_model 中间件将自定义字段注入到 LLM 可见的上下文中，
+    或者让工具通过 state 参数直接读取状态。
+    """
+
+    # -------------------------------------------------------------------------
+    # 定义自定义状态：扩展 AgentState，添加额外字段
+    # -------------------------------------------------------------------------
+    class CustomAgentState(AgentState):
+        """扩展 Agent 状态，添加用户 ID 和偏好。
+
+        这些字段会在整个对话期间保持，随 checkpointer 持久化。
+        """
+        user_id: str           # 用户标识
+        preferences: dict      # 用户偏好
+
+    @tool
+    def get_user_info(state: CustomAgentState) -> str:
+        """查询用户信息（从自定义状态中读取）。"""
+        user_id = state.get("user_id", "未知")
+        prefs = state.get("preferences", {})
+        return f"用户ID: {user_id}, 偏好: {prefs}"
+
+    @tool
+    def get_weather(city: str) -> str:
+        """查询指定城市的天气信息。"""
+        weather_db = {
+            "北京": "晴，25°C",
+            "上海": "多云，28°C",
+            "深圳": "晴，29°C",
+        }
+        return weather_db.get(city, f"暂无 {city} 的天气数据")
+
+    model = model_untils.get_qwen_client()
+    if model is None:
+        print("【跳过】未配置阿里云 API Key，无法运行此示例")
+        return
+
+    # -------------------------------------------------------------------------
+    # 中间件：将自定义状态字段注入到 LLM 可见的上下文中
+    # -------------------------------------------------------------------------
+
+    @before_model
+    def inject_user_context(state: CustomAgentState, runtime: Runtime) -> dict | None:
+        """将自定义状态中的用户信息注入到消息中，使 LLM 能感知。"""
+        user_id = state.get("user_id")
+        prefs = state.get("preferences")
+
+        if not user_id and not prefs:
+            return None  # 没有自定义数据，无需注入
+
+        # 构建用户信息摘要
+        info_parts = []
+        if user_id:
+            info_parts.append(f"当前用户ID: {user_id}")
+        if prefs:
+            pref_str = ", ".join(f"{k}: {v}" for k, v in prefs.items())
+            info_parts.append(f"用户偏好: {pref_str}")
+
+        info_text = "；".join(info_parts)
+        print(f"  [inject_user_context] 注入用户上下文: {info_text}")
+
+        # 通过追加一条 system 消息让 LLM 看到这些信息
+        from langchain_core.messages import SystemMessage
+        return {
+            "messages": [SystemMessage(content=f"[系统] {info_text}。请在回答时参考这些用户信息。")]
+        }
+
+    # -------------------------------------------------------------------------
+    # 创建带自定义状态的 Agent
+    # -------------------------------------------------------------------------
+
+    agent = create_agent(
+        model,
+        tools=[get_weather, get_user_info],
+        state_schema=CustomAgentState,  # 注册自定义状态模式
+        middleware=[inject_user_context],
+        system_prompt="你是一个有用的助手。如果知道用户偏好，请据此回答。",
+        checkpointer=InMemorySaver(),
+    )
+
+    print("【Agent 创建成功 - 带自定义状态】")
+    print(f"  自定义状态字段:")
+    print(f"    - user_id: 用户标识")
+    print(f"    - preferences: 用户偏好")
+    print(f"  中间件: inject_user_context (将状态字段注入 LLM 上下文)")
+    print()
+
+    # -------------------------------------------------------------------------
+    # 调用时传入自定义状态
+    # -------------------------------------------------------------------------
+
+    config: RunnableConfig = {"configurable": {"thread_id": "custom-1"}}
+
+    # 第 1 轮：传入自定义状态
+    print(f"{'─' * 50}")
+    print("【第 1 轮】传入自定义状态（user_id + preferences）")
+    result = agent.invoke(
+        {
+            "messages": [HumanMessage(content="帮我查一下天气")],
+            "user_id": "user_123",
+            "preferences": {"城市": "深圳", "语言": "中文"},
+        },
+        config,
+    )
+    print(f"  用户: 帮我查一下天气")
+    print(f"  Agent: {result['messages'][-1].content}")
+    print(f"  [状态] user_id: {result.get('user_id', 'N/A')}")
+    print(f"  [状态] preferences: {result.get('preferences', 'N/A')}")
+    print()
+
+    # 第 2 轮：自定义状态随 checkpointer 保持，中间件注入 LLM 上下文
+    print(f"{'─' * 50}")
+    print("【第 2 轮】自定义状态持久化 + 中间件注入（LLM 能看到偏好）")
+    result_2 = agent.invoke(
         {"messages": [HumanMessage(content="你还记得我的偏好吗？")]},
         config,
     )
@@ -277,6 +417,17 @@ def customizing_memory_demo():
     print(f"  Agent: {result_2['messages'][-1].content}")
     print(f"  [状态] preferences: {result_2.get('preferences', 'N/A')}")
     print()
+
+    # 第 3 轮：验证工具也能读取状态
+    # print(f"{'─' * 50}")
+    # print("【第 3 轮】通过工具读取自定义状态")
+    # result_3 = agent.invoke(
+    #     {"messages": [HumanMessage(content="调用 get_user_info 查一下我的信息")]},
+    #     config,
+    # )
+    # print(f"  用户: 调用 get_user_info 查一下我的信息")
+    # print(f"  Agent: {result_3['messages'][-1].content}")
+    # print()
 
 
 # =============================================================================
@@ -502,6 +653,7 @@ if __name__ == '__main__':
 
     # 运行示例
     # simple_memory_demo()
-    # customizing_memory_demo()
+    customizing_memory_demo1()
+    # customizing_memory_demo2()
     # trim_messages_demo()
-    summarize_messages_demo()
+    # summarize_messages_demo()

@@ -1,3 +1,6 @@
+from langchain_core.messages import HumanMessage, AIMessage
+from langchain_ollama import ChatOllama
+
 from utils import model_untils
 
 
@@ -78,6 +81,9 @@ def basic_tool_definition():
         Args:
             query: Search terms to look for
             limit: Maximum number of results to return
+
+        Returns:
+            A string containing the results
         """
         return f"Found {limit} results for '{query}'"
 
@@ -97,6 +103,7 @@ def basic_tool_definition():
     result2 = search_database.invoke({"query": "李四"})
     print(f"【调用结果2】{result2}")
     print()
+
 
 
 # =============================================================================
@@ -129,8 +136,8 @@ def custom_tool_properties():
         """Evaluate mathematical expressions."""
         # 注意：eval 在实际使用中有安全风险，这里仅用于演示
         try:
-            result = eval(expression)
-            return str(result)
+            # result = eval(expression)
+            return str(999)
         except Exception as e:
             return f"Error: {e}"
 
@@ -140,14 +147,79 @@ def custom_tool_properties():
     print()
 
     # 测试计算器工具
-    test_expr = "2 + 3 * 4"
-    result = calc.invoke({"expression": test_expr})
-    print(f"【计算结果】{test_expr} = {result}")
+    # test_expr = "2 + 3 * 4"
+    # result = calc.invoke({"expression": test_expr})
+    # print(f"【计算结果】{test_expr} = {result}")
+    # print()
+
+    model = ChatOllama(model="qwen3.5:2b")
+    # bind_tools 返回一个绑定工具的新模型实例，原 model 不受影响
+    model_with_tools = model.bind_tools([search, calc])
+
+
+    # -------------------------------------------------------------------------
+    # 场景 1: 触发搜索工具调用
+    # -------------------------------------------------------------------------
+    print("场景 1: 触发 web_search 工具")
+    # messages = [HumanMessage(content="帮我搜索一下人工智能的最新进展")]
+    messages = [
+        AIMessage(content="你好，你是一个AI助手，不需要web搜索的功能可以不调用工具"),
+        HumanMessage(content="简单介绍一下你自己")
+    ]
+
+    # 第 1 步: 模型决定是否调用工具
+    # response = model_with_tools.invoke(messages)
+    # print(f"  用户: {messages[0].content}")
+    #
+    # if response.tool_calls:
+    #     for tc in response.tool_calls:
+    #         print(f"  模型决定调用工具: {tc['name']}, 参数: {tc['args']}")
+    #
+    #         # 第 2 步: 执行工具
+    #         tool_result = search.invoke(tc['args'])
+    #         print(f"  工具返回: {tool_result}")
+    #
+    #         # 第 3 步: 将工具结果追加到消息列表
+    #         messages.append(response)  # 追加模型的 AI 消息（含 tool_call）
+    #         from langchain_core.messages import ToolMessage
+    #         messages.append(ToolMessage(content=tool_result, tool_call_id=tc["id"]))
+    #
+    #         # 第 4 步: 让模型基于工具结果生成最终回答
+    #         final_response = model_with_tools.invoke(messages)
+    #         print(f"  最终回答: {final_response.content}")
+    # else:
+    #     print(f"  直接回复，不需要调用工具: {response.content}")
+    # print()
+
+    #-------------------------------------------------------------------------
+    # 场景 2: 触发计算器工具调用
+    #-------------------------------------------------------------------------
+    print("场景 2: 触发 calculator 工具")
+    messages = [HumanMessage(content="23 乘以 456 等于多少？")]
+
+    response = model_with_tools.invoke(messages)
+    print(f"  用户: {messages[0].content}")
+
+    if response.tool_calls:
+        for tc in response.tool_calls:
+            print(f"  模型决定调用工具: {tc['name']}, 参数: {tc['args']}")
+
+            tool_result = calc.invoke(tc['args'])
+            print(f"  工具返回: {tool_result}")
+
+            messages.append(response)
+            from langchain_core.messages import ToolMessage
+            messages.append(ToolMessage(content=tool_result, tool_call_id=tc["id"]))
+
+            final_response = model_with_tools.invoke(messages)
+            print(f"  最终回答: {final_response.content}")
+    else:
+        print(f"  Agent: {response.content}")
     print()
 
 
 # =============================================================================
-# 示例 3: 使用 Pydantic 定义复杂参数
+# 示例 3: 使用 Pydantic 定义复杂参数   做为了解
 # =============================================================================
 
 def pydantic_schema_tools():
@@ -359,8 +431,8 @@ def tool_call_simulation():
 if __name__ == '__main__':
 
     # 运行示例
-    basic_tool_definition()
-    # custom_tool_properties()
+    # basic_tool_definition()
+    custom_tool_properties()
     # pydantic_schema_tools()
     # tool_runtime_state()
     # tool_call_simulation()

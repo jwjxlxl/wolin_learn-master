@@ -2,6 +2,7 @@ from langchain_core.messages import HumanMessage, AIMessage
 from langchain_ollama import ChatOllama
 
 from utils import model_untils
+from langchain.tools import tool, ToolRuntime
 
 
 # =============================================================================
@@ -132,8 +133,10 @@ def custom_tool_properties():
 
     # 自定义工具描述
     @tool("calculator", description="Performs arithmetic calculations. Use this for any math problems.")
-    def calc(expression: str) -> str:
+    def calc(runtime: ToolRuntime) -> str:
         """Evaluate mathematical expressions."""
+        print(f"runtime: {runtime.state.get("messages")}")
+        print(f"runtime: {runtime.state.get("user_id")}")
         # 注意：eval 在实际使用中有安全风险，这里仅用于演示
         try:
             # result = eval(expression)
@@ -288,6 +291,12 @@ def tool_runtime_state():
     """
     使用 ToolRuntime 访问运行时状态
 
+    state：messages，context上下文
+    把运行时的信息注入到runtime中
+
+    作用是：
+        在工具中，可以访问和修改运行时的状态
+
     ToolRuntime 可以在工具执行时访问和修改状态
     """
     print("=" * 60)
@@ -295,7 +304,7 @@ def tool_runtime_state():
     print("=" * 60)
 
     from langchain_core.messages import HumanMessage, AIMessage
-    from langchain.tools import tool, ToolRuntime
+
 
     # 访问对话状态
     @tool
@@ -432,8 +441,8 @@ if __name__ == '__main__':
 
     # 运行示例
     # basic_tool_definition()
-    custom_tool_properties()
+    # custom_tool_properties()
     # pydantic_schema_tools()
-    # tool_runtime_state()
+    tool_runtime_state()
     # tool_call_simulation()
 

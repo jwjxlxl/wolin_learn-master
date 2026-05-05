@@ -2,7 +2,7 @@ from langchain.agents import create_agent
 from langchain.agents.middleware import wrap_model_call, ModelRequest, ModelResponse
 from langchain_openai import ChatOpenAI
 from langchain_ollama import ChatOllama
-
+from langchain_core.messages import SystemMessage
 from utils import model_untils
 
 
@@ -88,15 +88,12 @@ def bind_tools_demo():
         }
         return weather_db.get(city, f"暂无 {city} 的天气数据")
 
+    #实例化大模型的客户端
     model = ChatOllama(model="qwen3.5:2b")
-
-    print("【工具绑定信息】")
-    print(f"  工具 1: get_weather - {get_weather.description}")
-    print()
 
     # 模型收到问题后，可以决定是否调用工具
     print("【发送问题给模型】")
-    from langchain_core.messages import SystemMessage
+    # 创建 Agent 并绑定工具
     agent = create_agent(
         model=model,
         tools=[get_weather],
@@ -105,7 +102,7 @@ def bind_tools_demo():
 
     # 运行代理
     response = agent.invoke(
-        {"messages": [HumanMessage("北京的天气怎么样")]}
+        {"messages": [HumanMessage("东京的天气怎么样")]}
     )
 
     print(response["messages"][-1].content)
@@ -232,29 +229,32 @@ def dynamic_model_selection_demo():
         print("【跳过】未配置阿里云 API Key，无法运行此示例")
         return
 
+    # 用于跨 invoke 累积消息数（闭包状态）
+    total_messages = [0]
+
     # -------------------------------------------------------------------------
     # 定义中间件：根据消息数量动态选择模型
     # -------------------------------------------------------------------------
     @wrap_model_call
     def dynamic_model_selection(request: ModelRequest, handler) -> ModelResponse:
         """根据对话复杂性选择模型。
+        可以自定义策略（可以使用指定的关键字判断，也可以使用模型判断）
 
         策略：
-          - 对话消息数 > 10 → 切换到高级模型（长对话需要更强的推理能力）
-          - 对话消息数 ≤ 10 → 使用基础模型（简单任务不需要大模型）
+          - 累积消息数 > 10 → 切换到高级模型（长对话需要更强的推理能力）
+          - 累积消息数 ≤ 10 → 使用基础模型（简单任务不需要大模型）
         """
-        message_count = len(request.state["messages"])
+        # 累加当前请求的消息数（每次 invoke 的消息会持续增加）
+        total_messages[0] += len(request.messages)
+        msg_count = total_messages[0]
 
-        if message_count > 10:
-            # 对较长的对话使用高级模型
-            model = advanced_model
-            print(f"  [动态切换] 消息数={message_count} → 使用高级模型 (Qwen)")
+        if msg_count > 10:
+            # 对较长的对话使用高级模型（使用 override API 替代已废弃的直接赋值）
+            print(f"  [动态切换] 累积消息数={msg_count} -> 使用高级模型 (Qwen)")
+            return handler(request.override(model=advanced_model))
         else:
-            model = basic_model
-            print(f"  [动态切换] 消息数={message_count} → 使用基础模型 (Ollama)")
-
-        request.model = model
-        return handler(request)
+            print(f"  [动态切换] 累积消息数={msg_count} -> 使用基础模型 (Ollama)")
+            return handler(request)
 
     # -------------------------------------------------------------------------
     # 创建带中间件的 Agent
@@ -265,18 +265,15 @@ def dynamic_model_selection_demo():
         middleware=[dynamic_model_selection]       # 注入动态选择中间件
     )
 
-    print("【Agent 创建成功 - 动态模型选择模式】")
-    print(f"  基础模型: Ollama (qwen3.5:2b) - 本地轻量")
-    print(f"  高级模型: Qwen (qwen-plus) - 云端强大")
-    print(f"  切换策略: 消息数 > 10 时切换到高级模型")
-    print(f"  工具 1: get_weather")
-    print(f"  工具 2: calculator")
-    print()
-
     # 调用 Agent
     questions = [
         "北京今天天气怎么样？",
         "23 加 45 等于多少？",
+        "北京今天天气怎么样？适合户外活动吗？",
+        "帮我算一下 (15 + 27) * 3 等于多少",
+        "我想了解你们公司的地址和营业时间",
+        "机器学习的应用领域有哪些？",
+        "人工智能的应用领域有哪些？"
     ]
 
     for question in questions:
@@ -470,6 +467,6 @@ if __name__ == '__main__':
 
     # 运行示例
     # bind_tools_demo()
-    create_agent_demo()
-    # dynamic_model_selection_demo()
+    # create_agent_demo()
+    dynamic_model_selection_demo()
     # react_agent_demo()

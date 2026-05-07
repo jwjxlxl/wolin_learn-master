@@ -135,7 +135,6 @@ def simple_memory_demo():
         {"messages": [HumanMessage(content="你好，我叫小明，我在北京。")]},
         config,
     )
-    print(f"  用户: 你好，我叫小明，我在北京。")
     print(f"  Agent: {result_1['messages'][-1].content}")
     print()
 
@@ -231,7 +230,7 @@ def customizing_memory_demo1():
 
     agent = create_agent(
         model,
-        tools=[get_weather],
+        tools=[get_weather, get_user_info],
         state_schema=CustomAgentState,  # 注册自定义状态模式
         system_prompt="你是一个有用的助手。如果知道用户偏好，请据此回答。",
         checkpointer=InMemorySaver(),
@@ -260,7 +259,7 @@ def customizing_memory_demo1():
         },
         config,
     )
-    print(f"  用户: 帮我查一下天气")
+
     print(f"  Agent: {result['messages'][-1].content}")
     print(f"  [状态] user_id: {result.get('user_id', 'N/A')}")
     print(f"  [状态] preferences: {result.get('preferences', 'N/A')}")
@@ -270,10 +269,9 @@ def customizing_memory_demo1():
     print(f"{'─' * 50}")
     print("【第 2 轮】自定义状态持久化（无需再次传入）")
     result_2 = agent.invoke(
-        {"messages": [HumanMessage(content="我的上一个问题是什么？")]},
+        {"messages": [HumanMessage(content="还记得我的偏好吗？")]},
         config,
     )
-    print(f"  用户: 我的上一个问题是什么？")
     print(f"  Agent: {result_2['messages'][-1].content}")
     print(f"  [状态] preferences: {result_2.get('preferences', 'N/A')}")
     print()
@@ -400,7 +398,6 @@ def customizing_memory_demo2():
         },
         config,
     )
-    print(f"  用户: 帮我查一下天气")
     print(f"  Agent: {result['messages'][-1].content}")
     print(f"  [状态] user_id: {result.get('user_id', 'N/A')}")
     print(f"  [状态] preferences: {result.get('preferences', 'N/A')}")
@@ -653,7 +650,8 @@ if __name__ == '__main__':
 
     # 运行示例
     # simple_memory_demo()
-    customizing_memory_demo1()
-    # customizing_memory_demo2()
+    # customizing_memory_demo1()
+    customizing_memory_demo2()
+    # trim_messages_demo()
     # trim_messages_demo()
     # summarize_messages_demo()

@@ -133,7 +133,7 @@ def custom_tool_properties():
 
     # 自定义工具描述
     @tool("calculator", description="Performs arithmetic calculations. Use this for any math problems.")
-    def calc(runtime: ToolRuntime) -> str:
+    def calc(expression, runtime: ToolRuntime) -> str:
         """Evaluate mathematical expressions."""
         print(f"runtime: {runtime.state.get("messages")}")
         print(f"runtime: {runtime.state.get("user_id")}")
@@ -165,10 +165,10 @@ def custom_tool_properties():
     # -------------------------------------------------------------------------
     print("场景 1: 触发 web_search 工具")
     # messages = [HumanMessage(content="帮我搜索一下人工智能的最新进展")]
-    messages = [
-        AIMessage(content="你好，你是一个AI助手，不需要web搜索的功能可以不调用工具"),
-        HumanMessage(content="简单介绍一下你自己")
-    ]
+    # messages = [
+    #     AIMessage(content="你好，你是一个AI助手，不需要web搜索的功能可以不调用工具"),
+    #     HumanMessage(content="简单介绍一下你自己")
+    # ]
 
     # 第 1 步: 模型决定是否调用工具
     # response = model_with_tools.invoke(messages)
@@ -441,8 +441,8 @@ if __name__ == '__main__':
 
     # 运行示例
     # basic_tool_definition()
-    # custom_tool_properties()
+    custom_tool_properties()
     # pydantic_schema_tools()
-    tool_runtime_state()
+    # tool_runtime_state()
     # tool_call_simulation()
 

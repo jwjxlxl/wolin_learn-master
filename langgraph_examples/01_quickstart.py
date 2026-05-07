@@ -129,6 +129,19 @@ def simple_two_node_graph():
         .compile()
     )
 
+    # from IPython.display import Image, display
+    # from IPython.core.display import Image
+    # display(Image(graph.get_graph(xray=True).draw_mermaid_png()))
+
+    # 生成 PNG 的二进制数据
+    png_data = graph.get_graph(xray=True).draw_mermaid_png()
+
+    # 保存到指定的目录
+    output_path = r"images\graph.png"
+    with open(output_path, "wb") as f:
+        f.write(png_data)
+
+
     # 4. 执行图
     #    invoke() 的参数是初始状态，图会从这个初始状态开始按边依次执行节点
     #    返回值是最终的状态（所有节点执行完毕后的状态）
@@ -232,6 +245,14 @@ def conditional_branch_graph():
         .add_edge("neutral_reply", END)
         .compile()
     )
+
+    # 生成 PNG 的二进制数据
+    png_data = graph.get_graph(xray=True).draw_mermaid_png()
+
+    # 保存到 C 盘
+    output_path = r"images\graph.png"
+    with open(output_path, "wb") as f:
+        f.write(png_data)
 
     # 测试不同输入
     print("【测试 1: 正面输入】")
@@ -373,6 +394,14 @@ def agent_loop_graph():
         .compile()
     )
 
+    # 生成 PNG 的二进制数据
+    png_data = graph.get_graph(xray=True).draw_mermaid_png()
+
+    # 保存到 C 盘
+    output_path = r"images\graph.png"
+    with open(output_path, "wb") as f:
+        f.write(png_data)
+
     # 运行 Agent
     print("【运行 Agent: 3加4等于多少，再乘以2】")
     result = graph.invoke({
@@ -512,6 +541,14 @@ def search_qa_agent():
         .compile()
     )
 
+    # 生成 PNG 的二进制数据
+    png_data = graph.get_graph(xray=True).draw_mermaid_png()
+
+    # 保存到 C 盘
+    output_path = r"images\graph.png"
+    with open(output_path, "wb") as f:
+        f.write(png_data)
+
     # 测试不同问题
     tests = [
         "公司的福利有哪些？",
@@ -546,9 +583,7 @@ if __name__ == '__main__':
     # 取消注释以运行不同示例
     # simple_two_node_graph()
     # conditional_branch_graph()
-    # agent_loop_graph()
-    search_qa_agent()
+    agent_loop_graph()
+    # search_qa_agent()
 
-    print("=" * 70)
-    print("  接下来探索：将 langgraph_examples 目录扩展为完整的 Agent 项目")
-    print("=" * 70 + "\n")
+

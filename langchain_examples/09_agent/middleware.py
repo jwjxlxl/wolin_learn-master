@@ -89,7 +89,7 @@ from langchain_core.messages import HumanMessage, AIMessage
 # 示例 1: 基于装饰器的中间件 - 监控与日志
 # =============================================================================
 
-def decorator_middleware_demo():
+def decorator_middleware_demo(query: str):
     """
     使用装饰器创建中间件：监控 Agent 的执行过程
 
@@ -116,7 +116,7 @@ def decorator_middleware_demo():
 
     # 2. @after_model - 节点式：模型响应后执行
     #    用途：输出验证、内容过滤、提前终止
-    @after_model(can_jump_to=["end"])
+    @after_model()
     def check_response(state: AgentState, runtime) -> dict | None:
         """检查模型响应，如果包含敏感词则提前终止。"""
         last_msg = state["messages"][-1]
@@ -172,21 +172,15 @@ def decorator_middleware_demo():
     agent = create_agent(
         model,
         tools=[get_weather],
-        system_prompt="你是一个有用的助手，请简洁回答。",
+        system_prompt="你是一个有用的助手，请简洁回答。回答后把用户的问题附加在最后",
         middleware=[log_before_model, check_response, timing_middleware],
     )
 
-    print("【Agent 创建成功 - 带监控中间件】")
-    print(f"  中间件列表:")
-    print(f"    - log_before_model  (@before_model - 调用前日志)")
-    print(f"    - check_response    (@after_model - 响应检查)")
-    print(f"    - timing_middleware (@wrap_model_call - 调用计时)")
-    print()
-
     # 调用 Agent
-    question = "北京今天天气怎么样？"
-    print(f"【用户提问】{question}")
-    result = agent.invoke({"messages": [HumanMessage(content=question)]})
+    # question = "北京今天天气怎么样？"
+    # question = "介绍一下机器学习的基本概念"
+    print(f"【用户提问】{query}")
+    result = agent.invoke({"messages": [HumanMessage(content=query)]})
     print(f"【Agent 回答】{result['messages'][-1].content}")
     print()
 
@@ -315,6 +309,7 @@ def class_middleware_demo():
         primary_model,
         tools=[calculator],
         system_prompt="你是一个计算助手，请使用计算器工具完成计算。",
+        # 如果是自定义的类中间件，需要传入类实例
         middleware=[
             RetryMiddleware(max_retries=3, backoff_factor=2.0),
             FallbackMiddleware(fallback_model=fallback_model),
@@ -390,8 +385,11 @@ def builtin_middleware_demo():
     # 当对话接近 token 限制时，自动对历史消息进行摘要
     # 适用于：长期对话、多轮对话、需要保留完整上下文的应用
 
+    # 实例化一个专门用于生成摘要的模型
+    summary_model = ChatOllama(model="qwen3.5:2b")
+
     summarization = SummarizationMiddleware(
-        model="openai:gpt-4o-mini",           # 用于生成摘要的模型（轻量模型即可）
+        model=summary_model,           # 用于生成摘要的模型（轻量模型即可）
         max_tokens_before_summary=4000,        # 超过 4000 token 时触发摘要
         messages_to_keep=10,                   # 摘要后保留最近 10 条消息
     )
@@ -424,6 +422,8 @@ def builtin_middleware_demo():
     questions = [
         "北京今天天气怎么样？",
         "计算 100 + 200 等于多少？",
+        "详细的解释一下量子力学的概念和应用",
+        "大海为什么是蓝色的"
     ]
 
     for question in questions:
@@ -621,7 +621,13 @@ if __name__ == '__main__':
 
 
     # 运行示例
-    # decorator_middleware_demo()
+    # while True:
+    #     query = input("请输入问题：")
+    #     if query == "exit":
+    #         break
+    #     else:
+    #         decorator_middleware_demo(query)
+
     # class_middleware_demo()
     # builtin_middleware_demo()
     human_in_the_loop_demo()

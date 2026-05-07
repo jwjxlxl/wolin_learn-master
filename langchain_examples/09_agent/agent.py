@@ -3,6 +3,8 @@ from langchain.agents.middleware import wrap_model_call, ModelRequest, ModelResp
 from langchain_openai import ChatOpenAI
 from langchain_ollama import ChatOllama
 from langchain_core.messages import SystemMessage
+from langgraph.prebuilt import ToolRuntime
+
 from utils import model_untils
 
 
@@ -201,7 +203,7 @@ def dynamic_model_selection_demo():
 
     # 定义工具
     @tool
-    def get_weather(location: str) -> str:
+    def get_weather(location: str, runtime: ToolRuntime) -> str:
         """获取指定位置的天气信息。"""
         weather_db = {
             "北京": "晴，25°C",
@@ -209,6 +211,7 @@ def dynamic_model_selection_demo():
             "广州": "小雨，30°C",
             "深圳": "晴，29°C",
         }
+        print(f"get_weather:{runtime.state.get('messages')}")
         return weather_db.get(location, f"{location} 的天气：暂无数据")
 
     @tool

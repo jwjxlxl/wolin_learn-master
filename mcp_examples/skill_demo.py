@@ -475,13 +475,13 @@ if __name__ == '__main__':
     # demo1_tool_vs_skill()
 
     # 示例 2: 方式A - system_prompt 编排（需要 API Key）
-    # demo2_skill_via_system_prompt()
+    demo2_skill_via_system_prompt()
 
     # 示例 3: 方式B - 封装函数（需要 API Key）
     # demo3_skill_via_function()
 
     # 示例 4: Skill 价值对比（需要 API Key）
-    demo4_skill_value()
+    # demo4_skill_value()
 
     # 示例 5: 原理总结（无需 API Key，直接运行）
     # demo5_summary()

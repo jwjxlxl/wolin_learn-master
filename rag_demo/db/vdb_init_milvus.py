@@ -1,3 +1,15 @@
+# =============================================================================
+# vdb_init_milvus — Milvus 向量数据库初始化
+# =============================================================================
+# 用途：创建 document_chunks 和 qa_pairs 两个集合，插入文档切片和问答对数据
+# =============================================================================
+# 核心功能：
+#   1. create_document_chunks_collection() — 文档切片集合（稠密+稀疏向量混合检索）
+#   2. create_qa_pairs_collection() — 问答对集合（支持 BM25 + 向量检索）
+#   3. insert_document_chunks() — 读取 TXT 文件，切片后插入
+#   4. insert_qa_pairs() — 读取 JSON QA 文件，生成向量后插入
+# =============================================================================
+
 import os
 import json
 import time
@@ -274,6 +286,4 @@ if __name__ == "__main__":
 
     # 第二步：插入数据
     # insert_document_chunks(str(data_dir / "三国演义.txt"))
-    insert_qa_pairs(str(data_dir / "qa_paris_additional.json"))
-
-    # TODO: 向量库中的数据，可以提供一个接口进行增量和全量数据的更新
+    insert_qa_pairs(str(data_dir / "qa_sanguo_additional.json"))

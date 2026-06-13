@@ -64,32 +64,6 @@ def _hybrid_search_documents(query: str, top_k: int = 3) -> list[dict]:
         output_fields=["text", "file_name", "chunk_index"],
     )
 
-    '''
-    from pymilvus import Function, FunctionType
-
-        # 使用权重重排算法 (Weighted Ranker)
-        ranker = Function(
-            name="weight",
-            input_field_names=[],  # 必须是空列表
-            function_type=FunctionType.RERANK,
-            params={
-                "reranker": "weighted",  # 指定使用加权重排
-                "weights": [0.6, 0.4],   # 权重数组,对应每个搜索路径
-                "norm_score": True       # 可选:是否归一化分数
-            }
-        )
-        
-        # 执行混合搜索
-        results = milvus_client.hybrid_search(
-            collection_name=DOCUMENT_CHUNKS_COLLECTION,
-            reqs=[req_dense, req_sparse],
-            ranker=ranker,
-            limit=top_k,
-            output_fields=["text", "file_name", "chunk_index"],
-        )
-    
-    '''
-
     refs = []
     for hits in results:
         for hit in hits:

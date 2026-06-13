@@ -22,7 +22,7 @@
 ### 实战语料
 
 - 📚 **原始文档**：`datas/三国演义.txt`（1.75 MB 完整小说）
-- ❓ **问答对**：`datas/qa_paris.json`（50 条三国知识 QA）+ `datas/qa_paris_additional.json`（3 条增量 QA）
+- ❓ **问答对**：`datas/qa_sanguo.json`（50 条三国知识 QA）+ `datas/qa_sanguo_additional.json`（3 条增量 QA）
 
 ---
 
@@ -126,8 +126,8 @@ rag_demo/
 │
 └── datas/                             # 数据文件
     ├── 三国演义.txt                    # 原始语料（1.75 MB）
-    ├── qa_paris.json                  # 50 条三国 QA 对
-    └── qa_paris_additional.json       # 3 条增量测试 QA
+    ├── qa_sanguo.json                  # 50 条三国 QA 对
+    └── qa_sanguo_additional.json       # 3 条增量测试 QA
 ```
 
 ---

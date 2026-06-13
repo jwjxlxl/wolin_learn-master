@@ -5,8 +5,10 @@
 | 我想... | 去这里 |
 |---------|--------|
 | 修改 LangChain 教学内容 | `langchain_examples/` → 改 `.py` → 运行 `convert_py_to_ipynb.py` |
+| 修改 LangGraph/Agent 教学内容 | `langgraph_examples/` → 改 `.py` → 运行 `convert_py_to_ipynb.py` |
 | 修改 RAG/Milvus 教学内容 | `rag_examples/`（基础）→ `rag_demo/`（实战） |
 | 添加新的教学模块 | 遵循对应子目录的格式规范（见下方"关键规则"） |
+| 获取通用模型/工具 | `utils/model_utils.py`（`get_model` / `get_qwen_client`） |
 | 理解项目约定 | 阅读本文档"关键规则"和"常见反模式" |
 | 了解之前改了什么 | 跳到末尾"改造历史" |
 
@@ -39,6 +41,24 @@
 - **`utils/` 和 `学习路线.py` 不转 .ipynb**（工具/元信息文件）。
 - 每个教学文件 2-3 个示例，用 `print(f"\n-- 示例 N: 标题")` 分隔。
 
+### langgraph_examples/ 专属（LangGraph Agent 教程，5 模块）
+
+| # | 模块 | 内容 | 默认模型 |
+|---|------|------|----------|
+| 01 | `01_introduction/` | 概念 + 最简图 | 无需模型 |
+| 02 | `02_state_and_branching/` | 状态管理 + 条件分支 | 无需模型 |
+| 03 | `03_agent_loop/` | ReAct Agent 循环 + create_agent 对比 | Ollama `qwen3.5:2b` |
+| 04 | `04_workflows/` | 提示链 / 路由 / 并行化 / 评估器-优化器 | Ollama `qwen3.5:2b` |
+| 05 | `05_practical/` | 智能问答 Agent 综合实战 | Ollama `qwen3.5:2b` |
+
+- **默认使用 Ollama 本地模型**：通过 `utils/model_utils.get_model()` 获取（默认 `qwen3.5:2b`）。
+- 云端 API 切换：`get_model(use_cloud=True)` → 自动使用 `get_qwen_client()`。
+- `.ipynb` 转换脚本：`convert_py_to_ipynb.py`（9 个 notebook）。
+- 测试：`tests/`，pytest 框架（11 个测试）。
+- 共享工具：`utils/graph_helpers.py`（`create_tool_node` / `create_router` / `build_react_agent`）。
+- **`what_is_langgraph.py` 不转 .ipynb**（纯概念文件，类似 `what_is_langchain.py`）。
+- 每个教学文件含 2 个示例（1 个 LLM + 1 个纯逻辑），确保无 API Key 也能跑通至少一个。
+
 ### rag_examples/ 专属（RAG + Milvus 主课程）
 
 - 配置入口：`milvus_config.py`（`DEFAULT_DIMENSION = 1024`、`MILVUS_URI`、`MILVUS_DB_NAME`）
@@ -56,7 +76,7 @@
 
 | # | ❌ 错误做法 | ✅ 正确做法 | 原因 |
 |---|-----------|-----------|------|
-| 1 | 用 `sys.path.insert()` hack 跨模块导入 | 用 `utils/` 共享模块 + 标准包导入 | hack 脆弱、IDE 不识别，已全部清理 |
+| 1 | 在子模块文件中用 `sys.path.insert()` hack 导入其他子模块的函数 | 共享代码放项目根 `utils/`；教学文件统一 `sys.path.insert(0, os.path.join(...))` 仅用于导入 `utils/` | 跨子模块 hack 已全清理；导入 `utils/` 的路径设置是必要且统一的 |
 | 2 | `print(f"\n{'─'*50}")\nprint("标题")\nprint(f"{'─'*50}")` | `print(f"\n-- 标题")` | 3 行冗余，刚全局清洗过 100+ 处 |
 | 3 | 用 Read/Write 直接编辑 .ipynb JSON | NotebookEdit 工具 / 修改 .py 后重新转换 | 直接编辑易破坏 JSON 结构 |
 | 4 | 在多个文件重复定义相同函数 | 提取到 `util/` 共享模块 | 已去重 `generate_embedding()`（原 3 处重复） |
@@ -68,11 +88,12 @@
 
 | 组件 | 技术 | 约束 |
 |------|------|------|
-| 本地 LLM | Ollama `qwen3.5:2b` | langchain_examples 默认模型，需本地运行 `ollama serve` |
-| 云端 LLM | 阿里云 Qwen `qwen-plus` | rag_examples AI 切片/摘要；需 `ALIYUN_API_KEY` |
+| 本地 LLM | Ollama `qwen3.5:2b` | langchain_examples + langgraph_examples 默认模型，需本地运行 `ollama serve` |
+| 云端 LLM | 阿里云 Qwen `qwen-plus` | rag_examples AI 切片/摘要 + langgraph 可选云端模式；需 `ALIYUN_API_KEY` |
 | 云端 LLM | DeepSeek `deepseek-chat` | rag_demo QA 生成；需 `DEEPSEEK_API_KEY` |
 | LLM 框架 | LangChain 1.0+ (`create_agent`, LCEL) | langchain_examples 使用；**已弃用** `ConversationBufferMemory`、`SequentialChain` |
-| Agent 状态 | LangGraph (`InMemorySaver`, `ToolRuntime`) | langchain_examples 09_agent 使用 |
+| Agent 框架 | LangGraph (`StateGraph`, `Send`, `create_react_agent`) | langgraph_examples 核心 + langchain_examples 09_agent 使用 |
+| 共享工具 | `utils/model_utils.py` | `get_model()`（Ollama 默认）和 `get_qwen_client()`（云端 Qwen）的统一入口 |
 | 向量数据库 | Milvus 2.4+ (pymilvus) | `MILVUS_URI` 配置；Windows 不支持 Lite 版，需 Docker |
 | Embedding | 阿里云 `text-embedding-v4` | **固定 1024 维**，通过 OpenAI 兼容接口调用 |
 | 文本切片 | LangChain `RecursiveCharacterTextSplitter` | rag_demo 使用 |
@@ -96,6 +117,14 @@ MILVUS_DB_NAME=default
 各子项目有独立的 `.env.example` 模板文件。
 
 ## 改造历史
+
+### 2026-06-13 — langgraph_examples 三阶段重构
+
+- **Phase 1 — 工程基础**：修复 `model_untils` 拼写错误，消除 `sys.path` hack，创建 5 子模块结构（`01_introduction` ~ `05_practical`），提取共享函数到 `utils/graph_helpers.py`
+- **Phase 2 — 教学体验**：全部文件默认 Ollama 本地模型（`get_model()`），统一分隔符格式，`.py→.ipynb` 批量转换（9 个 notebook），README 教学大纲
+- **Phase 3 — 内容充实**：新增并行化（Send API）、评估器-优化器、`create_react_agent()` 对比示例，11 个 pytest 测试
+- **全局影响**：`get_model()` 提升至 `utils/model_utils.py`（跨子项目共享），`utils/model_untils.py` 更名为 `utils/model_utils.py`，mcp_examples 四个文件随同修正导入
+- 详情见 `langgraph_examples/README.md`
 
 ### 2026-06-13 — langchain_examples 全面优化
 

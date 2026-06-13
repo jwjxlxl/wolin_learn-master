@@ -1,43 +1,30 @@
 """RAG 混合检索问答模块
 
 对 document_chunks 和 qa_pairs 两张表分别执行混合检索（向量+BM25），
-通过 RRF 融合排序后，将检索结果置入提示词上下文，调用 Qwen 大模型生成回答。
+通过 RRF 融合排序后，将检索结果置入提示词上下文，调用 DeepSeek 大模型生成回答。
 """
 
-from openai import OpenAI
 import os
-from pymilvus import AnnSearchRequest, Function, FunctionType, MilvusClient
+from openai import OpenAI
+from pymilvus import AnnSearchRequest, Function, FunctionType
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# ── 客户端初始化 ──────────────────────────────────────────────
-embedding_client = OpenAI(
-    api_key=os.getenv("ALIYUN_API_KEY"),
-    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
-)
+# 导入共享模块
+from rag_demo.config import get_milvus_client, DOCUMENT_CHUNKS_COLLECTION, QA_PAIRS_COLLECTION
+from rag_demo.util.embedding import generate_embedding
 
+# ── 客户端初始化 ──────────────────────────────────────────────
 llm_client = OpenAI(
     api_key=os.getenv("DEEPSEEK_API_KEY"),
     base_url="https://api.deepseek.com"
 )
 
-milvus_client = MilvusClient(
-    uri="http://47.115.57.130:19530",
-    db_name="ai80"
-)
+milvus_client = get_milvus_client()
 
 
 # ── 工具函数 ─────────────────────────────────────────────────
-def generate_embedding(text: str, dimensions: int = 768) -> list[float]:
-    """生成文本向量"""
-    completion = embedding_client.embeddings.create(
-        model="text-embedding-v4",
-        input=text,
-        dimensions=dimensions,
-        encoding_format="float"
-    )
-    return completion.data[0].embedding
 
 
 def _hybrid_search_documents(query: str, top_k: int = 3) -> list[dict]:
@@ -70,7 +57,7 @@ def _hybrid_search_documents(query: str, top_k: int = 3) -> list[dict]:
     )
 
     results = milvus_client.hybrid_search(
-        collection_name="document_chunks",
+        collection_name=DOCUMENT_CHUNKS_COLLECTION,
         reqs=[req_dense, req_sparse],
         ranker=ranker,
         limit=top_k,
@@ -94,7 +81,7 @@ def _hybrid_search_documents(query: str, top_k: int = 3) -> list[dict]:
         
         # 执行混合搜索
         results = milvus_client.hybrid_search(
-            collection_name="document_chunks",
+            collection_name=DOCUMENT_CHUNKS_COLLECTION,
             reqs=[req_dense, req_sparse],
             ranker=ranker,
             limit=top_k,
@@ -146,7 +133,7 @@ def _hybrid_search_qa(query: str, top_k: int = 3) -> list[dict]:
     )
 
     results = milvus_client.hybrid_search(
-        collection_name="qa_pairs",
+        collection_name=QA_PAIRS_COLLECTION,
         reqs=[req_dense, req_sparse],
         ranker=ranker,
         limit=top_k,
@@ -236,7 +223,8 @@ def rag_ask(query: str, doc_top_k: int = 3, qa_top_k: int = 3) -> dict:
 
 
 if __name__ == "__main__":
-    result = rag_ask("ai0226和AI0309最帅的是谁？")
+    # 测试 RAG 问答：使用三国演义相关的真实问题
+    result = rag_ask("诸葛亮北伐失败的原因是什么？")
     print("=" * 60)
     print("回答：", result["answer"])
     print("\n" + "=" * 60)

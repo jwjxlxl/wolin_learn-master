@@ -3,48 +3,23 @@ import json
 import time
 from pathlib import Path
 
-from pymilvus import MilvusClient, DataType, Function, FunctionType
-from openai import OpenAI
+from pymilvus import DataType, Function, FunctionType
 from dotenv import load_dotenv
 
 # 加载 .env 文件
 load_dotenv()
 
-# 连接到远程 Milvus 并指定数据库
-client = MilvusClient(
-    uri="http://47.115.57.130:19530",
-    db_name="ai80"
-)
+# 使用共享配置和工具模块
+from rag_demo.config import get_milvus_client, DOCUMENT_CHUNKS_COLLECTION, QA_PAIRS_COLLECTION
+from rag_demo.util.embedding import generate_embedding, DEFAULT_EMBEDDING_DIMENSION
 
-# 初始化向量模型客户端
-embedding_client = OpenAI(
-    api_key=os.getenv("ALIYUN_API_KEY"),
-    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
-)
-
-
-def generate_embedding(text: str, dimensions: int = 768) -> list[float]:
-    """生成文本的向量表示
-
-    Args:
-        text: 输入文本
-        dimensions: 向量维度，默认 768
-
-    Returns:
-        向量列表
-    """
-    completion = embedding_client.embeddings.create(
-        model="text-embedding-v4",
-        input=text,
-        dimensions=dimensions,
-        encoding_format="float"
-    )
-    return completion.data[0].embedding
+# 连接到 Milvus
+client = get_milvus_client()
 
 
 def create_document_chunks_collection():
     """创建文档分片集合，支持密集向量+稀疏向量(BM25)混合检索"""
-    collection_name = "document_chunks"
+    collection_name = DOCUMENT_CHUNKS_COLLECTION
 
     if client.has_collection(collection_name=collection_name):
         print(f"集合 '{collection_name}' 已存在,正在删除...")
@@ -87,7 +62,7 @@ def create_document_chunks_collection():
     schema.add_field(
         field_name="dense_vector",
         datatype=DataType.FLOAT_VECTOR,
-        dim=768
+        dim=DEFAULT_EMBEDDING_DIMENSION
     )
 
     schema.add_field(
@@ -128,7 +103,7 @@ def create_document_chunks_collection():
 
 def create_qa_pairs_collection():
     """创建问答对集合，包含问题、答案、推理过程三个字段，支持问题的向量检索和BM25检索"""
-    collection_name = "qa_pairs"
+    collection_name = QA_PAIRS_COLLECTION
 
     if client.has_collection(collection_name=collection_name):
         print(f"集合 '{collection_name}' 已存在,正在删除...")
@@ -167,7 +142,7 @@ def create_qa_pairs_collection():
     schema.add_field(
         field_name="dense_vector",
         datatype=DataType.FLOAT_VECTOR,
-        dim=768
+        dim=DEFAULT_EMBEDDING_DIMENSION
     )
 
     schema.add_field(
@@ -244,7 +219,7 @@ def insert_document_chunks(txt_file_path: str, chunk_size: int = 500, chunk_over
 
         # 批量插入
         if len(data_batch) >= batch_size or i == len(chunks) - 1:
-            client.insert(collection_name="document_chunks", data=data_batch)
+            client.insert(collection_name=DOCUMENT_CHUNKS_COLLECTION, data=data_batch)
             print(f"已插入 {i + 1}/{len(chunks)} 个切片")
             data_batch = []
 
@@ -276,7 +251,7 @@ def insert_qa_pairs(json_file_path: str, batch_size: int = 50):
 
         # 批量插入
         if len(data_batch) >= batch_size or i == len(qa_list) - 1:
-            client.insert(collection_name="qa_pairs", data=data_batch)
+            client.insert(collection_name=QA_PAIRS_COLLECTION, data=data_batch)
             print(f"已插入 {i + 1}/{len(qa_list)} 条 QA")
             data_batch = []
 
@@ -284,14 +259,21 @@ def insert_qa_pairs(json_file_path: str, batch_size: int = 50):
 
 
 if __name__ == "__main__":
+    # =========================================================================
+    # 使用说明：
+    #   1. 取消下方注释以创建集合并插入数据
+    #   2. 首次使用需先创建集合，再插入数据
+    #   3. 确保已配置 .env 文件中的 MILVUS_URI 和 API 密钥
+    # =========================================================================
+
+    data_dir = Path(__file__).parent.parent / "datas"
+
+    # 第一步：创建集合（只需执行一次）
     # create_document_chunks_collection()
     # create_qa_pairs_collection()
 
-    data_dir = Path(__file__).parent.parent / "datas"
+    # 第二步：插入数据
     # insert_document_chunks(str(data_dir / "三国演义.txt"))
     insert_qa_pairs(str(data_dir / "qa_paris_additional.json"))
 
-    '''
-        向量库中的数据，可以提供一个接口进行更新
-        增量和全量数据的更新
-    '''
+    # TODO: 向量库中的数据，可以提供一个接口进行增量和全量数据的更新

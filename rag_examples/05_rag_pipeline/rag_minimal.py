@@ -12,7 +12,7 @@
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from milvus_config import MILVUS_URI
+from milvus_config import MILVUS_URI, DEFAULT_DIMENSION
 
 
 # =============================================================================
@@ -20,7 +20,15 @@ from milvus_config import MILVUS_URI
 # =============================================================================
 
 class SimpleRAG:
-    """最简单的 RAG 实现"""
+    """最简单的 RAG 实现
+
+    ⚠️ 重要说明：本类使用随机模拟向量（mock embedding）仅用于演示 RAG 流程。
+    在实际项目中，必须替换为真实的 Embedding 模型。详见：
+
+    - embedding_examples/02_aliyun_embedding.py — 阿里云百炼 API 的真实 Embedding 调用
+    - embedding_examples/03_local_embedding.py — 本地 sentence-transformers 模型
+    - 05_rag_pipeline/rag_full_pipeline.py — 使用了真实 Embedding 的完整 RAG 实现
+    """
 
     def __init__(self, milvus_uri=MILVUS_URI, collection_name="simple_rag"):
         from pymilvus import MilvusClient
@@ -28,13 +36,25 @@ class SimpleRAG:
         self.client = MilvusClient(uri=milvus_uri)
         self.collection_name = collection_name
 
-        # 简化：用随机向量模拟 Embedding（实际应该用真实模型）
-        import random
-        random.seed(42)
-        self.dim = 768
+        # 使用配置文件中的默认维度（当前：text-embedding-v4 = 1024 维）
+        self.dim = DEFAULT_DIMENSION
 
     def _random_embedding(self, text):
-        """模拟 Embedding（实际应该用真实模型）"""
+        """模拟 Embedding 生成（仅供演示，实际项目请替换为真实 Embedding 模型）
+
+        ⚠️ 此处使用随机向量仅为演示 RAG 流程，检索结果无实际语义意义。
+        替换方法：将本函数替换为调用真实 Embedding API，例如：
+
+            from rag_examples.embedding_examples.02_aliyun_embedding import AliyunEmbedding
+            embedder = AliyunEmbedding()
+            return embedder.embed(text)
+
+        或使用阿里云 DashScope：
+
+            from openai import OpenAI
+            client = OpenAI(api_key="...", base_url="https://dashscope.aliyuncs.com/compatible-mode/v1")
+            return client.embeddings.create(model="text-embedding-v4", input=text).data[0].embedding
+        """
         import random
         random.seed(hash(text) % 10000)
         return [random.uniform(-1, 1) for _ in range(self.dim)]

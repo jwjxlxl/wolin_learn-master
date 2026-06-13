@@ -4,37 +4,20 @@
 返回检索出的原始文本片段列表。
 """
 
-from openai import OpenAI
-import os
-from pymilvus import AnnSearchRequest, Function, FunctionType, MilvusClient
+from pymilvus import AnnSearchRequest, Function, FunctionType
 from dotenv import load_dotenv
 
 load_dotenv()
 
+# 导入共享模块
+from rag_demo.config import get_milvus_client, DOCUMENT_CHUNKS_COLLECTION
+from rag_demo.util.embedding import generate_embedding
+
 # ── 客户端初始化 ──────────────────────────────────────────────
-embedding_client = OpenAI(
-    api_key=os.getenv("ALIYUN_API_KEY"),
-    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
-)
+milvus_client = get_milvus_client()
 
-milvus_client = MilvusClient(
-    uri="http://47.115.57.130:19530",
-    db_name="ai80"
-)
-
-COLLECTION_NAME = "document_chunks"
+COLLECTION_NAME = DOCUMENT_CHUNKS_COLLECTION
 DEFAULT_TOP_K = 5
-
-
-def generate_embedding(text: str, dimensions: int = 768) -> list[float]:
-    """生成文本向量"""
-    completion = embedding_client.embeddings.create(
-        model="text-embedding-v4",
-        input=text,
-        dimensions=dimensions,
-        encoding_format="float"
-    )
-    return completion.data[0].embedding
 
 
 def search_file_chunks(query: str, top_k: int = DEFAULT_TOP_K) -> list[dict]:

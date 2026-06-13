@@ -1,36 +1,33 @@
 # =============================================================================
 # Milvus 连接配置
 # =============================================================================
-#  
+#
 # 用途：统一管理 Milvus 连接配置
 #
 # 说明：
-#   - 优先使用 Docker Milvus（已运行在 localhost:19530）
-#   - 如果没有 Docker Milvus，可修改为本地文件模式
+#   - 通过环境变量 MILVUS_URI 和 MILVUS_DB_NAME 配置连接
+#   - 默认连接本地 Docker Milvus（localhost:19530）
+#   - 使用前请复制 .env.example 为 .env 并填写配置
 # =============================================================================
 
-# # 设置 UTF-8 编码（Windows 专用）
-# import sys
-# import io
-# sys.stdout = io.TextIOWrapper(
-#     sys.stdout.buffer,
-#     encoding='utf-8',
-#     errors='replace',
-#     line_buffering=True
-# )
+import os
+from dotenv import load_dotenv
 
-# Milvus 连接 URI
-# 方案 1: Docker Milvus（推荐，已运行）
-# MILVUS_URI = "http://192.168.142.128:19530"
-MILVUS_URI = "http://47.115.57.130:19530"
-# 方案 2: Milvus Lite（本地文件模式，需要 pip install milvus-lite）
-# MILVUS_URI = "milvus_demo.db"
+load_dotenv()
+
+# Milvus 连接 URI（从环境变量读取，默认本地 Docker）
+# 本地 Docker：http://localhost:19530
+# Milvus Lite（不支持 Windows）：milvus_demo.db
+MILVUS_URI = os.getenv("MILVUS_URI", "http://localhost:19530")
+
+# Milvus 数据库名
+MILVUS_DB_NAME = os.getenv("MILVUS_DB_NAME", "default")
 
 # 默认集合名称
 DEFAULT_COLLECTION_NAME = "rag_demo"
 
-# 默认 Embedding 维度
-DEFAULT_DIMENSION = 768
+# 默认 Embedding 维度（text-embedding-v4 输出 1024 维）
+DEFAULT_DIMENSION = 1024
 
 # 默认度量类型
 DEFAULT_METRIC_TYPE = "COSINE"

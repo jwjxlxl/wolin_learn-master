@@ -60,5 +60,17 @@ def parse_docx_file(file_path: str) -> str:
 
 
 if __name__ == '__main__':
-    # print(parse_txt_file("C:\\沃林AI课程\\Dify\\教育服务\\相关资料\\三国演义.txt"))
-    print(parse_pdf_file(r"C:\沃林AI课程\Dify\教育服务\相关资料\测试简历\曹文栋-简历.pdf"))
+    # 使用说明：
+    #   1. 取消注释并替换为你的文件路径
+    #   2. 支持 TXT、PDF、DOCX 三种格式
+
+    # 示例：解析 TXT 文件
+    # print(parse_txt_file("path/to/your/file.txt"))
+
+    # 示例：解析 PDF 文件
+    # print(parse_pdf_file("path/to/your/file.pdf"))
+
+    # 示例：解析 DOCX 文件
+    # print(parse_docx_file("path/to/your/file.docx"))
+
+    print("text_parser 模块加载成功。请取消注释上面的示例代码并替换为你的文件路径。")

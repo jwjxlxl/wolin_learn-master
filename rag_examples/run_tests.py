@@ -2,37 +2,76 @@
 # RAG 教学示例 - 综合测试脚本
 # =============================================================================
 # 测试所有文件的语法和函数结构
+#
+# 支持 .py 和 .ipynb 两种格式：
+#   - 优先检查 .py 文件
+#   - 如果 .py 不存在，自动降级为检查 .ipynb 文件
 
 import sys
-import importlib.util
+import os
+import json
 
 # 测试结果记录
 test_results = []
 
-def test_file_syntax(file_path, module_name):
-    """测试文件语法"""
-    try:
-        spec = importlib.util.spec_from_file_location(module_name, file_path)
-        module = importlib.util.module_from_spec(spec)
-        # 只检查语法，不执行
+
+def _read_file_content(file_path):
+    """读取文件内容，支持 .py 和 .ipynb 格式"""
+    if file_path.endswith('.ipynb'):
+        import json
         with open(file_path, 'r', encoding='utf-8') as f:
-            compile(f.read(), file_path, 'exec')
+            nb = json.load(f)
+        # 提取所有代码单元的内容
+        code_cells = []
+        for cell in nb.get('cells', []):
+            if cell.get('cell_type') == 'code':
+                source = cell.get('source', [])
+                if isinstance(source, list):
+                    code_cells.append(''.join(source))
+                else:
+                    code_cells.append(source)
+        return '\n'.join(code_cells)
+    else:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return f.read()
+
+
+def _resolve_file_path(file_path):
+    """解析文件路径：如果 .py 不存在则尝试 .ipynb"""
+    if os.path.exists(file_path):
+        return file_path
+
+    # 尝试 .ipynb 后缀
+    ipynb_path = file_path.replace('.py', '.ipynb')
+    if os.path.exists(ipynb_path):
+        return ipynb_path
+
+    return file_path  # 返回原始路径，让后续代码处理错误
+
+
+import os
+
+
+def test_file_syntax(file_path, module_name):
+    """测试文件语法（支持 .py 和 .ipynb）"""
+    try:
+        content = _read_file_content(file_path)
+        compile(content, file_path, 'exec')
         return True, "语法正确"
     except SyntaxError as e:
         return False, f"语法错误：{e}"
     except Exception as e:
-        return False, f"导入错误：{e}"
+        return False, f"读取错误：{e}"
+
 
 def test_function_exists(file_path, expected_functions):
     """检查期望的函数/类是否存在"""
     found = []
     missing = []
 
-    with open(file_path, 'r', encoding='utf-8') as f:
-        content = f.read()
+    content = _read_file_content(file_path)
 
     for func in expected_functions:
-        # 检查函数或类定义
         if f"def {func}(" in content or f"class {func}" in content:
             found.append(func)
         else:
@@ -72,8 +111,9 @@ modules_01 = [
 ]
 
 for file_path, expected_funcs in modules_01:
-    syntax_ok, syntax_msg = test_file_syntax(file_path, file_path.replace("/", "_").replace(".", "_"))
-    found, missing = test_function_exists(file_path, expected_funcs)
+    real_path = _resolve_file_path(file_path)
+    syntax_ok, syntax_msg = test_file_syntax(real_path, file_path.replace("/", "_").replace(".", "_"))
+    found, missing = test_function_exists(real_path, expected_funcs)
 
     status = "[OK]" if syntax_ok and not missing else "[WARN]"
     print(f"\n{status} {file_path}")
@@ -143,8 +183,9 @@ modules_02 = [
 ]
 
 for file_path, expected_funcs in modules_02:
-    syntax_ok, syntax_msg = test_file_syntax(file_path, file_path.replace("/", "_").replace(".", "_"))
-    found, missing = test_function_exists(file_path, expected_funcs)
+    real_path = _resolve_file_path(file_path)
+    syntax_ok, syntax_msg = test_file_syntax(real_path, file_path.replace("/", "_").replace(".", "_"))
+    found, missing = test_function_exists(real_path, expected_funcs)
 
     status = "[OK]" if syntax_ok and not missing else "[WARN]"
     print(f"\n{status} {file_path}")
@@ -196,8 +237,9 @@ modules_03 = [
 ]
 
 for file_path, expected_funcs in modules_03:
-    syntax_ok, syntax_msg = test_file_syntax(file_path, file_path.replace("/", "_").replace(".", "_"))
-    found, missing = test_function_exists(file_path, expected_funcs)
+    real_path = _resolve_file_path(file_path)
+    syntax_ok, syntax_msg = test_file_syntax(real_path, file_path.replace("/", "_").replace(".", "_"))
+    found, missing = test_function_exists(real_path, expected_funcs)
 
     status = "[OK]" if syntax_ok and not missing else "[WARN]"
     print(f"\n{status} {file_path}")
@@ -232,8 +274,9 @@ modules_04 = [
 ]
 
 for file_path, expected_funcs in modules_04:
-    syntax_ok, syntax_msg = test_file_syntax(file_path, file_path.replace("/", "_").replace(".", "_"))
-    found, missing = test_function_exists(file_path, expected_funcs)
+    real_path = _resolve_file_path(file_path)
+    syntax_ok, syntax_msg = test_file_syntax(real_path, file_path.replace("/", "_").replace(".", "_"))
+    found, missing = test_function_exists(real_path, expected_funcs)
 
     status = "[OK]" if syntax_ok and not missing else "[WARN]"
     print(f"\n{status} {file_path}")
@@ -271,8 +314,9 @@ modules_05 = [
 ]
 
 for file_path, expected_funcs in modules_05:
-    syntax_ok, syntax_msg = test_file_syntax(file_path, file_path.replace("/", "_").replace(".", "_"))
-    found, missing = test_function_exists(file_path, expected_funcs)
+    real_path = _resolve_file_path(file_path)
+    syntax_ok, syntax_msg = test_file_syntax(real_path, file_path.replace("/", "_").replace(".", "_"))
+    found, missing = test_function_exists(real_path, expected_funcs)
 
     status = "[OK]" if syntax_ok and not missing else "[WARN]"
     print(f"\n{status} {file_path}")
@@ -319,8 +363,118 @@ modules_emb = [
 ]
 
 for file_path, expected_funcs in modules_emb:
-    syntax_ok, syntax_msg = test_file_syntax(file_path, file_path.replace("/", "_").replace(".", "_"))
-    found, missing = test_function_exists(file_path, expected_funcs)
+    real_path = _resolve_file_path(file_path)
+    syntax_ok, syntax_msg = test_file_syntax(real_path, file_path.replace("/", "_").replace(".", "_"))
+    found, missing = test_function_exists(real_path, expected_funcs)
+
+    status = "[OK]" if syntax_ok and not missing else "[WARN]"
+    print(f"\n{status} {file_path}")
+    print(f"   语法：{syntax_msg}")
+    print(f"   函数：{len(found)}/{len(expected_funcs)} 已实现")
+    if missing:
+        print(f"   缺失：{missing}")
+
+    test_results.append({
+        "file": file_path,
+        "syntax_ok": syntax_ok,
+        "functions_found": len(found),
+        "functions_expected": len(expected_funcs),
+        "missing_functions": missing
+    })
+
+# ==================== 06_rag_advanced ====================
+print("\n" + "=" * 60)
+print("测试模块：06_rag_advanced")
+print("=" * 60)
+
+modules_06a = [
+    ("06_rag_advanced/01_hybrid_search_advanced.py", [
+        "explain_bm25_function", "create_hybrid_search_collection",
+        "insert_demo_data", "demo_pure_dense_search",
+        "demo_pure_sparse_search", "demo_hybrid_search",
+        "explain_ranking_strategies",
+    ]),
+    ("06_rag_advanced/02_dual_collection_design.py", [
+        "explain_dual_collection", "create_dual_collections",
+        "insert_dual_collection_data", "dual_collection_search",
+        "build_rag_prompt", "dual_collection_summary",
+    ]),
+    ("06_rag_advanced/03_from_mock_to_real.py", [
+        "explain_mock_vs_real", "step_by_step_replacement",
+        "UniversalEmbedder", "demo_universal_embedder",
+        "migration_checklist",
+    ]),
+]
+
+for file_path, expected_funcs in modules_06a:
+    real_path = _resolve_file_path(file_path)
+    syntax_ok, syntax_msg = test_file_syntax(real_path, file_path.replace("/", "_").replace(".", "_"))
+    found, missing = test_function_exists(real_path, expected_funcs)
+
+    status = "[OK]" if syntax_ok and not missing else "[WARN]"
+    print(f"\n{status} {file_path}")
+    print(f"   语法：{syntax_msg}")
+    print(f"   函数：{len(found)}/{len(expected_funcs)} 已实现")
+    if missing:
+        print(f"   缺失：{missing}")
+
+    test_results.append({
+        "file": file_path,
+        "syntax_ok": syntax_ok,
+        "functions_found": len(found),
+        "functions_expected": len(expected_funcs),
+        "missing_functions": missing
+    })
+
+# ==================== 06_rag_evaluation ====================
+print("\n" + "=" * 60)
+print("测试模块：06_rag_evaluation")
+print("=" * 60)
+
+modules_06b = [
+    ("06_rag_evaluation/01_rag_evaluation.py", [
+        "explain_why_evaluate", "explain_ragas_metrics",
+        "explain_eval_dataset", "RAGEvaluator",
+        "evaluation_best_practices",
+    ]),
+]
+
+for file_path, expected_funcs in modules_06b:
+    real_path = _resolve_file_path(file_path)
+    syntax_ok, syntax_msg = test_file_syntax(real_path, file_path.replace("/", "_").replace(".", "_"))
+    found, missing = test_function_exists(real_path, expected_funcs)
+
+    status = "[OK]" if syntax_ok and not missing else "[WARN]"
+    print(f"\n{status} {file_path}")
+    print(f"   语法：{syntax_msg}")
+    print(f"   函数：{len(found)}/{len(expected_funcs)} 已实现")
+    if missing:
+        print(f"   缺失：{missing}")
+
+    test_results.append({
+        "file": file_path,
+        "syntax_ok": syntax_ok,
+        "functions_found": len(found),
+        "functions_expected": len(expected_funcs),
+        "missing_functions": missing
+    })
+
+# ==================== utils ====================
+print("\n" + "=" * 60)
+print("测试模块：utils")
+print("=" * 60)
+
+modules_utils = [
+    ("utils/helpers.py", [
+        "ensure_env_loaded", "get_api_key",
+        "safe_milvus_operation", "format_score", "truncate_text",
+    ]),
+]
+
+for file_path, expected_funcs in modules_utils:
+    real_path = _resolve_file_path(file_path)
+    syntax_ok, syntax_msg = test_file_syntax(real_path, file_path.replace("/", "_").replace(".", "_"))
+    found, missing = test_function_exists(real_path, expected_funcs)
 
     status = "[OK]" if syntax_ok and not missing else "[WARN]"
     print(f"\n{status} {file_path}")

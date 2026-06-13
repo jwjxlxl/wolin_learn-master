@@ -17,11 +17,11 @@ python -m pip install --upgrade pip
 
 echo.
 echo [2/3] 安装核心依赖...
-pip install langchain langchain-community langchain-ollama python-dotenv pydantic
+pip install langchain langchain-community langchain-ollama langgraph python-dotenv pydantic
 
 echo.
-echo [3/3] 安装可选依赖（用于 RAG 检索）...
-pip install langchain-huggingface faiss-cpu langchain-openai
+echo [3/3] 安装扩展依赖（用于 RAG 检索和云端 API）...
+pip install langchain-openai langchain-text-splitters langchain-huggingface faiss-cpu
 
 echo.
 echo ==============================================================================

@@ -43,8 +43,7 @@ Level 2: 核心技能 (2-3 周)
 +---------------------------------------------+
 |  03_prompt/                                 |
 |  ├── prompt_template.py  <- 模板基础        |
-|  ├── few_shot_prompt.py  <- Few-Shot        |
-|  └── pipeline_prompt.py  <- Pipeline        |
+|  └── few_shot_prompt.py  <- Few-Shot        |
 +---------------------------------------------+
               |
 +---------------------------------------------+
@@ -81,6 +80,16 @@ Level 5: 实战项目 (2-3 周)
 |  08_project/                                |
 |  ├── qna_bot.py          <- 问答机器人      |
 |  └── research_assistant.py <- 研究助手      |
++---------------------------------------------+
+              |
+Level 6: Agent 智能体 (2-3 周) — 新范式
++---------------------------------------------+
+|  09_agent/                                   |
+|  ├── tools.py            <- Tool 工具定义    |
+|  ├── agent.py            <- create_agent     |
+|  ├── agent_memory.py     <- Agent 记忆       |
+|  ├── middleware.py       <- 中间件拦截器     |
+|  └── human_in_the_loop.py <- 人在回路       |
 +---------------------------------------------+
               |
         完成课程!

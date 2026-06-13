@@ -27,7 +27,7 @@
 ### 03_prompt/
 - [✓] prompt_template.py - 语法正确，**运行通过** ✅
 - [✓] few_shot_prompt.py - 语法正确，已修复花括号转义，**运行通过** ✅
-- [✓] pipeline_prompt.py - 语法正确，**运行通过** ✅
+- [✗] pipeline_prompt.py - 已删除（内容合并至 06_chains/simple_chain.py）
 
 ### 04_output_parser/
 - [✓] string_parser.py - 语法正确，**运行通过** ✅
@@ -52,11 +52,23 @@
 - [✓] qna_bot.py - 语法正确，已修复 import，**运行通过** ✅
 - [✓] research_assistant.py - 语法正确，**运行通过** ✅
 
+### 09_agent/
+- [✓] tools.py - 语法正确，已修复 utils 引用路径 ✅
+- [✓] agent.py - 语法正确，已修复 utils 引用路径 ✅
+- [✓] agent_memory.py - 语法正确，已修复 utils 引用路径 ✅
+- [✓] middleware.py - 语法正确，已修复 utils 引用路径 ✅
+- [✓] human_in_the_loop.py - 语法正确，已修复 utils 引用路径 ✅
+
+### utils/
+- [✓] __init__.py - 语法正确 ✅
+- [✓] model_utils.py - 语法正确 ✅
+
 ### 其他文件
 - [✓] 学习路线.py - 语法正确，运行正常 ✅
 - [✓] README.md - 文档完整 ✅
-- [✓] requirements.txt - 依赖列表完整 ✅
-- [✓] install_deps.bat - 安装脚本可用 ✅
+- [✓] requirements.txt - 已更新（添加 langgraph 依赖） ✅
+- [✓] install_deps.bat - 安装脚本已更新 ✅
+- [✗] test.py - 已删除（未完成的 LangGraph 草稿）
 
 ---
 

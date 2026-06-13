@@ -1,297 +1,136 @@
 # =============================================================================
-# 基础 LLM 调用
+# LLM 基础调用 — 用 LangChain 调用各种大模型
 # =============================================================================
-#  
-# 用途：教学演示 - 使用 LangChain 调用 LLM
 #
-# 核心概念：
-#   - LLM vs Chat Model 的区别
-#     - LLM: 文本补全（像续写句子）
-#     - Chat Model: 对话交互（像聊天）
-#   - 本地模型 (Ollama) vs 云端 API (Qwen/DeepSeek)
+# 学完本文件你将能够：
+#   ✅ 用本地 Ollama 模型进行单轮和多轮对话
+#   ✅ 理解 SystemMessage / HumanMessage / AIMessage 三种角色
+#   ✅ 封装统一的模型切换函数（本地 ↔ 云端自由切换）
 # =============================================================================
 
-# -----------------------------------------------------------------------------
-# 运行前检查
-# -----------------------------------------------------------------------------
-# 1. 已安装 Ollama 服务（使用本地模型时）
-# 2. 已下载模型：ollama pull qwen3.5:2b
-# 3. 已安装依赖：pip install -r requirements.txt
-# -----------------------------------------------------------------------------
-
-# 设置 UTF-8 编码（Windows 专用）
 import sys
 import io
-sys.stdout = io.TextIOWrapper(
-    sys.stdout.buffer,
-    encoding='utf-8',
-    errors='replace',
-    line_buffering=True
-)
-
-# =============================================================================
-# 第一部分：理解 LLM 和 Chat Model 的区别
-# =============================================================================
-"""
-LLM（语言模型）vs Chat Model（对话模型）
-
-想象两种不同的交流方式：
-
-📝 LLM - 文本补全
-   你："今天天气真好，我想出去"
-   LLM："......散步。公园里的花开得很美。"
-   （它把你的话当成一个句子的开头，帮你续写）
-
-💬 Chat Model - 对话交互
-   你："今天天气真好，我想出去"
-   Chat Model："是啊，这么好的天气，出去走走吧！想去哪里？"
-   （它理解你在说话，并给出回应）
-
-结论：对话应用优先使用 Chat Model！
-"""
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
 
 
 # =============================================================================
-# 第二部分：使用 Ollama 本地模型
+# 示例 1: 本地 Ollama 基础调用
 # =============================================================================
 
-def ollama_chat_example():
+def ollama_basic():
     """
-    使用 Ollama 本地模型进行对话
+    使用 Ollama 本地模型进行单轮对话。
 
-    优点：
-    - 免费，无需 API Key
-    - 数据本地处理，隐私安全
-    - 可离线使用
+    核心概念：
+    - ChatOllama: LangChain 用于连接 Ollama 的接口
+    - model.invoke("问题"): 发送问题，等待完整回复
+    - response.content: 取出纯文本内容
 
-    缺点：
-    - 需要本地 GPU 资源
-    - 模型相对较小
+    优点：免费、离线可用、数据不离开本机
+    缺点：需要本地 GPU/内存，模型能力有限
     """
-    print("=" * 60)
-    print("Ollama 本地模型调用")
-    print("=" * 60)
-
     from langchain_ollama import ChatOllama
 
-    # 创建 Chat Model 实例
-    # model: 指定使用的模型名称（需与 Ollama 中的一致）
+    print(f"\n-- 示例 1: 本地 Ollama 调用")
+
     model = ChatOllama(model="qwen3.5:2b")
-
-    # 调用模型
-    # invoke: 最基础的调用方法，传入消息内容
-    response = model.invoke("你好，请简单介绍一下你自己。")
-
-    # 打印结果
-    # response.content: 获取模型回复的文本内容
-    print(f"AI 回复：{response.content}")
-    print()
+    response = model.invoke("你好，请用一句话介绍你自己。")
+    print(f"回复: {response.content}")
 
 
-def ollama_with_messages_example():
+# =============================================================================
+# 示例 2: 多轮对话（带消息历史）
+# =============================================================================
+
+def ollama_multiturn():
     """
-    使用多轮对话历史调用
+    使用消息列表实现多轮对话。
 
-    Chat Model 支持传入消息列表，包含角色信息
+    核心概念：
+    - SystemMessage: 设定 AI 的角色和行为准则（像导演给演员剧本）
+    - HumanMessage:  用户的输入
+    - AIMessage:     AI 的回复（手动添加到历史中，让 AI "记住"之前说过的话）
+
+    为什么需要消息列表？
+    LLM 本身是"无状态"的——每次调用都是全新的对话。
+    要让它"记住"上下文，必须把历史消息一起传给它。
     """
-    print("=" * 60)
-    print("Ollama 多轮对话")
-    print("=" * 60)
-
     from langchain_ollama import ChatOllama
     from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
+    print(f"\n-- 示例 2: 多轮对话（带消息历史）")
+
     model = ChatOllama(model="qwen3.5:2b")
 
-    # 构建消息列表
     messages = [
-        # SystemMessage: 系统提示词，设定 AI 的角色和行为
         SystemMessage(content="你是一位友好的助手，说话简洁。"),
-
-        # HumanMessage: 用户的消息
         HumanMessage(content="我叫小明，今年 10 岁。"),
-
-        # AIMessage: AI 的回复（手动添加，用于模拟历史对话）
         AIMessage(content="你好小明！很高兴认识你。有什么问题吗？"),
-
-        # 新的用户消息
-        HumanMessage(content="你喜欢什么颜色？"),
+        HumanMessage(content="你还记得我叫什么吗？"),
     ]
 
-    # 传入完整消息列表，AI 会根据上下文回复
     response = model.invoke(messages)
-
-    print(f"AI 回复：{response.content}")
-    print()
+    print(f"回复: {response.content}")
 
 
 # =============================================================================
-# 第三部分：使用云端 API（阿里云 Qwen）
+# 示例 3: 统一模型封装（本地 ↔ 云端自由切换）
 # =============================================================================
 
-def qwen_chat_example():
+def get_model(provider: str = "ollama"):
     """
-    使用阿里云 Qwen API 进行对话
+    根据服务商名称返回对应的模型实例。
 
-    优点：
-    - 模型强大，效果好
-    - 无需本地 GPU
-    - 按使用付费
-
-    缺点：
-    - 需要网络
-    - 数据上传到云端
-    """
-    print("=" * 60)
-    print("阿里云 Qwen 调用")
-    print("=" * 60)
-
-    try:
-        from langchain_openai import ChatOpenAI
-        import os
-        from dotenv import load_dotenv
-
-        # 加载环境变量
-        load_dotenv()
-
-        # 检查 API Key
-        api_key = os.getenv("ALIYUN_API_KEY")
-        if not api_key or api_key == "sk-your-aliyun-api-key-here":
-            print("未配置 API Key，跳过此示例")
-            print("提示：在 .env 文件中配置 ALIYUN_API_KEY")
-            print()
-            return
-
-        # 创建 Chat Model 实例
-        model = ChatOpenAI(
-            model="qwen-plus",              # 模型名称
-            api_key=api_key,                # API Key
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"  # 阿里云兼容模式地址
-        )
-
-        # 调用模型
-        response = model.invoke("你好，请简单介绍一下你自己。")
-
-        print(f"AI 回复：{response.content}")
-        print()
-
-    except ImportError:
-        print("未安装 langchain-openai")
-        print("提示：pip install langchain-openai")
-        print()
-
-
-# =============================================================================
-# 第四部分：使用 DeepSeek API
-# =============================================================================
-
-def deepseek_chat_example():
-    """
-    使用 DeepSeek API 进行对话
-
-    DeepSeek 特点：
-    - 性价比高
-    - 代码生成能力强（deepseek-coder）
-    - 对话模型效果好（deepseek-chat）
-    """
-    print("=" * 60)
-    print("DeepSeek 调用")
-    print("=" * 60)
-
-    try:
-        from langchain_openai import ChatOpenAI
-        import os
-        from dotenv import load_dotenv
-
-        load_dotenv()
-
-        api_key = os.getenv("DEEPSEEK_API_KEY")
-        if not api_key or api_key == "sk-your-deepseek-api-key-here":
-            print("未配置 API Key，跳过此示例")
-            print("提示：在 .env 文件中配置 DEEPSEEK_API_KEY")
-            print()
-            return
-
-        # DeepSeek 也兼容 OpenAI API 格式
-        model = ChatOpenAI(
-            model="deepseek-chat",          # 对话模型
-            api_key=api_key,
-            base_url="https://api.deepseek.com"
-        )
-
-        response = model.invoke("你好，请简单介绍一下你自己。")
-
-        print(f"AI 回复：{response.content}")
-        print()
-
-    except ImportError:
-        print("未安装 langchain-openai")
-        print("提示：pip install langchain-openai")
-        print()
-
-
-# =============================================================================
-# 第五部分：统一封装（推荐写法）
-# =============================================================================
-
-def get_model(provider="ollama"):
-    """
-    根据服务商返回对应的模型实例
-
-    这样写的好处：
-    - 方便切换模型
-    - 代码集中管理配置
+    好处：切换模型只改一行参数，不需要到处改代码。
     """
     if provider == "ollama":
         from langchain_ollama import ChatOllama
         return ChatOllama(model="qwen3.5:2b")
 
     elif provider == "qwen":
-        from langchain_openai import ChatOpenAI
         import os
         from dotenv import load_dotenv
-
+        from langchain_openai import ChatOpenAI
         load_dotenv()
         return ChatOpenAI(
             model="qwen-plus",
             api_key=os.getenv("ALIYUN_API_KEY"),
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
+            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
         )
 
     elif provider == "deepseek":
-        from langchain_openai import ChatOpenAI
         import os
         from dotenv import load_dotenv
-
+        from langchain_openai import ChatOpenAI
         load_dotenv()
         return ChatOpenAI(
             model="deepseek-chat",
             api_key=os.getenv("DEEPSEEK_API_KEY"),
-            base_url="https://api.deepseek.com"
+            base_url="https://api.deepseek.com",
         )
 
     else:
-        raise ValueError(f"不支持的服务商：{provider}")
+        raise ValueError(f"不支持的服务商: {provider}")
 
 
-def unified_chat_example():
+def unified_model_demo():
     """
-    使用统一封装的模型调用
+    演示统一封装的使用方式——切换模型只需改一个字符串。
 
-    推荐在实际项目中使用这种方式
+    这个模式在实际项目中非常实用：
+    - 开发阶段用 Ollama（免费、快速迭代）
+    - 上线阶段切换到云端 API（能力更强）
+    - 不需要改动业务逻辑代码
     """
-    print("=" * 60)
-    print("统一封装调用（推荐）")
-    print("=" * 60)
+    print(f"\n-- 示例 3: 统一模型封装")
 
-    # 切换模型只需改这一行
+    # 切换模型只需改这一行: "ollama" / "qwen" / "deepseek"
     model = get_model("ollama")
-    # model = get_model("qwen")       # 切换到 Qwen
-    # model = get_model("deepseek")   # 切换到 DeepSeek
+    response = model.invoke("你好，请用一句话介绍你自己。")
+    print(f"回复: {response.content}")
 
-    response = model.invoke("你好，请简单介绍一下你自己。")
-    print(f"AI 回复：{response.content}")
-    print()
+    # 切换到 Qwen 云端模型（需要配置 .env 中的 ALIYUN_API_KEY）
+    # model = get_model("qwen")
 
 
 # =============================================================================
@@ -299,27 +138,10 @@ def unified_chat_example():
 # =============================================================================
 
 if __name__ == '__main__':
-    print("\n" + "=" * 70)
-    print("  LangChain 基础 LLM 调用")
-    print("  说明：LLM vs Chat Model 的区别")
-    print("=" * 70 + "\n")
+    print("\n>>> 02_llm_call — LLM 基础调用\n")
 
-    print("【运行前检查】")
-    print("  1. 已安装 Ollama 服务（使用本地模型时）")
-    print("  2. 已下载模型：ollama pull qwen3.5:2b")
-    print("  3. 已安装依赖：pip install -r requirements.txt")
-    print()
+    ollama_basic()
+    ollama_multiturn()
+    unified_model_demo()
 
-    # 运行示例
-    ollama_chat_example()
-    # ollama_with_messages_example()
-
-    # 云端 API 示例（有 API Key 可取消注释）
-    # qwen_chat_example()
-    # deepseek_chat_example()
-
-    unified_chat_example()
-
-    print("=" * 70)
-    print("  接下来学习：chat_model.py（深入理解消息类型）")
-    print("=" * 70 + "\n")
+    # 接下来学习: chat_model.py（消息类型详解）

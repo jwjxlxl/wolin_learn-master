@@ -1,12 +1,11 @@
 # =============================================================================
-# 简单链
+# 简单链 — 用 LCEL（LangChain Expression Language）串联组件
 # =============================================================================
-#  
-# 用途：教学演示 - 使用 Chain 组合多个组件
 #
-# 核心概念：
-#   - Chain = "功能组合包"
-#   - Prompt + LLM + Parser = 完整功能
+# 学完本文件你将能够：
+#   ✅ 理解 Pipeline 的核心概念：Prompt → Model → Parser 一气呵成
+#   ✅ 使用 | 操作符把组件串联成"链"
+#   ✅ 封装可复用的 Chain 函数
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -16,269 +15,185 @@
 # 2. 已下载模型：ollama pull qwen3.5:2b
 # -----------------------------------------------------------------------------
 
-# 设置 UTF-8 编码（Windows 专用）
+# 设置 UTF-8 编码（Windows 中文环境必需）
 import sys
 import io
 sys.stdout = io.TextIOWrapper(
-    sys.stdout.buffer,
-    encoding='utf-8',
-    errors='replace',
-    line_buffering=True
+    sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True
 )
 
+from langchain_core.prompts import PromptTemplate
+from langchain_ollama import ChatOllama
+from langchain_core.output_parsers import StrOutputParser
+
 
 # =============================================================================
-# 第一部分：理解 Chain
+# 第一部分：理解 LCEL Pipeline
 # =============================================================================
 """
-什么是 Chain？
+什么是 LCEL Pipeline（管道）？
 
-🔗 定义
-   Chain = "链" = 多个组件连接在一起
-   Prompt + Model + Parser = 一个完整功能
+🏭 核心概念：
+   Pipeline = "流水线" = 用 | 操作符把多个组件串起来，数据自动流转
 
-🎯 为什么需要 Chain？
+   没有 Pipeline 时（手动分步）：
+      formatted = prompt.format(concept="人工智能")     # 第1步：填模板
+      response = model.invoke(formatted)                # 第2步：调模型
+      result = response.content                         # 第3步：取文本
+   → 3 个中间变量，代码分散
 
-   不用 Chain:
-   # 每次都要写这么多代码
-   prompt = PromptTemplate.from_template(...)
-   model = ChatOllama(...)
-   parser = StrOutputParser()
-   formatted = prompt.format(...)
-   response = model.invoke(formatted)
-   result = parser.invoke(response)
+   有了 Pipeline：
+      chain = prompt | model | parser
+      result = chain.invoke({"concept": "人工智能"})
+   → 一行定义，一行调用，清晰简洁
 
-   用 Chain:
-   chain = prompt | model | parser
-   result = chain.invoke({...})
-
-💡 生活化比喻
-   Chain = "套餐"
-   单点：米饭 + 菜 + 汤（分开点麻烦）
-   套餐：一键搞定（方便）
+💡 生活化比喻：
+   Pipeline = 餐厅流水线
+   点单 → 做菜 → 上菜
+   每个环节自动流转到下一个，不需要服务员手工传递
 """
 
 
 # =============================================================================
-# 示例 1: 回顾 Pipeline（最简单的 Chain）
+# 示例 1: 三段式 Pipeline — Prompt + Model + Parser
 # =============================================================================
 
-def review_pipeline():
+def three_stage_pipeline():
     """
-    回顾之前学过的 Pipeline
+    演示最经典的 LCEL 三段式：prompt | model | parser。
 
-    其实那就是最简单的 Chain
+    核心概念：
+    - | 操作符：LangChain 的"管道符号"，左边输出自动成为右边输入
+    - PromptTemplate：填空题模板，用 {变量名} 做占位符
+    - StrOutputParser：把 Model 返回的 Message 对象转成纯字符串
+    - invoke()：往管道里投入数据，自动完成所有步骤
+
+    数据流：
+    {"concept": "机器学习"}
+      → PromptTemplate 填模板
+      → ChatOllama 调模型
+      → StrOutputParser 转字符串
+      → "机器学习是..."（纯文本）
     """
     print("=" * 60)
-    print("示例 1: 回顾 Pipeline（最简单的 Chain）")
+    print("示例 1: 三段式 Pipeline（Prompt → Model → Parser）")
     print("=" * 60)
 
-    from langchain_core.prompts import PromptTemplate
-    from langchain_ollama import ChatOllama
-    from langchain_core.output_parsers import StrOutputParser
+    # 1. 创建模板：{concept} 是占位符
+    prompt = PromptTemplate.from_template(
+        "请用一句话解释{concept}。"
+    )
 
-    # 创建 Chain
-    prompt = PromptTemplate.from_template("请用一句话解释{topic}。")
+    # 2. 创建模型
     model = ChatOllama(model="qwen3.5:2b")
+
+    # 3. 创建解析器：把 Message 对象转成字符串
     parser = StrOutputParser()
 
+    # 4. 用 | 串成 Pipeline
     chain = prompt | model | parser
 
-    # 调用
-    result = chain.invoke({"topic": "人工智能"})
+    # 5. 投入数据，自动完成所有步骤
+    result = chain.invoke({"concept": "人工智能"})
 
-    print(f"AI 回复：{result}")
+    # result 已经是纯字符串了，不是 Message 对象
+    print(f"输出：{result}")
+    print(f"类型：{type(result).__name__}（已是字符串，无需 .content）")
     print()
 
 
 # =============================================================================
-# 示例 2: 实用的翻译 Chain
+# 示例 2: 实用场景 — 翻译链
 # =============================================================================
 
 def translation_chain():
     """
-    创建一个实用的翻译链
+    一个可直接使用的翻译 Chain。
+
+    展示如何通过 Prompt 中的 {变量} 来灵活控制 Chain 的行为。
+    同一个 Chain，不同输入参数 → 不同翻译方向。
     """
     print("=" * 60)
-    print("示例 2: 翻译 Chain（实用）")
+    print("示例 2: 翻译链（实用场景）")
     print("=" * 60)
 
-    from langchain_core.prompts import PromptTemplate
-    from langchain_ollama import ChatOllama
-    from langchain_core.output_parsers import StrOutputParser
-
-    # 翻译 Chain
+    # 创建翻译专用的 Prompt
     prompt = PromptTemplate.from_template("""
 你是一位专业翻译，请将以下文本从{source_lang}翻译成{target_lang}。
 
 要求：
 1. 保持原意
 2. 翻译自然流畅
-3. 只输出翻译结果
+3. 只输出翻译结果，不要解释
 
 原文：{text}
 
 译文：""")
 
     model = ChatOllama(model="qwen3.5:2b")
-    parser = StrOutputParser()
+    chain = prompt | model | StrOutputParser()
 
-    chain = prompt | model | parser
-
-    # 使用
-    texts = [
+    # 同一个 Chain，不同参数 → 不同翻译方向
+    tasks = [
         {"source_lang": "英语", "target_lang": "中文", "text": "Hello, world!"},
         {"source_lang": "中文", "target_lang": "英语", "text": "今天天气真好！"},
-        {"source_lang": "英语", "target_lang": "日语", "text": "Thank you!"},
     ]
 
-    for t in texts:
-        result = chain.invoke(t)
-        print(f"{t['source_lang']} → {t['target_lang']}: {result}")
+    for task in tasks:
+        result = chain.invoke(task)
+        print(f"{task['source_lang']}→{task['target_lang']}: {task['text']}")
+        print(f"  译文: {result}")
     print()
 
 
 # =============================================================================
-# 示例 3: 笑话生成 Chain
+# 示例 3: 可复用的 Chain 工厂函数
 # =============================================================================
 
-def joke_generator_chain():
+def reusable_chain_factory():
     """
-    创建一个笑话生成链
-    """
-    print("=" * 60)
-    print("示例 3: 笑话生成 Chain（有趣）")
-    print("=" * 60)
+    演示如何把 Chain 封装成函数，方便在多处复用。
 
-    from langchain_core.prompts import PromptTemplate
-    from langchain_ollama import ChatOllama
-    from langchain_core.output_parsers import StrOutputParser
+    核心概念：
+    - Chain 工厂函数 = 一个"生产 Chain 的函数"
+    - 好处：一次编写，到处使用；修改只需改一处
 
-    # 笑话生成 Chain
-    prompt = PromptTemplate.from_template("""
-你是一位幽默大师，请根据主题生成一个冷笑话。
-
-主题：{topic}
-
-要求：
-1. 简短（50 字以内）
-2. 有创意
-3. 结尾有意想不到的反转
-
-冷笑话：""")
-
-    model = ChatOllama(model="qwen3.5:2b")
-    parser = StrOutputParser()
-
-    chain = prompt | model | parser
-
-    # 生成笑话
-    topics = ["程序员", "爱情", "工作", "学习"]
-
-    for topic in topics:
-        joke = chain.invoke({"topic": topic})
-        print(f"【{topic}】{joke}")
-    print()
-
-
-# =============================================================================
-# 示例 4: 诗歌创作 Chain
-# =============================================================================
-
-def poem_chain():
-    """
-    创建一个诗歌创作链
+    生活化比喻：
+    直接创建 Chain = 每次想吃包子就自己和面、调馅、蒸
+    工厂函数       = 写一个"做包子"的菜谱，想吃了照着做就行
     """
     print("=" * 60)
-    print("示例 4: 诗歌创作 Chain（文艺）")
+    print("示例 3: 可复用的 Chain 工厂函数")
     print("=" * 60)
 
-    from langchain_core.prompts import PromptTemplate
-    from langchain_ollama import ChatOllama
-    from langchain_core.output_parsers import StrOutputParser
-
-    # 诗歌创作 Chain
-    prompt = PromptTemplate.from_template("""
-你是一位诗人，请以"{topic}"为题，写一首四句短诗。
-
-要求：
-1. 每句 5-7 个字
-2. 有意境
-3. 押韵更好
-
-短诗：""")
-
-    model = ChatOllama(model="qwen3.5:2b")
-    parser = StrOutputParser()
-
-    chain = prompt | model | parser
-
-    # 创作诗歌
-    topics = ["春天", "月亮", "思念", "人生"]
-
-    for topic in topics:
-        print(f"【{topic}】")
-        poem = chain.invoke({"topic": topic})
-        print(poem)
-        print()
-
-
-# =============================================================================
-# 示例 5: 可复用的 Chain 函数
-# =============================================================================
-
-def reusable_chain_function():
-    """
-    把 Chain 封装成函数，方便复用
-    """
-    print("=" * 60)
-    print("示例 5: 可复用的 Chain 函数")
-    print("=" * 60)
-
-    from langchain_core.prompts import PromptTemplate
-    from langchain_ollama import ChatOllama
-    from langchain_core.output_parsers import StrOutputParser
-
-    def create_translation_chain(source_lang, target_lang):
+    def create_translator(source_lang: str, target_lang: str):
         """
-        创建翻译 Chain 的工厂函数
+        创建一个特定语言方向的翻译 Chain。
 
         Args:
             source_lang: 源语言
             target_lang: 目标语言
 
         Returns:
-            一个可以直接调用的 chain
+            一个配置好的翻译 Chain，调用时只需传入 {"text": "..."}
         """
         prompt = PromptTemplate.from_template(f"""
 你是一位专业翻译，请将文本从{source_lang}翻译成{target_lang}。
+只输出翻译结果，不要解释。
 
-要求：
-1. 保持原意
-2. 只输出翻译结果
-
-原文：{{text}}
+原文：{{{{text}}}}
 
 译文：""")
-
         model = ChatOllama(model="qwen3.5:2b")
-        parser = StrOutputParser()
+        return prompt | model | StrOutputParser()
 
-        return prompt | model | parser
+    # 创建两个不同方向的翻译 Chain
+    en_to_zh = create_translator("英语", "中文")
+    zh_to_en = create_translator("中文", "英语")
 
-    # 创建特定方向的翻译链
-    en_to_zh = create_translation_chain("英语", "中文")
-    zh_to_en = create_translation_chain("中文", "英语")
-
-    # 使用
-    print("英译中：")
-    result = en_to_zh.invoke({"text": "Artificial intelligence is amazing!"})
-    print(result)
-    print()
-
-    print("中译英：")
-    result = zh_to_en.invoke({"text": "中国的历史文化非常悠久。"})
-    print(result)
+    # 使用时只需传 {text}
+    print("英→中:", en_to_zh.invoke({"text": "Artificial intelligence is amazing!"}))
+    print("中→英:", zh_to_en.invoke({"text": "中国的历史文化非常悠久。"}))
     print()
 
 
@@ -288,8 +203,8 @@ def reusable_chain_function():
 
 if __name__ == '__main__':
     print("\n" + "=" * 70)
-    print("  简单链 - Simple Chain")
-    print("  说明：用 Pipeline 组合组件")
+    print("  简单链 — LCEL Pipeline")
+    print("  用 | 操作符串联 Prompt → Model → Parser")
     print("=" * 70 + "\n")
 
     print("【运行前检查】")
@@ -297,13 +212,11 @@ if __name__ == '__main__':
     print("  2. 已下载模型：ollama pull qwen3.5:2b")
     print()
 
-    # 运行示例
-    review_pipeline()
+    # ★ 按顺序运行：从基础到实用
+    three_stage_pipeline()
     translation_chain()
-    joke_generator_chain()
-    poem_chain()
-    reusable_chain_function()
+    reusable_chain_factory()
 
     print("=" * 70)
-    print("  接下来学习：sequential_chain.py（多步骤链）")
+    print("  接下来学习：sequential_chain.py（多步骤顺序链）")
     print("=" * 70 + "\n")

@@ -1,287 +1,104 @@
 # =============================================================================
-# 缓冲区记忆
+# 记忆策略 — 完整记忆 vs 窗口记忆
 # =============================================================================
-#  
-# 用途：教学演示 - 使用不同类型的 Memory 管理对话历史
 #
-# 核心概念：
-#   - ConversationBufferMemory = "完整聊天记录"
-#   - 限制长度的原因（成本、上下文限制）
+# 学完本文件你将能够：
+#   ✅ 理解不同记忆策略的适用场景
+#   ✅ 使用 ConversationBufferMemory（完整记忆）和 WindowMemory（滑动窗口）
 # =============================================================================
 
-# -----------------------------------------------------------------------------
-# 运行前检查
-# -----------------------------------------------------------------------------
-# 1. 已安装 Ollama 服务
-# 2. 已下载模型：ollama pull qwen3.5:2b
-# -----------------------------------------------------------------------------
-
-# 设置 UTF-8 编码（Windows 专用）
 import sys
 import io
-sys.stdout = io.TextIOWrapper(
-    sys.stdout.buffer,
-    encoding='utf-8',
-    errors='replace',
-    line_buffering=True
-)
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
 
 
-# =============================================================================
-# 第一部分：Memory 的类型
-# =============================================================================
 """
-LangChain 提供的 Memory 类型：
+记忆策略对比:
 
-📋 ConversationBufferMemory
-   - 保存完整的聊天记录
-   - 适合：短对话、需要完整上下文的场景
-   - 缺点：对话长了会消耗大量 token
+  ConversationBufferMemory（完整记忆）
+    保存所有对话，一字不漏
+    适合: 短对话、需要完整上下文
+    缺点: 对话长了消耗大量 Token（成本高、速度慢）
 
-✂️ ConversationBufferWindowMemory
-   - 只保存最近的 K 轮对话
-   - 适合：长对话、节省 token
-   - 类似：滑动窗口
+  ConversationBufferWindowMemory（窗口记忆）
+    只保留最近 K 轮对话，旧的自动丢弃
+    适合: 长对话、节省 Token
+    类似: 手机短信——往上翻只能看到最近几条
 
-📝 ConversationSummaryMemory
-   - 用 AI 总结历史对话
-   - 适合：超长对话
-   - 类似：把厚书读薄
-
-💬 ConversationSummaryBufferMemory
-   - 结合窗口和总结
-   - 最近对话保留原文，更早的总结
-   - 最佳平衡
+  生活化比喻:
+    Buffer = 录像机（全程录制，但硬盘会满）
+    Window = 行车记录仪（循环覆盖，只保留最近一段）
 """
 
+from langchain_core.messages import HumanMessage, AIMessage
+from langchain_classic.memory import ConversationBufferMemory, ConversationBufferWindowMemory
+
 
 # =============================================================================
-# 示例 1: ConversationBufferMemory 详解
+# 示例 1: 完整记忆 — 保存所有对话
 # =============================================================================
 
-def buffer_memory_details():
+def buffer_memory_demo():
     """
-    详细了解 ConversationBufferMemory
+    ConversationBufferMemory 保存完整的聊天记录。
+
+    save_context({"input": ..., "output": ...})  — 每次存一对问答
+    load_memory_variables({})["chat_history"]     — 取出所有历史
     """
-    print("=" * 60)
-    print("示例 1: ConversationBufferMemory 详解")
-    print("=" * 60)
+    print(f"\n-- 示例 1: 完整记忆（Buffer）")
 
-    from langchain_classic.memory import ConversationBufferMemory
-    from langchain_core.messages import HumanMessage, AIMessage
+    memory = ConversationBufferMemory(return_messages=True)
 
-    # 创建 Memory
-    memory = ConversationBufferMemory(
-        memory_key="chat_history",
-        return_messages=True  # 返回消息对象列表
-    )
-
-    # 保存对话
-    print("保存对话...")
     memory.save_context(
         {"input": "你好，我叫小明。"},
-        {"output": "你好小明！很高兴认识你。"}
+        {"output": "你好小明！很高兴认识你。"},
     )
     memory.save_context(
         {"input": "我今年 10 岁。"},
-        {"output": "10 岁正是学习的好年纪！"}
+        {"output": "10 岁正是学习的好年纪！"},
     )
     memory.save_context(
         {"input": "我喜欢打篮球。"},
-        {"output": "篮球是一项很好的运动！"}
+        {"output": "篮球是一项很好的运动！"},
     )
 
-    # 查看历史
     history = memory.load_memory_variables({})["chat_history"]
-    print(f"\n历史对话数量：{len(history)}")
-    print(f"历史对话类型：{type(history)}")
-
-    for i, msg in enumerate(history, 1):
-        print(f"  {i}. {type(msg).__name__}: {msg.content[:30]}...")
-
-    print()
-
-    # 获取对话字符串
-    buffer = memory.load_memory_variables({})["chat_history"]
-    print("完整对话字符串:")
-    for msg in buffer:
-        if isinstance(msg, HumanMessage):
-            print(f"  用户：{msg.content}")
-        else:
-            print(f"  AI: {msg.content}")
-    print()
+    print(f"  历史消息数: {len(history)} 条")
+    for msg in history:
+        role = "用户" if isinstance(msg, HumanMessage) else "AI"
+        print(f"    {role}: {msg.content}")
 
 
 # =============================================================================
-# 示例 2: ConversationBufferWindowMemory（窗口记忆）
+# 示例 2: 窗口记忆 — 只保留最近 K 轮
 # =============================================================================
 
-def window_memory_example():
+def window_memory_demo():
     """
-    使用窗口记忆，只保留最近的对话
+    ConversationBufferWindowMemory 只保留最近 K 轮对话。
 
-    适合长对话场景，节省 token
+    k=3 表示只保留最近 3 轮。旧消息自动丢弃，节省 Token。
     """
-    print("=" * 60)
-    print("示例 2: ConversationBufferWindowMemory（窗口记忆）")
-    print("=" * 60)
+    print(f"\n-- 示例 2: 窗口记忆（Window, k=3）")
 
-    from langchain_classic.memory import ConversationBufferWindowMemory
-    from langchain_core.messages import HumanMessage, AIMessage
+    memory = ConversationBufferWindowMemory(k=3, return_messages=True)
 
-    # k=2 表示只保留最近 2 轮对话
-    memory = ConversationBufferWindowMemory(
-        k=3,
-        return_messages=True
-    )
-
-    print("保存 5 轮对话（但只保留最近 2 轮）...\n")
-
-    # 保存多轮对话
     conversations = [
-        ("第 1 轮：你好", "你好！有什么可以帮你？"),
-        ("第 2 轮：今天天气不错", "是啊，适合出去玩！"),
-        ("第 3 轮：我想去公园", "公园是个好选择！"),
-        ("第 4 轮：有什么推荐的活动吗", "可以散步、野餐！"),
-        ("第 5 轮：好的谢谢", "不客气，玩得开心！"),
+        ("第1轮：你好", "你好！有什么可以帮你？"),
+        ("第2轮：今天天气不错", "是啊，适合出去玩！"),
+        ("第3轮：我想去公园", "公园是个好选择！"),
+        ("第4轮：有什么推荐的活动", "可以散步、野餐！"),
+        ("第5轮：好的谢谢", "不客气，玩得开心！"),
     ]
 
-    for user_input, ai_response in conversations:
-        memory.save_context(
-            {"input": user_input},
-            {"output": ai_response}
-        )
-        print(f"保存：{user_input} → {ai_response}")
+    for user_msg, ai_msg in conversations:
+        memory.save_context({"input": user_msg}, {"output": ai_msg})
 
-    # 查看历史（只应该有最近 2 轮）
-    memory_vars = memory.load_memory_variables({})
-    # 新版本可能使用不同的键名
-    history = memory_vars.get("chat_history", memory_vars.get("history", []))
-    print(f"\n实际保留的历史数量：{len(history)}")
-    print("(因为 k=2，所以只保留最近 2 轮 = 4 条消息)")
-
+    history = memory.load_memory_variables({}).get("chat_history", [])
+    print(f"  保存了 5 轮，但只保留 {len(history)} 条消息（最近 3 轮）")
     for msg in history:
-        print(f"  {type(msg).__name__}: {msg.content}")
-    print()
-
-
-# =============================================================================
-# 示例 3: 带记忆的对话链
-# =============================================================================
-
-def conversation_chain():
-    """
-    使用 ConversationChain 创建带记忆的对话
-
-    ConversationChain 是 LangChain 封装好的对话链
-    """
-    print("=" * 60)
-    print("示例 3: ConversationChain（封装好的对话链）")
-    print("=" * 60)
-
-    from langchain_ollama import ChatOllama
-    from langchain_classic.memory import ConversationBufferMemory
-    from langchain_classic.chains import ConversationChain
-    from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-
-    # 创建模型
-    model = ChatOllama(model="qwen3.5:2b")
-
-    # 创建记忆
-    memory = ConversationBufferMemory(return_messages=True)
-
-    # 创建对话链
-    # ConversationChain = Prompt + Model + Memory 的封装
-    chain = ConversationChain(
-        llm=model,
-        memory=memory,
-        prompt=ChatPromptTemplate.from_messages([
-            ("system", "你是一位友好、有帮助的助手。"),
-            MessagesPlaceholder(variable_name="history"),
-            ("human", "{input}"),
-        ])
-    )
-
-    print("开始对话（输入 'quit' 退出）\n")
-
-    while True:
-        user_input = input("你：").strip()
-        if user_input.lower() == 'quit':
-            break
-
-        response = chain.invoke({"input": user_input})
-        print(f"AI: {response['response']}")
-        print()
-
-
-# =============================================================================
-# 示例 4: 实际应用场景 - 客服机器人
-# =============================================================================
-
-def customer_service_bot():
-    """
-    模拟客服机器人
-
-    需要记住用户的问题和之前的对话
-    """
-    print("=" * 60)
-    print("示例 4: 客服机器人（实际应用）")
-    print("=" * 60)
-    print("(输入 'quit' 退出)\n")
-
-    from langchain_ollama import ChatOllama
-    from langchain_classic.memory import ConversationBufferMemory
-    from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-
-    # 系统提示词
-    system_prompt = """你是一位电商客服助手，负责回答用户关于订单、物流、售后等问题。
-要求：
-1. 态度友好、专业
-2. 回答简洁明了
-3. 如果不知道具体信息，引导用户提供订单号"""
-
-    # 创建记忆
-    memory = ConversationBufferMemory(
-        memory_key="chat_history",
-        return_messages=True
-    )
-
-    # 创建 Prompt
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", system_prompt),
-        # 使用 MessagesPlaceholder 注入历史对话
-        MessagesPlaceholder(variable_name="chat_history"),
-        ("human", "{input}"),
-    ])
-
-    model = ChatOllama(model="qwen3.5:2b")
-
-    print("客服机器人已启动！")
-    print("可以问：我的订单到哪了？怎么退换货？etc.\n")
-
-    while True:
-        user_input = input("你：").strip()
-        if user_input.lower() == 'quit':
-            break
-
-        # 从记忆对象中获取历史的对话记录
-        chat_history = memory.load_memory_variables({})["chat_history"]
-
-        # 调用，带有完整记忆的调用
-        messages = prompt.format_messages(
-            chat_history=chat_history,
-            input=user_input
-        )
-        response = model.invoke(messages)
-
-        print(f"客服：{response.content}")
-        print()
-
-        # 当大模型最近一次返回内容后，把内保存到memory中
-        memory.save_context(
-            {"input": user_input},
-            {"output": response.content}
-        )
+        role = "用户" if isinstance(msg, HumanMessage) else "AI"
+        print(f"    {role}: {msg.content}")
 
 
 # =============================================================================
@@ -289,24 +106,9 @@ def customer_service_bot():
 # =============================================================================
 
 if __name__ == '__main__':
-    print("\n" + "=" * 70)
-    print("  缓冲区记忆 - Buffer Memory")
-    print("  说明：不同类型的记忆管理")
-    print("=" * 70 + "\n")
+    print("\n>>> 05_memory/buffer_memory — 记忆策略\n")
 
-    print("【运行前检查】")
-    print("  1. 已安装 Ollama 服务")
-    print("  2. 已下载模型：ollama pull qwen3.5:2b")
-    print()
+    buffer_memory_demo()
+    window_memory_demo()
 
-    # 运行示例
-    # buffer_memory_details()
-    # window_memory_example()
-
-    # 交互式示例（按需运行）
-    conversation_chain()
-    # customer_service_bot()
-
-    print("=" * 70)
-    print("  接下来学习：06_chains/simple_chain.py")
-    print("=" * 70 + "\n")
+    # 接下来学习: 06_chains/simple_chain.py（LCEL Pipeline）

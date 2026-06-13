@@ -73,7 +73,8 @@ python 01_introduction/first_chain.py
 |------|------|------|
 | [prompt_template.py](03_prompt/prompt_template.py) | Prompt 模板基础 | ⭐⭐ |
 | [few_shot_prompt.py](03_prompt/few_shot_prompt.py) | Few-Shot 示例 | ⭐⭐⭐ |
-| [pipeline_prompt.py](03_prompt/pipeline_prompt.py) | Pipeline 组合 | ⭐⭐⭐ |
+
+> 💡 LCEL Pipeline（`|` 操作符）在 [06_chains/simple_chain.py](06_chains/simple_chain.py) 中学习
 
 ### 📚 第四部分：输出解析
 
@@ -112,6 +113,19 @@ python 01_introduction/first_chain.py
 |------|------|------|
 | [qna_bot.py](08_project/qna_bot.py) | 问答机器人 | ⭐⭐⭐⭐ |
 | [research_assistant.py](08_project/research_assistant.py) | 研究助手 | ⭐⭐⭐⭐⭐ |
+
+### 📚 第九部分：Agent 智能体（新范式）
+
+| 文件 | 说明 | 难度 |
+|------|------|------|
+| [tools.py](09_agent/tools.py) | Tool 工具定义 | ⭐⭐⭐⭐ |
+| [agent.py](09_agent/agent.py) | create_agent 创建智能体 | ⭐⭐⭐⭐⭐ |
+| [agent_memory.py](09_agent/agent_memory.py) | Agent 记忆管理 | ⭐⭐⭐⭐⭐ |
+| [middleware.py](09_agent/middleware.py) | 中间件拦截器 | ⭐⭐⭐⭐⭐ |
+| [human_in_the_loop.py](09_agent/human_in_the_loop.py) | 人在回路审批 | ⭐⭐⭐⭐⭐ |
+
+> 💡 09_agent 模块使用 LangChain 1.0+ 的 `create_agent` API，是官方推荐的现代写法。
+> 01-08 模块中的 Chain/Prompt/Parser 概念是 Agent 内部的"积木块"。
 
 ## 学习建议
 

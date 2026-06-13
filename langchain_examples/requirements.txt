@@ -8,11 +8,23 @@ langchain-community>=0.3.0
 langchain-openai>=0.2.0
 langchain-ollama>=0.2.0
 
+# Agent 相关（09_agent 模块需要）
+langgraph>=0.2.0
+
 # 数据处理
 pydantic>=2.0.0
 
 # 环境变量管理
 python-dotenv>=1.0.0
 
-# 文本嵌入（用于 RAG）
+# 文本分块（用于 RAG）
 langchain-text-splitters>=0.3.0
+
+# 可选：向量检索（07_retrieval 模块）
+# langchain-huggingface
+# faiss-cpu
+# sentence-transformers
+
+# 可选：文档加载
+# pypdf
+# python-docx

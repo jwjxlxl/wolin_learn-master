@@ -10,6 +10,8 @@ from rag_examples.utils.helpers import (
     ensure_env_loaded,
     get_api_key,
     safe_milvus_operation,
+    format_score,
+    truncate_text,
 )
 
 
@@ -17,4 +19,6 @@ __all__ = [
     "ensure_env_loaded",
     "get_api_key",
     "safe_milvus_operation",
+    "format_score",
+    "truncate_text",
 ]

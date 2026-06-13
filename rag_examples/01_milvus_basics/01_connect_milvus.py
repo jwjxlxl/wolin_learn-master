@@ -53,7 +53,7 @@ def connect_with_auth():
     uri = f"http://{host}:{port}"
 
     user = "root"
-    password = "Milvus"
+    password = "Milvus"  # Milvus 默认密码，生产环境应通过环境变量读取
 
     print(f"正在连接到 {uri}...")
     print(f"用户：{user}")

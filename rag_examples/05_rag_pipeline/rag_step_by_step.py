@@ -7,11 +7,9 @@
 # 适合：想深入理解每个步骤原理的学习者
 # =============================================================================
 
-# 导入 Milvus 配置（优先使用 Docker Milvus）
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from milvus_config import MILVUS_URI
+# 从项目根目录（wolin_learn-master/）运行本文件：
+#   python rag_examples/05_rag_pipeline/rag_step_by_step.py
+from rag_examples.milvus_config import MILVUS_URI, DEFAULT_DIMENSION
 
 
 # =============================================================================
@@ -27,9 +25,7 @@ def step1_load_documents():
     - .json JSON 格式文件
     - .md   Markdown 文件
     """
-    print("=" * 60)
-    print("步骤 1: 文档加载")
-    print("=" * 60)
+    print(f"\n-- 步骤 1: 文档加载")
 
     # 示例：加载纯文本文件
     sample_docs = [
@@ -62,10 +58,7 @@ def step2_document_chunking(documents, chunk_size=100, chunk_overlap=20):
         chunk_size: 每个切片的大小
         chunk_overlap: 切片之间的重叠
     """
-    print()
-    print("=" * 60)
-    print("步骤 2: 文档切片")
-    print("=" * 60)
+    print(f"\n-- 步骤 2: 文档切片")
     print(f"切片参数：chunk_size={chunk_size}, chunk_overlap={chunk_overlap}")
 
     chunks = []
@@ -92,15 +85,12 @@ def step3_embedding(chunks):
 
     注：这里用随机向量模拟，实际应该用真实的 Embedding 模型
     """
-    print()
-    print("=" * 60)
-    print("步骤 3: Embedding 向量化")
-    print("=" * 60)
+    print(f"\n-- 步骤 3: Embedding 向量化")
 
     import random
     random.seed(42)
 
-    dim = 768  # 向量维度
+    dim = DEFAULT_DIMENSION  # 向量维度（1024，与 text-embedding-v4 一致）
     embeddings = []
 
     for chunk in chunks:
@@ -128,10 +118,7 @@ def step4_store_to_milvus(chunks, embeddings, collection_name="rag_demo"):
     """
     from pymilvus import MilvusClient
 
-    print()
-    print("=" * 60)
-    print("步骤 4: 存入 Milvus")
-    print("=" * 60)
+    print(f"\n-- 步骤 4: 存入 Milvus")
 
     client = MilvusClient(uri=MILVUS_URI)
 
@@ -142,7 +129,7 @@ def step4_store_to_milvus(chunks, embeddings, collection_name="rag_demo"):
     # 创建 Collection
     client.create_collection(
         collection_name=collection_name,
-        dimension=768,
+        dimension=DEFAULT_DIMENSION,
         auto_id=True,
         metric_type="COSINE"
     )
@@ -177,15 +164,12 @@ def step5_vector_search(client, collection_name, query, top_k=3):
     """
     import random
 
-    print()
-    print("=" * 60)
-    print("步骤 5: 向量检索")
-    print("=" * 60)
+    print(f"\n-- 步骤 5: 向量检索")
     print(f"查询：{query}")
 
     # 模拟查询向量
     random.seed(hash(query) % 10000)
-    query_vector = [random.uniform(-1, 1) for _ in range(768)]
+    query_vector = [random.uniform(-1, 1) for _ in range(DEFAULT_DIMENSION)]
 
     # 执行检索
     results = client.search(
@@ -217,10 +201,7 @@ def step6_rag_qna(contexts, question):
         contexts: 检索到的相关文档
         question: 用户问题
     """
-    print()
-    print("=" * 60)
-    print("步骤 6: RAG 问答")
-    print("=" * 60)
+    print(f"\n-- 步骤 6: RAG 问答")
     print(f"问题：{question}")
 
     # 构建 Prompt
@@ -264,10 +245,7 @@ def full_pipeline_summary():
     """
     完整流程总结
     """
-    print()
-    print("=" * 60)
-    print("RAG 流程总结")
-    print("=" * 60)
+    print(f"\n-- RAG 流程总结")
 
     print("""
 ┌─────────────────────────────────────────────────────────┐

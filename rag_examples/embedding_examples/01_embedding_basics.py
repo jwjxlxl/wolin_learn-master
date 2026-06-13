@@ -285,6 +285,7 @@ def visualize_embeddings():
     用简化的方式演示向量可视化
 
     真实向量是高维的（768 维、1024 维），
+    本项目统一使用 1024 维（text-embedding-v4），
     这里用 2D 演示帮助理解
     """
     print()

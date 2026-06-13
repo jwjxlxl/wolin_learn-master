@@ -8,11 +8,9 @@
 #   文档 → 切片 → Embedding → Milvus → 检索 → 问答
 # =============================================================================
 
-# 导入 Milvus 配置（优先使用 Docker Milvus）
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from milvus_config import MILVUS_URI, DEFAULT_DIMENSION
+# 从项目根目录（wolin_learn-master/）运行本文件：
+#   python rag_examples/05_rag_pipeline/rag_minimal.py
+from rag_examples.milvus_config import MILVUS_URI, DEFAULT_DIMENSION
 
 
 # =============================================================================

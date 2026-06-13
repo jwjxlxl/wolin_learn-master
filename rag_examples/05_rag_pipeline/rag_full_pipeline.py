@@ -16,18 +16,14 @@
 # 3. 配置 API Key：确保 .env 文件中配置了 ALIYUN_API_KEY 或 DASHSCOPE_API_KEY
 # -----------------------------------------------------------------------------
 
-# 设置 UTF-8 编码（Windows 专用）
+# 从项目根目录（wolin_learn-master/）运行本文件：
+#   python rag_examples/05_rag_pipeline/rag_full_pipeline.py
 
 # 加载 .env 文件中的环境变量
 from dotenv import load_dotenv
 load_dotenv()
 
-# 导入 Milvus 配置（优先使用 Docker Milvus）
-import sys
-import os
-# 添加父目录到路径，允许导入配置
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from milvus_config import MILVUS_URI
+from rag_examples.milvus_config import MILVUS_URI
 
 
 
@@ -596,15 +592,9 @@ def demo_full_pipeline():
     print("         RAG 完整流程演示")
     print("=" * 70)
 
-    # 导入 Milvus 配置（使用远程 Milvus 服务）
-    import sys
-    import os
-    sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-    from milvus_config import MILVUS_URI
-
     # 初始化 Pipeline（使用阿里云 Embedding API）
     pipeline = RAGPipeline(
-        milvus_uri=MILVUS_URI,  # 使用远程 Milvus 服务
+        milvus_uri=MILVUS_URI,  # 已在文件顶部从 milvus_config 导入
         collection_name="demo_rag",
         dim=1024  # text-embedding-v4 维度
     )

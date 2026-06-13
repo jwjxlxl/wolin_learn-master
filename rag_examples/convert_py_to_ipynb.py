@@ -305,38 +305,47 @@ def convert_py_to_ipynb(py_path, ipynb_path):
 
 
 def main():
-    # 定义要转换的文件列表
-    base_dir = r"c:\沃林AI课程\AI0226_0309课程\wolin_learn-master\rag_examples"
+    # 使用脚本所在目录作为基准路径
+    base_dir = os.path.dirname(os.path.abspath(__file__))
     
     files_to_convert = [
         # 01_milvus_basics
+        ("01_milvus_basics/01_connect_milvus.py", "01_milvus_basics/01_connect_milvus.ipynb"),
         ("01_milvus_basics/02_create_collection.py", "01_milvus_basics/02_create_collection.ipynb"),
         ("01_milvus_basics/03_insert_data.py", "01_milvus_basics/03_insert_data.ipynb"),
         ("01_milvus_basics/04_create_index.py", "01_milvus_basics/04_create_index.ipynb"),
-        
+
         # 02_document_chunking
         ("02_document_chunking/01_fixed_chunking.py", "02_document_chunking/01_fixed_chunking.ipynb"),
         ("02_document_chunking/02_sliding_window.py", "02_document_chunking/02_sliding_window.ipynb"),
         ("02_document_chunking/03_ai_chunking.py", "02_document_chunking/03_ai_chunking.ipynb"),
         ("02_document_chunking/04_summary_chunking.py", "02_document_chunking/04_summary_chunking.ipynb"),
         ("02_document_chunking/05_chunking_comparison.py", "02_document_chunking/05_chunking_comparison.ipynb"),
-        
+
         # 03_retrieval_methods
         ("03_retrieval_methods/01_scalar_query.py", "03_retrieval_methods/01_scalar_query.ipynb"),
         ("03_retrieval_methods/02_vector_search.py", "03_retrieval_methods/02_vector_search.ipynb"),
         ("03_retrieval_methods/03_keyword_search.py", "03_retrieval_methods/03_keyword_search.ipynb"),
         ("03_retrieval_methods/04_hybrid_search.py", "03_retrieval_methods/04_hybrid_search.ipynb"),
         ("03_retrieval_methods/05_rerank.py", "03_retrieval_methods/05_rerank.ipynb"),
-        
+
         # 04_rag_api
         ("04_rag_api/rag_qna_api.py", "04_rag_api/rag_qna_api.ipynb"),
         ("04_rag_api/rag_retrieval_api.py", "04_rag_api/rag_retrieval_api.ipynb"),
-        
+
         # 05_rag_pipeline
         ("05_rag_pipeline/rag_full_pipeline.py", "05_rag_pipeline/rag_full_pipeline.ipynb"),
         ("05_rag_pipeline/rag_minimal.py", "05_rag_pipeline/rag_minimal.ipynb"),
         ("05_rag_pipeline/rag_step_by_step.py", "05_rag_pipeline/rag_step_by_step.ipynb"),
-        
+
+        # 06_rag_advanced
+        ("06_rag_advanced/01_hybrid_search_advanced.py", "06_rag_advanced/01_hybrid_search_advanced.ipynb"),
+        ("06_rag_advanced/02_dual_collection_design.py", "06_rag_advanced/02_dual_collection_design.ipynb"),
+        ("06_rag_advanced/03_from_mock_to_real.py", "06_rag_advanced/03_from_mock_to_real.ipynb"),
+
+        # 06_rag_evaluation
+        ("06_rag_evaluation/01_rag_evaluation.py", "06_rag_evaluation/01_rag_evaluation.ipynb"),
+
         # embedding_examples
         ("embedding_examples/01_embedding_basics.py", "embedding_examples/01_embedding_basics.ipynb"),
         ("embedding_examples/02_aliyun_embedding.py", "embedding_examples/02_aliyun_embedding.ipynb"),

@@ -159,6 +159,13 @@ MILVUS_DB_NAME=default
 - **P1 — 工程规范**：`__init__.py` 移除 sys.path hack 改用相对导入；`rag_full_pipeline.py` 删除重复 sys.path；05_rag_pipeline 统一导入方式（3 文件）；`rag_step_by_step.py` 7 处分隔符统一；`utils/__init__.py` 补全导出；`convert_py_to_ipynb.py` 补全 06 系列模块 + 修复硬编码路径
 - **P2 — 教学润色**：`01_connect_milvus.py` 默认密码安全注释；`01_embedding_basics.py` 维度标准标注
 
+### 2026-06-13 — rag_demo 规范化修复
+
+- **文件重命名**：`qa_paris.json` → `qa_sanguo.json`（文件名与三国内容一致），同步更新 README
+- **代码清理**：删除 `rag_query.py` 25 行注释死代码（加权排序示例）；清理 `vdb_init_milvus.py` 残留 TODO
+- **文件头补全**：`vdb_init_milvus.py` 添加 `# ====` 格式文件头 docstring
+- **包完整性**：添加 `db/__init__.py` 使其成为正式 Python 包
+
 ### 2026-06-11 — rag_examples + rag_demo 修复与增强
 
 - **维度统一**：全部改为 1024 维，修正 13+ 处不一致

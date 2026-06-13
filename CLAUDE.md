@@ -61,10 +61,26 @@
 
 ### rag_examples/ 专属（RAG + Milvus 主课程）
 
+| # | 模块 | 内容 | 默认模型 |
+|---|------|------|----------|
+| 00 | `00_setup/` | 环境搭建指南 | 无需模型 |
+| 01 | `01_milvus_basics/` | Milvus 连接 / Collection / 插入 / 索引 | 模拟向量 |
+| 02 | `02_document_chunking/` | 固定切片 / 滑动窗口 / AI 切片 / 概要 / 对比 | 可选 Qwen |
+| 03 | `03_retrieval_methods/` | 标量查询 / 向量 / 关键字 / 混合 / Rerank | 模拟向量 |
+| 04 | `04_rag_api/` | RAG 检索 API + 问答 API 封装 | Qwen |
+| 05 | `05_rag_pipeline/` | RAG 最小版 / 分步详解 / 完整流程 | Qwen |
+| 06 | `06_rag_advanced/` | 混合检索进阶 / 双集合设计 / Mock→Real | Qwen |
+| 07 | `06_rag_evaluation/` | RAGAS 四指标评估 | 无需模型 |
+| — | `embedding_examples/` | Embedding 基础 / 阿里云 / 本地 / 对比 | 阿里云 API |
+
 - 配置入口：`milvus_config.py`（`DEFAULT_DIMENSION = 1024`、`MILVUS_URI`、`MILVUS_DB_NAME`）
-- `.ipynb` 转换脚本：`convert_py_to_ipynb.py`
-- 语法验证：`run_tests.py`（同时支持 .py 和 .ipynb）
-- 新增模块后需同步更新 `run_tests.py` 的 `modules_*` 列表
+- 导入方式：**统一使用** `from rag_examples.milvus_config import MILVUS_URI, DEFAULT_DIMENSION`，**禁止** `sys.path.insert()` hack 导入包内模块
+- `.ipynb` 转换脚本：`convert_py_to_ipynb.py`（8 个模块 27 个 notebook）
+- 语法验证：`run_tests.py`（同时支持 .py 和 .ipynb，含降级逻辑）
+- 共享工具：`utils/helpers.py`（`ensure_env_loaded` / `get_api_key` / `safe_milvus_operation` / `format_score` / `truncate_text`）
+- 新增模块后需同步更新 `run_tests.py` 的 `modules_*` 列表和 `convert_py_to_ipynb.py` 的 `files_to_convert` 列表
+- `.py` 是源文件（规范格式），`.ipynb` 通过转换脚本生成。**所有模块必须有对应的 .py 文件**
+- 每个教学文件用 `print(f"\n-- 示例 N: 标题")` 分隔
 
 ### rag_demo/ 专属（综合实战项目）
 
@@ -136,6 +152,12 @@ MILVUS_DB_NAME=default
 - **.ipynb 批量生成**：编写 `convert_py_to_ipynb.py`（状态机架构），24/24 转换成功
 - **自动剥离**：Windows 编码样板（`sys.stdout = io.TextIOWrapper(...)`）、空单元检测
 - **验证**：215 个单元，JSON 有效、函数完整、中文无乱码、无空单元
+
+### 2026-06-13 — rag_examples 全面规范化修复
+
+- **P0 — 阻塞性修复**：`rag_step_by_step.py` 768→1024 维统一；`02_create_collection.ipynb` 清除硬编码 IP/db_name/768（6 个 cell）；为 02/03/04 模块补建 12 个 .py 源文件
+- **P1 — 工程规范**：`__init__.py` 移除 sys.path hack 改用相对导入；`rag_full_pipeline.py` 删除重复 sys.path；05_rag_pipeline 统一导入方式（3 文件）；`rag_step_by_step.py` 7 处分隔符统一；`utils/__init__.py` 补全导出；`convert_py_to_ipynb.py` 补全 06 系列模块 + 修复硬编码路径
+- **P2 — 教学润色**：`01_connect_milvus.py` 默认密码安全注释；`01_embedding_basics.py` 维度标准标注
 
 ### 2026-06-11 — rag_examples + rag_demo 修复与增强
 

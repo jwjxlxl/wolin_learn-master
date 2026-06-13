@@ -26,7 +26,7 @@ if sys.stderr.encoding and sys.stderr.encoding.lower() != 'utf-8':
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-from utils import model_untils
+from utils.model_utils import get_qwen_client
 
 from dotenv import load_dotenv
 import requests
@@ -316,7 +316,7 @@ def create_amap_skill_agent():
         print("  获取 Key：https://lbs.amap.com/ → 创建应用 → 添加 Key → 选 Web服务")
         return None
 
-    model = model_untils.get_qwen_client()
+    model = get_qwen_client()
     if model is None:
         print("【跳过】未配置阿里云 API Key，无法运行此示例")
         return None

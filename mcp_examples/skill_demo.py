@@ -21,7 +21,7 @@ if sys.stderr.encoding and sys.stderr.encoding.lower() != 'utf-8':
 
 # 添加项目根目录到 Python 路径
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-from utils import model_untils
+from utils.model_utils import get_qwen_client
 
 from langchain.agents import create_agent
 from langchain_core.tools import tool
@@ -184,7 +184,7 @@ def demo2_skill_via_system_prompt():
     print("=" * 70)
     print()
 
-    model = model_untils.get_qwen_client()
+    model = get_qwen_client()
     if model is None:
         print("【跳过】未配置阿里云 API Key，无法运行此示例")
         return
@@ -315,7 +315,7 @@ def demo3_skill_via_function():
     print()
 
     # 在 Agent 中使用
-    model = model_untils.get_qwen_client()
+    model = get_qwen_client()
     if model is None:
         print("【跳过】未配置阿里云 API Key，无法运行此示例")
         return
@@ -361,7 +361,7 @@ def demo4_skill_value():
     print("=" * 70)
     print()
 
-    model = model_untils.get_qwen_client()
+    model = get_qwen_client()
     if model is None:
         print("【跳过】未配置阿里云 API Key，无法运行此示例")
         return

@@ -1,10 +1,7 @@
 from langchain.agents import create_agent
 from langchain_core.messages import HumanMessage
 
-import sys
-import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from utils import model_untils
+from utils.model_utils import get_qwen_client
 
 
 # =============================================================================
@@ -91,7 +88,7 @@ def local_mcp_demo():
     import asyncio
 
     # 实例化大模型的客户端
-    model = model_untils.get_qwen_client()
+    model = get_qwen_client()
     if model is None:
         print("【跳过】未配置阿里云 API Key，无法运行此示例")
         return
@@ -188,7 +185,7 @@ def remote_mcp_demo():
         print("  请在 .env 文件中添加高德地图 API Key：")
         return
 
-    model = model_untils.get_qwen_client()
+    model = get_qwen_client()
     if model is None:
         print("【跳过】未配置阿里云 API Key，无法运行此示例")
         return
@@ -274,7 +271,7 @@ def multi_server_mcp_demo():
         print("【跳过】未配置 AMAP_KEY，请先在 .env 中设置高德地图 Key")
         return
 
-    model = model_untils.get_qwen_client()
+    model = get_qwen_client()
     if model is None:
         print("【跳过】未配置阿里云 API Key，无法运行此示例")
         return
@@ -366,7 +363,7 @@ def github_mcp_demo():
 
     import asyncio
 
-    model = model_untils.get_qwen_client()
+    model = get_qwen_client()
     if model is None:
         print("【跳过】未配置阿里云 API Key，无法运行此示例")
         return

@@ -3,10 +3,7 @@ from langchain.agents import create_agent
 from langgraph_supervisor import create_supervisor
 from langchain_core.tools import tool
 
-import sys
-import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from utils import model_untils
+from utils.model_utils import get_qwen_client
 
 
 # =============================================================================
@@ -173,7 +170,7 @@ def run_multi_agent_demo():
         return
 
     # 获取模型
-    model = model_untils.get_qwen_client()
+    model = get_qwen_client()
     if model is None:
         print("【跳过】未配置阿里云 API Key，无法运行此示例")
         return

@@ -305,12 +305,6 @@ modules_05 = [
     ("05_rag_pipeline/rag_minimal.py", [
         "SimpleRAG"
     ]),
-    ("05_rag_pipeline/rag_step_by_step.py", [
-        "step1_load_documents", "step2_document_chunking",
-        "step3_embedding", "step4_store_to_milvus",
-        "step5_vector_search", "step6_rag_qna",
-        "full_pipeline_summary"
-    ]),
 ]
 
 for file_path, expected_funcs in modules_05:

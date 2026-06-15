@@ -69,7 +69,6 @@
 | 文件 | 内容 | 难度 |
 |------|------|------|
 | [rag_full_pipeline.py](rag_full_pipeline.py) | 完整流程封装 | ⭐⭐⭐ |
-| [rag_step_by_step.py](rag_step_by_step.py) | 分步详解版 | ⭐⭐⭐⭐ |
 | [rag_minimal.py](rag_minimal.py) | 最小可运行版 | ⭐⭐ |
 
 ## 快速开始
@@ -150,4 +149,3 @@ pip install -r ../requirements.txt
 
 1. 先运行 `rag_minimal.py`（最小可运行版，快速建立信心）
 2. 再运行 `rag_full_pipeline.py`（完整版，学习完整流程）
-3. 最后看 `rag_step_by_step.py`（分步详解，理解每个细节）

@@ -41,6 +41,8 @@ def parse_py_file(file_path):
         header_text = '\n'.join(header_lines)
         # 去掉第一组 # ==== 行
         header_text = re.sub(r'^#.*?\n#.*?\n#.*?\n', '', header_text, count=1)
+        # 去掉 docstring 标记（""" 或 '''）
+        header_text = header_text.replace('"""', '').replace("'''", '')
         header_text = convert_py_comments_to_markdown(header_text)
         if header_text.strip():
             cells.append({
@@ -54,7 +56,8 @@ def parse_py_file(file_path):
     func_start_idx = 0
     for i, line in enumerate(lines):
         stripped = line.strip()
-        if stripped.startswith('def '):
+        # 必须是行首的 def（无缩进），避免误捕获内部嵌套函数
+        if line.startswith('def '):
             func_start_idx = i
             break
         # 收集 import / from-import 行
@@ -71,33 +74,35 @@ def parse_py_file(file_path):
             # 非空非 import 行 → import 块结束
             break
 
-    if import_lines:
-        code_text = '\n'.join(import_lines).rstrip('\n')
-        if code_text.strip():
-            cells.append(make_code_cell(code_text))
-
     # ── 3. 提取函数定义 — 每个函数一个完整代码单元 ──
+    # 关键：将 import 行前置到每个函数 cell 中，确保每个 cell 自包含
+    # 这样学生在 Jupyter 中跳着运行 cell 也不会遇到 NameError
+    import_prefix = '\n'.join(import_lines).rstrip('\n') if import_lines else ''
     current_lines = []
 
     for i in range(func_start_idx, len(lines)):
         line = lines[i]
         stripped = line.strip()
 
-        # 遇到 if __name__ 停止
-        if stripped.startswith("if __name__"):
+        # 遇到 if __name__ 停止（必须是行首，无缩进）
+        if line.startswith("if __name__"):
             if current_lines:
                 code_text = '\n'.join(current_lines).rstrip('\n')
                 if code_text.strip():
-                    cells.append(make_code_cell(code_text))
+                    # 前置 import 到函数 cell
+                    full_code = import_prefix + '\n\n\n' + code_text if import_prefix else code_text
+                    cells.append(make_code_cell(full_code))
                 current_lines = []
             break
 
-        # 新函数开始 — 保存上一个
-        if stripped.startswith('def '):
+        # 新函数开始 — 保存上一个（必须是行首的 def，无缩进，避免误捕获内部嵌套函数）
+        if line.startswith('def '):
             if current_lines:
                 code_text = '\n'.join(current_lines).rstrip('\n')
                 if code_text.strip():
-                    cells.append(make_code_cell(code_text))
+                    # 前置 import 到函数 cell
+                    full_code = import_prefix + '\n\n\n' + code_text if import_prefix else code_text
+                    cells.append(make_code_cell(full_code))
             current_lines = [line]
             continue
 
@@ -109,7 +114,9 @@ def parse_py_file(file_path):
     if current_lines:
         code_text = '\n'.join(current_lines).rstrip('\n')
         if code_text.strip():
-            cells.append(make_code_cell(code_text))
+            # 前置 import 到函数 cell
+            full_code = import_prefix + '\n\n\n' + code_text if import_prefix else code_text
+            cells.append(make_code_cell(full_code))
 
     return cells
 

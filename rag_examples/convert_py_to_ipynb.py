@@ -79,13 +79,35 @@ def parse_py_file(file_path):
     # 这样学生在 Jupyter 中跳着运行 cell 也不会遇到 NameError
     import_prefix = '\n'.join(import_lines).rstrip('\n') if import_lines else ''
     current_lines = []
+    in_triple_string = False        # 是否在 """...""" 或 '''...''' 内部
+    triple_quote_type = None        # '"""' 或 "'''"
 
     for i in range(func_start_idx, len(lines)):
         line = lines[i]
         stripped = line.strip()
 
-        # 遇到 if __name__ 停止（必须是行首，无缩进）
-        if line.startswith("if __name__"):
+        # ── 跟踪三引号字符串状态 ──
+        # 统计当前行中 """ 和 ''' 的出现次数
+        dq_count = line.count('"""')
+        sq_count = line.count("'''")
+
+        if not in_triple_string:
+            # 不在字符串中 → 检查是否进入三引号字符串
+            if dq_count % 2 == 1:
+                in_triple_string = True
+                triple_quote_type = '"""'
+            elif sq_count % 2 == 1:
+                in_triple_string = True
+                triple_quote_type = "'''"
+        else:
+            # 在字符串中 → 检查是否退出
+            closing = triple_quote_type
+            if (closing == '"""' and dq_count % 2 == 1) or (closing == "'''" and sq_count % 2 == 1):
+                in_triple_string = False
+                triple_quote_type = None
+
+        # 遇到 if __name__ 停止（必须是行首，且不在三引号字符串内）
+        if not in_triple_string and line.startswith("if __name__"):
             if current_lines:
                 code_text = '\n'.join(current_lines).rstrip('\n')
                 if code_text.strip():
@@ -95,8 +117,8 @@ def parse_py_file(file_path):
                 current_lines = []
             break
 
-        # 新函数开始 — 保存上一个（必须是行首的 def，无缩进，避免误捕获内部嵌套函数）
-        if line.startswith('def '):
+        # 新函数开始 — 保存上一个（必须是行首 def，不在三引号字符串内，避免误捕获）
+        if not in_triple_string and line.startswith('def '):
             if current_lines:
                 code_text = '\n'.join(current_lines).rstrip('\n')
                 if code_text.strip():

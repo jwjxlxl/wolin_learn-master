@@ -95,6 +95,7 @@ def generate_embedding_with_llm(texts, model="text-embedding-v4", api_key=None):
         api_key = os.getenv("DASHSCOPE_API_KEY") or os.getenv("ALIYUN_API_KEY")
         if not api_key:
             raise ValueError("未找到 API Key，请设置环境变量 DASHSCOPE_API_KEY 或 ALIYUN_API_KEY")
+    print("API KEY：", api_key)
 
     client = OpenAI(
         api_key=api_key,
@@ -496,22 +497,24 @@ if __name__ == "__main__":
     print("  Milvus 基础 - 插入数据")
     print("=" * 70 + "\n")
 
-    explain_embedding()
-    print()
+    # explain_embedding()
+    # print()
 
-    insert_single_data()
-    print()
+    generate_embedding_with_llm("我是一支笔")
 
-    insert_batch_data()
-    print()
-
-    insert_with_custom_fields()
-    print()
-
-    insert_with_custom_id()
-    print()
-
-    insert_best_practices()
+    # insert_single_data()
+    # print()
+    #
+    # insert_batch_data()
+    # print()
+    #
+    # insert_with_custom_fields()
+    # print()
+    #
+    # insert_with_custom_id()
+    # print()
+    #
+    # insert_best_practices()
 
     print("\n" + "=" * 70)
     print("  数据插入学习完成！接下来：04_create_index.py（创建索引）")

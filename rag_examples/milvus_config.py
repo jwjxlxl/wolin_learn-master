@@ -18,7 +18,7 @@ load_dotenv()
 # Milvus 连接 URI（从环境变量读取，默认本地 Docker）
 # 本地 Docker：http://localhost:19530
 # Milvus Lite（不支持 Windows）：milvus_demo.db
-MILVUS_URI = os.getenv("MILVUS_URI", "http://localhost:19530")
+MILVUS_URI = os.getenv("MILVUS_URI", "http://192.168.142.128:19530")
 
 # Milvus 数据库名
 MILVUS_DB_NAME = os.getenv("MILVUS_DB_NAME", "default")

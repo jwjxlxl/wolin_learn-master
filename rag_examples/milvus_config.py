@@ -32,6 +32,9 @@ DEFAULT_DIMENSION = 1024
 # 默认度量类型
 DEFAULT_METRIC_TYPE = "COSINE"
 
+# 是否使用真实向量（True）或模拟向量（False）
+USE_REAL_EMBEDDING=True
+
 
 def get_milvus_client():
     """

@@ -13,21 +13,89 @@
 适用场景：语义匹配、跨语言搜索、容错搜索、多模态搜索
 """
 
+import os
 import random
+import time
 from dotenv import load_dotenv
 from pymilvus import MilvusClient
 from rag_examples.milvus_config import MILVUS_URI, DEFAULT_DIMENSION
 
 load_dotenv()
 
+# Embedding 模式控制
+# USE_REAL_EMBEDDING=true 时使用真实 Embedding 模型（需要 ALIYUN_API_KEY）
+# 不设置或设为 false 时使用模拟向量（向后兼容，无需 API Key）
+USE_REAL_EMBEDDING = os.getenv("USE_REAL_EMBEDDING", "false").lower() == "true"
+
 
 # =============================================================================
 # 示例 1: 准备测试数据
 # =============================================================================
 
+def _mock_embedding(text):
+    """
+    生成模拟向量（教学用，无需 API Key）。
+
+    使用 hash(text) 作为 seed，确保相同文本得到相同向量。
+    与原始 semantic_embedding 的机制一致，只是 seed 策略不同。
+    """
+    random.seed(hash(text) % 10000)
+    base = [0.5 if i % 3 == 0 else -0.3 for i in range(DEFAULT_DIMENSION)]
+    # 根据文本内容的前几个字符决定"语义段"位置
+    seed_val = hash(text) % 700
+    base[seed_val:seed_val + 100] = [0.8] * 100
+    vector = [b + random.uniform(-0.1, 0.1) for b in base]
+    return vector
+
+
+def _real_embedding(text):
+    """
+    使用阿里云 text-embedding-v4 生成真实向量（生产用，1024 维）。
+
+    需要设置环境变量 ALIYUN_API_KEY。
+    """
+    api_key = os.getenv("ALIYUN_API_KEY")
+    if not api_key:
+        raise ValueError("使用真实 Embedding 需要设置环境变量 ALIYUN_API_KEY。\n"
+                         "请在 .env 文件中添加：ALIYUN_API_KEY=your_key\n"
+                         "或设置 USE_REAL_EMBEDDING=false 使用模拟向量。")
+
+    try:
+        from openai import OpenAI
+    except ImportError:
+        raise ImportError("需要安装 openai 库：pip install openai")
+
+    client = OpenAI(
+        api_key=api_key,
+        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
+    )
+    response = client.embeddings.create(
+        model="text-embedding-v4",
+        input=text
+    )
+    return response.data[0].embedding
+
+
+def get_embedding(text):
+    """
+    获取文本向量（统一入口）。
+
+    根据 USE_REAL_EMBEDDING 自动选择真实或模拟模式。
+
+    参数:
+        text: 需要向量化的文本
+
+    返回:
+        list[float]: DEFAULT_DIMENSION (1024) 维向量
+    """
+    if USE_REAL_EMBEDDING:
+        return _real_embedding(text)
+    return _mock_embedding(text)
+
+
 def prepare_test_collection():
-    """准备向量检索测试用的 Collection（含语义结构的模拟向量）"""
-    random.seed(42)
+    """准备向量检索测试用的 Collection"""
+    mode_name = "真实 Embedding" if USE_REAL_EMBEDDING else "模拟向量"
 
     client = MilvusClient(uri=MILVUS_URI)
     collection_name = "vector_search_demo"
@@ -52,30 +120,26 @@ def prepare_test_collection():
         {"content": "编程是将人类思维转化为计算机可执行指令的过程。", "category": "Programming"},
     ]
 
-    def semantic_embedding(category, index):
-        """根据类别生成有语义结构的模拟向量"""
-        random.seed(category + str(index))
-        base = [0.5 if i % 3 == 0 else -0.3 for i in range(DEFAULT_DIMENSION)]
-        if category == "AI":
-            base[0:100] = [0.8] * 100
-        elif category == "Product":
-            base[100:200] = [0.8] * 100
-        elif category == "Programming":
-            base[200:300] = [0.8] * 100
-        vector = [b + random.uniform(-0.1, 0.1) for b in base]
-        return vector
+    if USE_REAL_EMBEDDING:
+        print(f"  使用真实 Embedding 模型（text-embedding-v4）生成向量...")
+        start = time.time()
 
     data_to_insert = []
     for i, doc in enumerate(documents):
+        vector = get_embedding(doc["content"])
         data_to_insert.append({
             "content": doc["content"],
             "category": doc["category"],
-            "vector": semantic_embedding(doc["category"], i)
+            "vector": vector
         })
+
+    if USE_REAL_EMBEDDING:
+        elapsed = time.time() - start
+        print(f"  ✓ 向量生成完成，耗时：{elapsed:.1f}s")
 
     client.insert(collection_name, data_to_insert)
 
-    print(f"✓ 已创建测试集合：{collection_name}")
+    print(f"✓ 已创建测试集合：{collection_name}（{mode_name}）")
     print(f"  插入文档数：{len(documents)}")
     print(f"  文档类别：AI(3 条), Product(2 条), Programming(2 条)")
 
@@ -91,8 +155,8 @@ def basic_vector_search(client, collection_name):
 
     # 场景 1: 查询"机器学习是什么"
     print(f"\n-- 示例 2.1: 查询'机器学习是什么'（AI 相关）")
-    random.seed(100)
-    query_vector = [0.8 if i < 100 else random.uniform(-0.2, 0.2) for i in range(DEFAULT_DIMENSION)]
+    query_text = "机器学习是什么"
+    query_vector = get_embedding(query_text)
 
     results = client.search(
         collection_name=collection_name,
@@ -110,8 +174,8 @@ def basic_vector_search(client, collection_name):
 
     # 场景 2: 查询"如何设计产品"
     print(f"\n-- 示例 2.2: 查询'如何设计产品'（Product 相关）")
-    random.seed(200)
-    query_vector = [0.8 if 100 <= i < 200 else random.uniform(-0.2, 0.2) for i in range(DEFAULT_DIMENSION)]
+    query_text = "如何设计一款好用的产品"
+    query_vector = get_embedding(query_text)
 
     results = client.search(
         collection_name=collection_name,
@@ -179,27 +243,35 @@ def batch_vector_search(client, collection_name):
     """一次传入多个查询向量，批量检索"""
     print(f"\n-- 示例 4: 批量向量检索")
 
-    random.seed(42)
-    query_vectors = [
-        [0.8 if i < 100 else random.uniform(-0.2, 0.2) for i in range(DEFAULT_DIMENSION)],
-        [0.8 if 100 <= i < 200 else random.uniform(-0.2, 0.2) for i in range(DEFAULT_DIMENSION)],
-        [0.8 if 200 <= i < 300 else random.uniform(-0.2, 0.2) for i in range(DEFAULT_DIMENSION)],
+    query_texts = [
+        "人工智能的核心技术有哪些？",
+        "如何设计一款好用的产品？",
+        "Python 编程语言的优势是什么？"
     ]
 
-    print("  批量查询 3 个问题向量...\n")
+    if USE_REAL_EMBEDDING:
+        start = time.time()
+
+    query_vectors = [get_embedding(text) for text in query_texts]
+
+    if USE_REAL_EMBEDDING:
+        elapsed = time.time() - start
+        print(f"  ✓ {len(query_texts)} 个向量生成完成，耗时：{elapsed:.1f}s\n")
+    else:
+        print(f"  批量查询 {len(query_texts)} 个文本向量...\n")
 
     results = client.search(
         collection_name=collection_name,
         data=query_vectors,
         limit=2,
-        output_fields=["category"]
+        output_fields=["content", "category"]
     )
 
     categories = ["AI", "产品", "编程"]
     for i, result in enumerate(results):
-        print(f"  【查询向量 {i+1}】（{categories[i]}相关）")
+        print(f"  【查询 {i+1}】{query_texts[i]}（{categories[i]}相关）")
         for j, hit in enumerate(result):
-            print(f"  [{j+1}] 相似度：{hit['distance']:.4f} | 类别：{hit['entity']['category']}")
+            print(f"  [{j+1}] 相似度：{hit['distance']:.4f} | 类别：{hit['entity']['category']} | {hit['entity']['content'][:40]}...")
         print()
 
 
@@ -231,7 +303,7 @@ def search_params_explained(client, collection_name):
 """)
 
     random.seed(99)
-    query_vector = [random.random() for _ in range(DEFAULT_DIMENSION)]
+    query_vector = get_embedding("向量检索有哪些关键参数")
 
     print("  实际检索演示：")
     results = client.search(
@@ -251,56 +323,49 @@ def search_params_explained(client, collection_name):
 # 示例 6: 使用真实 Embedding 模型
 # =============================================================================
 
-def search_with_real_embedding():
-    """展示实际项目中生成查询向量的三种方法"""
-    print(f"\n-- 示例 6: 使用真实 Embedding 模型")
+def embedding_quality_comparison():
+    """对比 mock 和 real embedding 的检索效果差异"""
+    print(f"\n-- 示例 6: Mock vs Real Embedding 效果对比")
     print("""
-  实际项目中如何生成查询向量？
+  ┌─────────────────────────────────────────────────────────┐
+  │ Mock 向量 vs 真实 Embedding 检索效果对比                 │
+  ├─────────────────────────────────────────────────────────┤
+  │                                                         │
+  │ Mock 向量（教学用）：                                    │
+  │   - 使用 hash(text) 生成确定性伪随机向量                 │
+  │   - 特点：无需 API Key，同文本同向量                     │
+  │   - 局限：向量没有真实语义信息                           │
+  │                                                         │
+  │ 真实 Embedding（生产用）：                                │
+  │   - 使用 text-embedding-v4 模型（1024 维）               │
+  │   - 特点：语义相似的文本向量距离近                       │
+  │   - 需要：ALIYUN_API_KEY 环境变量                       │
+  │                                                         │
+  └─────────────────────────────────────────────────────────┘
 
-  方法 1: sentence-transformers（本地模型）
+  当前模式：""" + ("真实 Embedding" if USE_REAL_EMBEDDING else "模拟向量（USE_REAL_EMBEDDING=true 切换）") + """
+
+  如何切换到真实 Embedding？
   ────────────────────────────────────────
-  from sentence_transformers import SentenceTransformer
+  1. 在 .env 文件中添加：ALIYUN_API_KEY=your_key
+  2. 添加：USE_REAL_EMBEDDING=true
+  3. 重新运行本文件
 
-  model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-  query = "什么是机器学习"
-  query_vector = model.encode(query).tolist()
-
-  方法 2: OpenAI Embedding API
+  代码对比：
   ────────────────────────────────────────
+  # Mock 模式（当前）
+  def _mock_embedding(text):
+      random.seed(hash(text) % 10000)
+      return [random.uniform(-1, 1) for _ in range(1024)]
+
+  # Real 模式（需要 API Key）
   from openai import OpenAI
-
-  client = OpenAI(api_key="your-key")
-  response = client.embeddings.create(
-      model="text-embedding-3-small",
-      input="什么是机器学习"
-  )
-  query_vector = response.data[0].embedding
-
-  方法 3: 阿里云百炼 API
-  ────────────────────────────────────────
-  from dashscope import TextEmbedding
-
-  result = TextEmbedding.call(
-      model='text-embedding-v2',
-      input='什么是机器学习'
-  )
-  query_vector = result.output['embeddings'][0]['embedding']
+  def _real_embedding(text):
+      client = OpenAI(api_key=os.getenv("ALIYUN_API_KEY"),
+          base_url="https://dashscope.aliyuncs.com/...")
+      return client.embeddings.create(
+          model="text-embedding-v4", input=text).data[0].embedding
 """)
-
-    print("  模拟流程：")
-    queries = [
-        "人工智能和机器学习有什么关系？",
-        "如何设计一个好的产品？",
-        "Python 适合做什么开发？"
-    ]
-
-    for query in queries:
-        print(f"  用户问题：{query}")
-        print(f"  ↓ Embedding 模型")
-        print(f"  输出：{DEFAULT_DIMENSION} 维向量 [0.023, -0.045, 0.089, ...]")
-        print(f"  ↓ 向量检索")
-        print(f"  返回：Top-3 最相似的文档")
-        print()
 
 
 # =============================================================================
@@ -373,5 +438,5 @@ if __name__ == "__main__":
     metric_type_comparison()
     batch_vector_search(client, collection_name)
     search_params_explained(client, collection_name)
-    search_with_real_embedding()
+    embedding_quality_comparison()
     vector_search_best_practices()

@@ -203,6 +203,7 @@ class SimpleBM25:
         返回:
             (doc_index, score, doc_content) 列表
         """
+        # 词袋
         query_terms = list(query.lower())
 
         scores = []
@@ -229,6 +230,7 @@ def demo_bm25_search():
         print(f"  [{i+1}] {doc[:50]}...")
     print()
 
+    # 实例化SimpleBM25的对象
     bm25 = SimpleBM25(documents)
 
     queries = ["机器学习", "深度学习", "自然语言处理"]
@@ -265,6 +267,7 @@ def bm25_with_library():
         tokenized_docs = [list(jieba.cut(doc)) for doc in documents]
         print(f"  分词完成（共 {sum(len(t) for t in tokenized_docs)} 个词）\n")
 
+        # 使用已经分词的文档进行bm25，采用BM25Okapi
         bm25 = BM25Okapi(tokenized_docs)
 
         queries = [
@@ -451,9 +454,9 @@ if __name__ == "__main__":
     print("  关键字检索（Keyword Search / BM25）")
     print("=" * 70 + "\n")
 
-    simple_keyword_match()
-    demo_bm25_search()
-    bm25_with_library()
-    keyword_vs_vector_search()
-    bm25_parameter_tuning()
+    # simple_keyword_match()
+    # demo_bm25_search()
+    # bm25_with_library()
+    # keyword_vs_vector_search()
+    # bm25_parameter_tuning()
     keyword_search_best_practices()

@@ -455,12 +455,9 @@ if __name__ == '__main__':
     print("  混合检索（Hybrid Search）")
     print("=" * 70 + "\n")
 
-    simple_hybrid_search()
-    rrf_fusion()
-    demo_hybrid_searcher()
+    # simple_hybrid_search()
+    # rrf_fusion()
+    # demo_hybrid_searcher()
     hybrid_search_best_practices()
-    milvus_hybrid_search_info()
+    # milvus_hybrid_search_info()
 
-    print("\n" + "=" * 70)
-    print("  下一步：05_rerank.py（Rerank 重排序）")
-    print("=" * 70 + "\n")

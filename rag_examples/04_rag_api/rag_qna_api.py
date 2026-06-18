@@ -11,7 +11,7 @@
 import os
 import sys
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv(override=True)
 
 from rag_examples.milvus_config import MILVUS_URI, DEFAULT_DIMENSION
 
@@ -475,7 +475,7 @@ if __name__ == "__main__":
     demo_basic_qna()
 
     # 示例 2: Prompt 模板定制
-    demo_custom_prompt()
+    # demo_custom_prompt()
 
     # 示例 3: 完整 RAG 流程解析
-    rag_pipeline_explained()
+    # rag_pipeline_explained()

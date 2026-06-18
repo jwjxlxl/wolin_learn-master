@@ -310,7 +310,7 @@ class RAGRetriever:
         """
         Rerank 重排序
 
-        使用 BGE-Reranker 对检索结果进行重排序
+        使用 BGE-Reranker (CrossEncoder) 对检索结果进行重排序
 
         参数:
             query: 查询文本
@@ -320,21 +320,21 @@ class RAGRetriever:
             重排后的结果列表
         """
         try:
-            from FlagEmbedding import FlagReranker
+            from sentence_transformers import CrossEncoder
 
-            reranker = FlagReranker('BAAI/bge-reranker-large', use_fp16=False)
+            reranker = CrossEncoder('BAAI/bge-reranker-large')
 
             pairs = [[query, r['content']] for r in results]
-            scores = reranker.compute_score(pairs)
+            scores = reranker.predict(pairs)
 
             for i, score in enumerate(scores):
-                results[i]['rerank_score'] = score
+                results[i]['rerank_score'] = float(score)
 
             results.sort(key=lambda x: x.get('rerank_score', 0), reverse=True)
             return results[:top_k]
 
         except ImportError:
-            print("  Rerank 需要安装：pip install FlagEmbedding")
+            print("  Rerank 需要安装：pip install sentence-transformers")
             return results[:top_k]
         except Exception as e:
             print(f"  Rerank 失败：{e}")
@@ -446,7 +446,7 @@ def demo_advanced_retrieval():
     for i, r in enumerate(results):
         print(f"  [{i+1}] {r['vector_score']:.3f} - {r['content'][:40]}...")
 
-    print("\n2. 带 Rerank 的检索（需安装 FlagEmbedding）：")
+    print("\n2. 带 Rerank 的检索（使用 CrossEncoder）：")
     results = retriever.search("机器学习需要什么基础？", top_k=3, use_rerank=True)
     for i, r in enumerate(results):
         rerank = r.get('rerank_score', 'N/A')
@@ -555,13 +555,13 @@ search() 参数：
 
 if __name__ == "__main__":
     # 示例 1: 基础检索
-    demo_basic_retrieval()
+    # demo_basic_retrieval()
 
-    # 示例 2: 高级检索（Rerank 需要安装 FlagEmbedding）
+    # 示例 2: 高级检索（Rerank 使用 CrossEncoder）
     demo_advanced_retrieval()
 
     # 示例 3: 从文件加载
-    demo_load_from_file()
+    # demo_load_from_file()
 
     # 示例 4: API 参数说明
-    api_parameters_explained()
+    # api_parameters_explained()

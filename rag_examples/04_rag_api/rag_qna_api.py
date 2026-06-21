@@ -294,7 +294,7 @@ class RAGQnA:
 # 示例 1: 基础问答演示
 # =============================================================================
 
-def demo_basic_qna():
+def demo_basic_qna(question:str):
     """演示基础 RAG 问答功能：初始化、添加文档、检索 + 生成"""
     print(f"\n-- 示例 1: 基础问答演示")
 
@@ -319,23 +319,17 @@ def demo_basic_qna():
 
     qna.retriever.add_documents(documents, chunk_size=100)
 
-    # 问答测试
-    questions = [
-        "机器学习需要什么基础？",
-        "深度学习有什么应用？"
-    ]
 
-    for question in questions:
-        print(f"\n用户：{question}")
+    print(f"\n用户：{question}")
 
-        result = qna.ask(question, top_k=3)
+    result = qna.ask(question, top_k=3)
 
-        print(f"助手：{result['answer']}")
+    print(f"助手：{result['answer']}")
 
-        if result['sources']:
-            print("\n引用来源:")
-            for src in result['sources'][:2]:
-                print(f"  [{src['id']}] {src['content']}")
+    if result['sources']:
+        print("\n引用来源:")
+        for src in result['sources'][:2]:
+            print(f"  [{src['id']}] {src['content']}")
 
     qna.close()
 
@@ -465,17 +459,96 @@ RAG 问答完整流程
   chat()           多轮对话
 """)
 
+# =============================================================================
+# 示例 2: 高级检索功能（混合检索 + Rerank）
+# =============================================================================
 
+def demo_advanced_retrieval():
+    """演示高级检索功能：纯向量检索 vs 带 Rerank 的检索"""
+    print(f"\n-- 示例 2: 高级检索功能")
+
+    retriever = RAGRetriever(
+        milvus_uri=MILVUS_URI,
+        collection_name="demo_advanced",
+        dim=DEFAULT_DIMENSION
+    )
+
+    retriever.create_collection()
+
+    documents = [
+        "机器学习需要数学基础，包括线性代数、概率统计和微积分。",
+        "深度学习是机器学习的子集，使用神经网络进行表征学习。",
+        "Python 是 AI 开发的首选语言，有 TensorFlow 和 PyTorch 等框架。",
+        "自然语言处理需要理解语法、语义和上下文信息。",
+        "计算机视觉的核心任务包括分类、检测和分割。",
+    ]
+
+    retriever.add_documents(documents, chunk_size=100)
+
+    print("\n1. 纯向量检索：")
+    results = retriever.search("机器学习需要什么基础？", top_k=3, use_vector=True)
+    for i, r in enumerate(results):
+        print(f"  [{i+1}] {r['vector_score']:.3f} - {r['content'][:40]}...")
+
+    print("\n2. 带 Rerank 的检索（使用 CrossEncoder）：")
+    results = retriever.search("机器学习需要什么基础？", top_k=3, use_rerank=True)
+    for i, r in enumerate(results):
+        rerank = r.get('rerank_score', 'N/A')
+        print(f"  [{i+1}] Rerank={rerank} - {r['content'][:40]}...")
+
+    retriever.close()
+
+
+# =============================================================================
+# 示例 3: 从文件加载文档
+# =============================================================================
+
+def demo_load_from_file():
+    """演示从 TXT 文件加载文档并检索"""
+    print(f"\n-- 示例 3: 从文件加载文档")
+
+    retriever = RAGRetriever(
+        milvus_uri=MILVUS_URI,
+        collection_name="demo_file",
+        dim=DEFAULT_DIMENSION
+    )
+
+    retriever.create_collection()
+
+    # 从 TXT 文件加载
+    file_path = os.path.join(os.path.dirname(__file__), "..", "data", "txt", "milvus_intro.txt")
+
+    print(f"加载文件：{file_path}")
+
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        print(f"读取到 {len(content)} 字符")
+
+        # 添加文档
+        retriever.add_documents([content], chunk_size=200, chunk_overlap=50)
+
+        # 检索测试
+        print("\n检索测试：")
+        results = retriever.search("Milvus 是什么？", top_k=2)
+
+        for i, r in enumerate(results):
+            print(f"  [{i+1}] {r['vector_score']:.3f}")
+            print(f"      {r['content'][:60]}...")
+
+    except FileNotFoundError:
+        print(f"  文件不存在：{file_path}（请确保数据文件已准备）")
+
+    retriever.close()
 # =============================================================================
 # 主程序入口
 # =============================================================================
 
 if __name__ == "__main__":
     # 示例 1: 基础问答
-    demo_basic_qna()
+    # demo_basic_qna("学习Python开发有什么好书？")
 
-    # 示例 2: Prompt 模板定制
-    # demo_custom_prompt()
+    demo_advanced_retrieval()
 
-    # 示例 3: 完整 RAG 流程解析
-    # rag_pipeline_explained()
+    # demo_load_from_file()

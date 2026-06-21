@@ -296,10 +296,10 @@ def demo_pure_sparse_search(client, collection_name):
         anns_field="sparse_vector",
         limit=3,
         output_fields=["title", "text"],
-        search_params={"params": {"metric_type": "BM25"}},
+        search_params={"metric_type": "BM25"},
     )
 
-    print("\n🟢 纯 BM25 关键词检索：")
+    print(f"\n🟢 纯 BM25 关键词检索：{results}")
     for i, hit in enumerate(results[0]):
         print(f"  {i+1}. [{hit['distance']:.4f}] {hit['entity']['title']}")
 
@@ -429,7 +429,7 @@ if __name__ == "__main__":
     print("=" * 70 + "\n")
 
     # 1. 讲解 BM25 Function
-    explain_bm25_function()
+    # explain_bm25_function()
 
     # 2. 创建 Collection
     client, collection_name = create_hybrid_search_collection()
@@ -445,12 +445,12 @@ if __name__ == "__main__":
     print("第四部分：三种检索方式对比")
     print("=" * 60)
 
-    demo_pure_dense_search(client, collection_name)
-    demo_pure_sparse_search(client, collection_name)
+    # demo_pure_dense_search(client, collection_name)
+    # demo_pure_sparse_search(client, collection_name)
     demo_hybrid_search(client, collection_name)
 
     # 6. RRF vs 加权排序
-    explain_ranking_strategies()
+    # explain_ranking_strategies()
 
     print("\n" + "=" * 70)
     print("  学习完成！接下来查看：")

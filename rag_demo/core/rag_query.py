@@ -17,8 +17,8 @@ from rag_demo.util.embedding import generate_embedding
 
 # ── 客户端初始化 ──────────────────────────────────────────────
 llm_client = OpenAI(
-    api_key=os.getenv("DEEPSEEK_API_KEY"),
-    base_url="https://api.deepseek.com"
+    api_key=os.getenv("ALIYUN_API_KEY"),
+    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
 )
 
 milvus_client = get_milvus_client()
@@ -126,6 +126,21 @@ def _hybrid_search_qa(query: str, top_k: int = 3) -> list[dict]:
             })
     return refs
 
+def demo_pure_sparse_search():
+    """纯 BM25 关键词检索"""
+    query = "向量数据库"
+
+    results = milvus_client.search(
+        collection_name=DOCUMENT_CHUNKS_COLLECTION,
+        data=[query],  # Text query, not a vector
+        anns_field="sparse_vector",  # The BM25 output field
+        limit=10
+    )
+
+    for hits in results:
+        for hit in hits:
+            print(f"id: {hit['id']}, score: {hit['distance']:.4f}")
+            print(f"  text: {hit['entity']['text']}")
 
 # ── 主入口 ───────────────────────────────────────────────────
 def rag_ask(query: str, doc_top_k: int = 3, qa_top_k: int = 3) -> dict:
@@ -177,7 +192,7 @@ def rag_ask(query: str, doc_top_k: int = 3, qa_top_k: int = 3) -> dict:
     user_prompt = f"{context}\n用户问题：{query}"
 
     completion = llm_client.chat.completions.create(
-        model="deepseek-chat",
+        model="qwen-plus",
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
@@ -210,3 +225,5 @@ if __name__ == "__main__":
             print(f"    答：{ref['answer']}")
         else:
             print(f"    内容：{ref['content'][:80]}...")
+
+    # demo_pure_sparse_search()

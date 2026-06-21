@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Milvus 连接配置（从环境变量读取，默认本地 Docker）
-MILVUS_URI = os.getenv("MILVUS_URI", "http://localhost:19530")
+MILVUS_URI = os.getenv("MILVUS_URI", "http://192.168.142.128:19530")
 MILVUS_DB_NAME = os.getenv("MILVUS_DB_NAME", "default")
 
 # 集合名称常量

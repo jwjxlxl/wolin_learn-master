@@ -1,4 +1,4 @@
-# =============================================================================
+﻿# =============================================================================
 # 02_dual_collection_design — 双集合 RAG 检索架构
 # =============================================================================
 # 用途：学习如何设计多集合的 RAG 检索架构
@@ -151,6 +151,58 @@ def create_dual_collections():
 # 第三部分：插入数据
 # =============================================================================
 
+def embed(texts):
+    """
+    生成文本向量（使用阿里云百炼 Embedding API）
+
+    参数:
+        texts: 文本或文本列表
+    返回:
+        向量列表
+    """
+    from openai import OpenAI
+
+    api_key = os.getenv("DASHSCOPE_API_KEY") or os.getenv("ALIYUN_API_KEY")
+
+    if isinstance(texts, str):
+        texts = [texts]
+
+    # 没有 API Key 时使用模拟向量（降级方案，演示模式）
+    if not api_key:
+        print("  未找到 API Key，使用模拟向量（演示模式）")
+        import random
+        random.seed(42)
+        return [[random.random() for _ in range(1024)] for _ in texts]
+
+    try:
+        client = OpenAI(
+            api_key=api_key,
+            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
+        )
+
+        # 批量处理（API 限制每次最多 25 条）
+        all_embeddings = []
+        batch_size = 25
+
+        for i in range(0, len(texts), batch_size):
+            batch = texts[i:i + batch_size]
+            response = client.embeddings.create(
+                model="text-embedding-v4",
+                input=batch,
+                encoding_format="float"
+            )
+            batch_embeddings = [item.embedding for item in response.data]
+            all_embeddings.extend(batch_embeddings)
+
+        print(f"已生成 {len(all_embeddings)} 个 Embedding 向量")
+        return all_embeddings
+
+    except Exception as e:
+        print(f"  Embedding API 调用失败：{e}，使用模拟向量")
+        import random
+        random.seed(42)
+        return [[random.random() for _ in range(1024)] for _ in texts]
+
 def insert_dual_collection_data(client, doc_collection, qa_collection):
     """向两个集合分别插入测试数据"""
     # 模拟向量生成
@@ -171,7 +223,7 @@ def insert_dual_collection_data(client, doc_collection, qa_collection):
             "text": chunk["text"],
             "file_name": chunk["file_name"],
             "chunk_index": chunk["chunk_index"],
-            "dense_vector": mock_embedding(chunk["text"]),
+            "dense_vector": embed(chunk["text"])[0],
         })
 
     client.insert(collection_name=doc_collection, data=doc_data)
@@ -190,7 +242,7 @@ def insert_dual_collection_data(client, doc_collection, qa_collection):
             "question": qa["question"],
             "answer": qa["answer"],
             "reasoning": qa["reasoning"],
-            "dense_vector": mock_embedding(qa["question"]),
+            "dense_vector": embed(qa["question"])[0],
         })
 
     client.insert(collection_name=qa_collection, data=qa_data)
@@ -205,9 +257,9 @@ def dual_collection_search(client, doc_collection, qa_collection, query: str):
     """同时对两个集合执行混合检索"""
     # 生成查询向量
     random.seed(hash(query) % 10000)
-    query_vector = [random.uniform(-1, 1) for _ in range(DEFAULT_DIMENSION)]
+    query_vector = embed(query)[0]
 
-    def hybrid_search(collection_name, top_k=3):
+    def hybrid_search(collection_name, output_fields, top_k=3):
         req_dense = AnnSearchRequest(
             data=[query_vector], anns_field="dense_vector",
             param={"nprobe": 10}, limit=top_k,
@@ -219,16 +271,18 @@ def dual_collection_search(client, doc_collection, qa_collection, query: str):
         ranker = Function(
             name="rrf", function_type=FunctionType.RERANK,
             params={"reranker": "rrf", "k": 100},
+            input_field_names=[],
         )
         return client.hybrid_search(
             collection_name=collection_name,
             reqs=[req_dense, req_sparse], ranker=ranker,
             limit=top_k,
+            output_fields=output_fields
         )
 
     # 并行检索两个集合
-    doc_results = hybrid_search(doc_collection, top_k=3)
-    qa_results = hybrid_search(qa_collection, top_k=3)
+    doc_results = hybrid_search(doc_collection, ["text", "file_name", "chunk_index"], top_k=3)
+    qa_results = hybrid_search(qa_collection, ["question", "answer", "reasoning"], top_k=3)
 
     return doc_results, qa_results
 
@@ -324,7 +378,7 @@ if __name__ == "__main__":
     print("=" * 70 + "\n")
 
     # 1. 讲解架构
-    explain_dual_collection()
+    # explain_dual_collection()
 
     # 2. 创建双集合
     client, doc_col, qa_col = create_dual_collections()
@@ -367,4 +421,4 @@ if __name__ == "__main__":
     print(prompt[:300] + "...")
 
     # 7. 总结
-    dual_collection_summary()
+    # dual_collection_summary()

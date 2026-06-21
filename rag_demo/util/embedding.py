@@ -8,7 +8,7 @@ import os
 from openai import OpenAI
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 # Embedding 客户端（模块级单例，所有模块共享）
 embedding_client = OpenAI(

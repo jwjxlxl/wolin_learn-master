@@ -242,6 +242,7 @@ def insert_dual_collection_data(client, doc_collection, qa_collection):
             "question": qa["question"],
             "answer": qa["answer"],
             "reasoning": qa["reasoning"],
+            # 对问题进行向量化的处理
             "dense_vector": embed(qa["question"])[0],
         })
 
@@ -257,6 +258,7 @@ def dual_collection_search(client, doc_collection, qa_collection, query: str):
     """同时对两个集合执行混合检索"""
     # 生成查询向量
     random.seed(hash(query) % 10000)
+    # 对用户的问题进行向量化处理
     query_vector = embed(query)[0]
 
     def hybrid_search(collection_name, output_fields, top_k=3):
@@ -281,7 +283,9 @@ def dual_collection_search(client, doc_collection, qa_collection, query: str):
         )
 
     # 并行检索两个集合
+    # 检索文档切片的表格
     doc_results = hybrid_search(doc_collection, ["text", "file_name", "chunk_index"], top_k=3)
+    # 对问答对进行检索
     qa_results = hybrid_search(qa_collection, ["question", "answer", "reasoning"], top_k=3)
 
     return doc_results, qa_results
@@ -395,22 +399,23 @@ if __name__ == "__main__":
     print("第四部分：双集合并行检索演示")
     print("=" * 60)
 
-    queries = ["Milvus 支持什么检索方式？", "什么是 BM25？"]
-    for query in queries:
-        print(f"\n查询：{query}")
-        doc_results, qa_results = dual_collection_search(client, doc_col, qa_col, query)
-
-        print("  文档片段结果：")
-        for hits in doc_results:
-            for hit in hits:
-                entity = hit.get("entity", {})
-                print(f"    [{hit['distance']:.4f}] {entity.get('text', '')[:50]}...")
-
-        print("  问答对结果：")
-        for hits in qa_results:
-            for hit in hits:
-                entity = hit.get("entity", {})
-                print(f"    [{hit['distance']:.4f}] Q: {entity.get('question', '')[:40]}...")
+    # queries = ["Milvus 支持什么检索方式？", "什么是 BM25？"]
+    # for query in queries:
+    #     print(f"\n查询：{query}")
+    #     # 调用双集合的检索结果
+    #     doc_results, qa_results = dual_collection_search(client, doc_col, qa_col, query)
+    #
+    #     print("  文档片段结果：")
+    #     for hits in doc_results:
+    #         for hit in hits:
+    #             entity = hit.get("entity", {})
+    #             print(f"    [{hit['distance']:.4f}] {entity.get('text', '')[:50]}...")
+    #
+    #     print("  问答对结果：")
+    #     for hits in qa_results:
+    #         for hit in hits:
+    #             entity = hit.get("entity", {})
+    #             print(f"    [{hit['distance']:.4f}] Q: {entity.get('question', '')[:40]}...")
 
     # 6. 展示提示词构建
     doc_results, qa_results = dual_collection_search(client, doc_col, qa_col, "什么是 RAG？")
@@ -418,7 +423,7 @@ if __name__ == "__main__":
     print("\n" + "=" * 60)
     print("第五部分：生成的 RAG 提示词（前 300 字）")
     print("=" * 60)
-    print(prompt[:300] + "...")
+    print(prompt[:500] + "...")
 
     # 7. 总结
     # dual_collection_summary()

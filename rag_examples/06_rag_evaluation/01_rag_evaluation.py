@@ -527,7 +527,7 @@ if __name__ == "__main__":
     print("=" * 70 + "\n")
 
     # 1. 讲解评估的必要性
-    explain_why_evaluate()
+    # explain_why_evaluate()
 
     # 2. 讲解 RAGAS 指标
     explain_ragas_metrics()

@@ -9,6 +9,9 @@
 # =============================================================================
 
 import sys
+from llm_basic import get_model
+from langchain_ollama import ChatOllama
+
 import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
 
@@ -37,12 +40,11 @@ def simplest_streaming():
     stream() 返回一个生成器，每次 yield 一小块文本。
     chunk.content 是当前这一小块的内容。
     """
-    from langchain_ollama import ChatOllama
 
     print(f"\n-- 示例 1: 最简单的流式调用")
 
-    model = ChatOllama(model="qwen3.5:2b")
-
+    # model = ChatOllama(model="qwen3.5:2b")
+    model = get_model("qwen")
     print("AI 正在输入: ", end="", flush=True)
     for chunk in model.stream("请用 50 字左右介绍人工智能。"):
         print(chunk.content, end='', flush=True)
@@ -60,12 +62,12 @@ def streaming_vs_invoke():
     注意：总耗时差不多，但流式模式"首字延迟"极低——
     用户 0.5 秒就能看到第一个字，不用干等。
     """
-    from langchain_ollama import ChatOllama
     import time
 
     print(f"\n-- 示例 2: 流式 vs 非流式对比")
 
-    model = ChatOllama(model="qwen3.5:2b")
+    # model = ChatOllama(model="qwen3.5:2b")
+    model = get_model("qwen")
     question = "请用三句话介绍你自己。"
 
     # 非流式
@@ -79,6 +81,7 @@ def streaming_vs_invoke():
     print("[流式] AI 正在输入: ", end="", flush=True)
     start = time.time()
     for chunk in model.stream(question):
+        time.sleep(0.1)
         print(chunk.content, end='', flush=True)
     print(f"\n耗时 {time.time() - start:.1f}秒")
 
@@ -115,10 +118,9 @@ def collect_while_streaming():
 # =============================================================================
 
 if __name__ == '__main__':
-    print("\n>>> 02_llm_call/streaming_output — 流式输出\n")
 
-    simplest_streaming()
-    streaming_vs_invoke()
+    # simplest_streaming()
+    # streaming_vs_invoke()
     collect_while_streaming()
 
     # 接下来学习: 03_prompt/prompt_template.py（Prompt 模板）

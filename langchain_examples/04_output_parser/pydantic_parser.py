@@ -31,6 +31,7 @@ from typing import List, Optional
 from langchain_core.prompts import PromptTemplate
 from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import PydanticOutputParser
+from utils.model_utils import get_model
 
 
 # =============================================================================
@@ -67,7 +68,19 @@ JSON:""")
 
     prompt = prompt.partial(format_instructions=parser.get_format_instructions())
 
-    model = ChatOllama(model="qwen3.5:2b")
+    # 小模型(2b)生成复杂JSON容易失败，需要：
+    #   1. 设置 format="json" 强制纯JSON输出（同时关闭思维链<think>标签）
+    #   2. 增加上下文长度(num_ctx)确保复杂JSON不被截断
+    # model = ChatOllama(
+    #     model="qwen3.5:2b",
+    #     format="json",          # 强制JSON输出格式，关闭思维链
+    #     num_ctx=4096,           # 增加上下文长度，避免复杂JSON被截断
+    #     num_predict=1024,       # 增加最大输出token数
+    # )
+
+
+    model = get_model("qwen")
+
     chain = prompt | model | parser
 
     result = chain.invoke({})
@@ -113,7 +126,18 @@ JSON:""")
 
     prompt = prompt.partial(format_instructions=parser.get_format_instructions())
 
-    model = ChatOllama(model="qwen3.5:2b")
+    # 小模型(2b)生成复杂JSON容易失败，需要：
+    #   1. 设置 format="json" 强制纯JSON输出（同时关闭思维链<think>标签）
+    #   2. 增加上下文长度(num_ctx)确保复杂JSON不被截断
+    # model = ChatOllama(
+    #     model="qwen3.5:2b",
+    #     format="json",          # 强制JSON输出格式，关闭思维链
+    #     num_ctx=4096,           # 增加上下文长度，避免复杂JSON被截断
+    #     num_predict=1024,       # 增加最大输出token数
+    # )
+
+    model = get_model("qwen")
+
     chain = prompt | model | parser
 
     result = chain.invoke({})
@@ -130,7 +154,7 @@ JSON:""")
 if __name__ == '__main__':
     print("\n>>> 04_output_parser/pydantic_parser — PydanticOutputParser\n")
 
-    pydantic_output_parser_basic()
+    # pydantic_output_parser_basic()
     complex_nested_model()
 
     # 接下来学习: 05_memory/conversation_memory.py（对话记忆）

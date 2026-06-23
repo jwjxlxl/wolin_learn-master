@@ -9,6 +9,7 @@
 
 import sys
 import io
+
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
 
 from langchain_core.prompts import PromptTemplate
@@ -55,7 +56,9 @@ def simplest_template():
 
     # 调用模型
     model = ChatOllama(model="qwen3.5:2b")
+    # model = get_model("qwen")
     response = model.invoke(formatted)
+
     print(f"回复: {response.content}")
 
 
@@ -80,6 +83,8 @@ def translation_template():
 译文:""")
 
     model = ChatOllama(model="qwen3.5:2b")
+
+    # model = get_model("qwen")
 
     # 英译中
     r = model.invoke(prompt.format(source_lang="英语", target_lang="中文",

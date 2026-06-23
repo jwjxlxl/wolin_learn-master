@@ -101,7 +101,7 @@ def create_documents_from_text():
 if __name__ == '__main__':
     print("\n>>> 07_retrieval/document_loader — 文档加载与分块\n")
 
-    chunk_document()
+    # chunk_document()
     create_documents_from_text()
 
     # 接下来学习: vector_store.py（向量存储）

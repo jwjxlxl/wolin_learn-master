@@ -30,6 +30,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.documents import Document
+from utils import get_model
 
 
 # =============================================================================
@@ -104,7 +105,7 @@ class SimpleRAGBot:
 
     def __init__(self, knowledge_base: list[Document]):
         self.knowledge = knowledge_base
-        self.model = ChatOllama(model="qwen3.5:2b")
+        self.model = get_model("qwen")
         self.prompt = PromptTemplate.from_template("""基于以下资料回答问题。如果资料中没有答案，就说不知道。
 
 资料:
@@ -155,7 +156,7 @@ def rag_bot_demo():
 if __name__ == '__main__':
     print("\n>>> 07_retrieval/rag_basic — RAG 基础\n")
 
-    simple_rag()
+    # simple_rag()
     rag_bot_demo()
 
     # 接下来学习: 08_project/qna_bot.py（实战问答机器人）

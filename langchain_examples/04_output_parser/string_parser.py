@@ -10,6 +10,9 @@
 
 import sys
 import io
+
+from langchain_classic.chains.question_answering.map_rerank_prompt import output_parser
+
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
 
 
@@ -26,6 +29,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='repla
 from langchain_core.prompts import PromptTemplate
 from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import StrOutputParser
+from utils.model_utils import get_model
 
 
 # =============================================================================
@@ -39,8 +43,10 @@ def compare_with_without_parser():
     不用 Parser: invoke() 返回 Message 对象，需要 .content 取文本
     用 Parser:    invoke() 直接返回纯字符串
     """
-    model = ChatOllama(model="qwen3.5:2b")
+    # model = ChatOllama(model="qwen3.5:2b")
+    model = get_model("qwen")
     question = "请用一句话介绍 Python。"
+
 
     # 不用 Parser
     print(f"\n{'─' * 50}")
@@ -70,8 +76,12 @@ def pipeline_with_batch():
     print(f"\n-- 示例 2: 三段式 Pipeline + 批量处理")
 
     prompt = PromptTemplate.from_template("用{num}个字介绍{topic}。")
-    model = ChatOllama(model="qwen3.5:2b")
-    chain = prompt | model | StrOutputParser()
+    # model = ChatOllama(model="qwen3.5:2b")
+    model = get_model("qwen")
+
+    output_parser = StrOutputParser()
+    # 链式调用: 通过管道符号|把LangChain中的每个组件按照前后的顺序拼接成一个链条
+    chain = prompt | model | output_parser
 
     # 批量输入
     inputs = [
@@ -91,7 +101,7 @@ def pipeline_with_batch():
 if __name__ == '__main__':
     print("\n>>> 04_output_parser/string_parser — StrOutputParser\n")
 
-    compare_with_without_parser()
+    # compare_with_without_parser()
     pipeline_with_batch()
 
     # 接下来学习: json_parser.py（JSON 结构化输出）

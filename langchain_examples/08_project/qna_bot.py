@@ -9,6 +9,9 @@
 
 import sys
 import io
+
+from utils import get_model
+
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
 
 
@@ -35,8 +38,8 @@ class DocQnABot:
         from langchain_core.documents import Document
 
         self.docs: list[Document] = []
-        self.model = ChatOllama(model="qwen3.5:2b")
-
+        # self.model = ChatOllama(model="qwen3.5:2b")
+        self.model = get_model("qwen")
         self.prompt = PromptTemplate.from_template("""基于以下资料回答问题。只根据资料回答，不要编造。
 
 资料:

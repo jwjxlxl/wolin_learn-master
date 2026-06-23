@@ -14,6 +14,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='repla
 
 from langchain_ollama import ChatOllama
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+from llm_basic import get_model
 
 
 """
@@ -43,7 +44,8 @@ def system_message_demo():
     """
     print(f"\n-- 示例 1: SystemMessage — 设定 AI 人设")
 
-    model = ChatOllama(model="qwen3.5:2b")
+    # model = ChatOllama(model="qwen3.5:2b")
+    model = get_model("qwen")
 
     personas = [
         ("严肃的科学家", "你是一位严肃的科学家，说话严谨、准确。"),
@@ -77,7 +79,8 @@ def multiturn_demo():
     """
     print(f"\n-- 示例 2: 多轮对话 — 让 AI 记住上下文")
 
-    model = ChatOllama(model="qwen3.5:2b")
+    # model = ChatOllama(model="qwen3.5:2b")
+    model = get_model("qwen")
     messages = [SystemMessage(content="你是一位友好的助手。")]
 
     # 第 1 轮
@@ -85,6 +88,7 @@ def multiturn_demo():
     response = model.invoke(messages)
     print(f"[第1轮] {response.content}")
 
+    # 把第一轮模型的回复加到消息列表中
     messages.append(AIMessage(content=response.content))
 
     # 第 2 轮
@@ -106,8 +110,8 @@ def roleplay_demo():
     """
     print(f"\n-- 示例 3: 角色扮演 — 英语老师")
 
-    model = ChatOllama(model="qwen3.5:2b")
-
+    # model = ChatOllama(model="qwen3.5:2b")
+    model = get_model("qwen")
     messages = [
         SystemMessage(content="""你是一位英语老师。
 要求：
@@ -128,8 +132,8 @@ def roleplay_demo():
 if __name__ == '__main__':
     print("\n>>> 02_llm_call/chat_model — 消息类型详解\n")
 
-    system_message_demo()
-    multiturn_demo()
+    # system_message_demo()
+    # multiturn_demo()
     roleplay_demo()
 
     # 接下来学习: streaming_output.py（流式输出）

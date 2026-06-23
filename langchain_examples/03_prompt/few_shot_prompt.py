@@ -33,6 +33,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='repla
 
 from langchain_core.prompts import PromptTemplate
 from langchain_ollama import ChatOllama
+from utils import get_model
 
 
 # =============================================================================
@@ -87,8 +88,9 @@ def sentiment_classification():
 评论: "{review}"
 情感:""")
 
-    model = ChatOllama(model="qwen3.5:2b")
+    # model = ChatOllama(model="qwen3.5:2b")
 
+    model = get_model("qwen-plus")
     for review in ["这个产品太棒了，我非常喜欢！", "完全不值这个价，浪费钱。"]:
         r = model.invoke(prompt.format(review=review))
         print(f"  \"{review}\" → {r.content}")
@@ -143,8 +145,8 @@ def using_langchain_fewshot():
 if __name__ == '__main__':
     print("\n>>> 03_prompt/few_shot — Few-Shot 示例\n")
 
-    simplest_few_shot()
-    sentiment_classification()
+    # simplest_few_shot()
+    # sentiment_classification()
     using_langchain_fewshot()
 
     # 接下来学习: 04_output_parser/string_parser.py（输出解析）

@@ -28,6 +28,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='repla
 from langchain_core.prompts import PromptTemplate
 from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import JsonOutputParser
+from utils.model_utils import get_model
 
 
 # =============================================================================
@@ -60,7 +61,8 @@ JSON:""")
     # 注入格式指令
     prompt = prompt.partial(format_instructions=parser.get_format_instructions())
 
-    model = ChatOllama(model="qwen3.5:2b")
+    # model = ChatOllama(model="qwen3.5:2b")
+    model = get_model("qwen")
     chain = prompt | model | parser
 
     result = chain.invoke({})
@@ -101,7 +103,8 @@ JSON:""")
 
     prompt = prompt.partial(format_instructions=parser.get_format_instructions())
 
-    model = ChatOllama(model="qwen3.5:2b")
+    # model = ChatOllama(model="qwen3.5:2b")
+    model = get_model("qwen")
     chain = prompt | model | parser
 
     reviews = [
@@ -123,6 +126,6 @@ if __name__ == '__main__':
     print("\n>>> 04_output_parser/json_parser — JsonOutputParser\n")
 
     using_json_parser()
-    product_review_analysis()
+    # product_review_analysis()
 
     # 接下来学习: pydantic_parser.py（强类型解析）

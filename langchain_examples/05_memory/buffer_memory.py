@@ -9,6 +9,9 @@
 
 import sys
 import io
+
+from langchain_openai import ChatOpenAI
+
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
 
 
@@ -32,7 +35,6 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='repla
 
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_classic.memory import ConversationBufferMemory, ConversationBufferWindowMemory
-
 
 # =============================================================================
 # 示例 1: 完整记忆 — 保存所有对话
@@ -62,7 +64,7 @@ def buffer_memory_demo():
         {"output": "篮球是一项很好的运动！"},
     )
 
-    history = memory.load_memory_variables({})["chat_history"]
+    history = memory.load_memory_variables({})["history"]
     print(f"  历史消息数: {len(history)} 条")
     for msg in history:
         role = "用户" if isinstance(msg, HumanMessage) else "AI"
@@ -94,7 +96,7 @@ def window_memory_demo():
     for user_msg, ai_msg in conversations:
         memory.save_context({"input": user_msg}, {"output": ai_msg})
 
-    history = memory.load_memory_variables({}).get("chat_history", [])
+    history = memory.load_memory_variables({}).get("history", [])
     print(f"  保存了 5 轮，但只保留 {len(history)} 条消息（最近 3 轮）")
     for msg in history:
         role = "用户" if isinstance(msg, HumanMessage) else "AI"
@@ -108,7 +110,7 @@ def window_memory_demo():
 if __name__ == '__main__':
     print("\n>>> 05_memory/buffer_memory — 记忆策略\n")
 
-    buffer_memory_demo()
+    # buffer_memory_demo()
     window_memory_demo()
 
     # 接下来学习: 06_chains/simple_chain.py（LCEL Pipeline）

@@ -48,9 +48,6 @@ def simplest_call():
     model.invoke("...")             = 你对着话筒说话
     response.content               = 听筒里传来的回复
     """
-    print("=" * 60)
-    print("示例 1: 最简单的调用（3 行代码）")
-    print("=" * 60)
 
     # 第 1 行：创建模型实例（就像拿起电话拨号）
     model = ChatOllama(model="qwen3.5:2b")
@@ -144,7 +141,7 @@ def streaming_call():
     print("示例 3: 流式输出（打字机效果）")
     print("=" * 60)
 
-    model = ChatOllama(model="qwen3.5:2b")
+    model = ChatOllama(model="qwen3.5:9b")
 
     # stream() 返回一个生成器，每次 yield 一小块内容
     print("AI 正在输入：", end="", flush=True)
@@ -184,6 +181,7 @@ def call_with_error_handling():
 
     except Exception as e:
         # 出了任何问题都进入这里，不会让程序直接崩溃
+        # 改成日志模块进行记录
         print(f"❌ 调用失败：{e}")
         print()
         print("可能的原因：")
@@ -212,11 +210,11 @@ if __name__ == '__main__':
 
     # ★ 默认运行最简单的示例 — 让学生第一次就成功
     simplest_call()
-    streaming_call()
-    call_with_error_handling()
+    # streaming_call()
+    # call_with_error_handling()
 
     # 有 API Key 可取消注释体验云端模型
-    # cloud_api_call()
+    cloud_api_call()
 
     print("=" * 70)
     print("  恭喜！你已完成第一个 LangChain 程序！")

@@ -102,11 +102,13 @@ def faiss_vector_search():
             Document(page_content="香蕉含有丰富的钾元素", metadata={"source": "food"}),
         ]
 
+        # 使用 DashScope 向量化模型
         embeddings = DashScopeEmbeddings(model="text-embedding-v3")
+        # 定义一个Faiss向量存储
         store = FAISS.from_documents(docs, embeddings)
 
         # 语义搜索: "人工智能相关的技术" 应该找到 ai 来源的文档
-        query = "人工智能相关的技术"
+        query = " Python 是一种什么语言？"
         results = store.similarity_search(query, k=3)
 
         print(f"搜索: '{query}'\n")
@@ -126,7 +128,7 @@ def faiss_vector_search():
 if __name__ == '__main__':
     print("\n>>> 07_retrieval/vector_store — 向量存储与语义搜索\n")
 
-    understand_embedding()
+    # understand_embedding()
     faiss_vector_search()
 
     # 接下来学习: rag_basic.py（RAG 基础）

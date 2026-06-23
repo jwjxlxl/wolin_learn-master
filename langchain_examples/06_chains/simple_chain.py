@@ -25,6 +25,7 @@ sys.stdout = io.TextIOWrapper(
 from langchain_core.prompts import PromptTemplate
 from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import StrOutputParser
+from utils.model_utils import get_model
 
 
 # =============================================================================
@@ -130,7 +131,11 @@ def translation_chain():
 
 译文：""")
 
-    model = ChatOllama(model="qwen3.5:2b")
+    # 需要用到模型实例，在这里创建，实例化
+    # model = ChatOllama(model="qwen3.5:2b")
+    # 修改成工厂模式：
+    model = get_model("qwen")
+
     chain = prompt | model | StrOutputParser()
 
     # 同一个 Chain，不同参数 → 不同翻译方向
@@ -162,6 +167,19 @@ def reusable_chain_factory():
     直接创建 Chain = 每次想吃包子就自己和面、调馅、蒸
     工厂函数       = 写一个"做包子"的菜谱，想吃了照着做就行
     """
+
+    """
+        设计模式之工厂模式：
+        原始创建对象的方法：在什么地方使用 就在什么地方创建对象
+        stu = Student(name="Jack", age=20, id=687)
+        
+        工厂模式：把创建对象的代码封装到一个函数中，在需要创建对象的地方调用这个函数
+        
+        def get_stu():
+            return Student()
+        
+        stu = get_stu()
+    """
     print("=" * 60)
     print("示例 3: 可复用的 Chain 工厂函数")
     print("=" * 60)
@@ -185,7 +203,8 @@ def reusable_chain_factory():
 
 译文：""")
         model = ChatOllama(model="qwen3.5:2b")
-        return prompt | model | StrOutputParser()
+        chain = prompt | model | StrOutputParser()
+        return chain
 
     # 创建两个不同方向的翻译 Chain
     en_to_zh = create_translator("英语", "中文")
@@ -213,9 +232,9 @@ if __name__ == '__main__':
     print()
 
     # ★ 按顺序运行：从基础到实用
-    three_stage_pipeline()
+    # three_stage_pipeline()
     translation_chain()
-    reusable_chain_factory()
+    # reusable_chain_factory()
 
     print("=" * 70)
     print("  接下来学习：sequential_chain.py（多步骤顺序链）")

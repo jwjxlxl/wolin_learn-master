@@ -10,6 +10,9 @@
 
 import sys
 import io
+
+from langchain_community.llms.aviary import get_models
+
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
 
 
@@ -31,6 +34,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='repla
 from langchain_core.prompts import PromptTemplate
 from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import StrOutputParser
+from utils.model_utils import get_model
 
 
 # =============================================================================
@@ -45,7 +49,8 @@ def simple_if_else_router():
     """
     print(f"\n-- 示例 1: if-else 路由")
 
-    model = ChatOllama(model="qwen3.5:2b")
+    # model = ChatOllama(model="qwen3.5:2b")
+    model = get_model()
     parser = StrOutputParser()
 
     # 准备三个不同功能的 Chain
@@ -79,8 +84,8 @@ def intelligent_router():
     """
     print(f"\n-- 示例 2: 智能路由（AI 自动判断类型）")
 
-    model = ChatOllama(model="qwen3.5:2b")
-
+    # model = ChatOllama(model="qwen3.5:2b")
+    model = get_model("qwen")
     # 分类 Chain — 判断输入类型
     classifier = (
         PromptTemplate.from_template("判断以下输入的类型，只输出一个词（translate/summarize/explain/other）:\n\n{input}\n\n类型:")
@@ -118,7 +123,7 @@ def intelligent_router():
 if __name__ == '__main__':
     print("\n>>> 06_chains/router_chain — 路由链\n")
 
-    simple_if_else_router()
+    # simple_if_else_router()
     intelligent_router()
 
     # 接下来学习: 07_retrieval/document_loader.py（文档加载）

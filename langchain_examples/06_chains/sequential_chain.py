@@ -9,6 +9,9 @@
 
 import sys
 import io
+
+from utils import get_model
+
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
 
 
@@ -44,7 +47,7 @@ def manual_sequential():
     """
     print(f"\n-- 示例 1: 手动串联两个 Chain")
 
-    model = ChatOllama(model="qwen3.5:2b")
+    model = ChatOllama(model="qwen3.5:9b")
     parser = StrOutputParser()
 
     # Chain 1: 生成大纲
@@ -80,7 +83,8 @@ def article_generator():
     """
     print(f"\n-- 示例 2: 文章生成器（三步流水线）")
 
-    model = ChatOllama(model="qwen3.5:2b")
+    # model = ChatOllama(model="qwen3.5:9b")
+    model = get_model("qwen")
     parser = StrOutputParser()
 
     # 定义三个 Chain
@@ -115,7 +119,7 @@ def article_generator():
 if __name__ == '__main__':
     print("\n>>> 06_chains/sequential_chain — 顺序链\n")
 
-    manual_sequential()
+    # manual_sequential()
     article_generator()
 
     # 接下来学习: router_chain.py（路由链）

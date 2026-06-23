@@ -36,27 +36,37 @@ def get_qwen_client(model_name="qwen-plus"):
     )
 
 
-def get_model(use_cloud: bool = False, model_name: str = None):
+def get_model(provider: str = None):
     """
-    获取模型实例（默认 Ollama 本地，与 langchain_examples 一致）。
+        根据服务商名称返回对应的模型实例。
 
-    Args:
-        use_cloud: True=使用阿里云 Qwen（需 ALIYUN_API_KEY）
-                   False=使用本地 Ollama qwen3.5:2b（默认）
-        model_name: 自定义模型名（Ollama 默认 qwen3.5:2b，云端默认 qwen-plus）
-
-    Returns:
-        ChatModel 实例，如果不可用则返回 None
-    """
-    if use_cloud:
-        return get_qwen_client(model_name or "qwen-plus")
-
-    # 默认：Ollama 本地模型
-    try:
+        好处：切换模型只改一行参数，不需要到处改代码。
+        """
+    if provider == "ollama":
         from langchain_ollama import ChatOllama
-        ollama_model = model_name or "qwen3.5:2b"
-        return ChatOllama(model=ollama_model)
-    except ImportError:
-        print("警告：未安装 langchain-ollama，请运行：pip install langchain-ollama")
-        print("  或使用云端 API：get_model(use_cloud=True)")
-        return None
+        return ChatOllama(model="qwen3.5:2b")
+
+    elif provider == "qwen":
+        import os
+        from dotenv import load_dotenv
+        from langchain_openai import ChatOpenAI
+        load_dotenv()
+        return ChatOpenAI(
+            model="qwen-plus",
+            api_key=os.getenv("ALIYUN_API_KEY"),
+            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+        )
+
+    elif provider == "deepseek":
+        import os
+        from dotenv import load_dotenv
+        from langchain_openai import ChatOpenAI
+        load_dotenv()
+        return ChatOpenAI(
+            model="deepseek-chat",
+            api_key=os.getenv("DEEPSEEK_API_KEY"),
+            base_url="https://api.deepseek.com",
+        )
+
+    else:
+        raise ValueError(f"不支持的服务商: {provider}")

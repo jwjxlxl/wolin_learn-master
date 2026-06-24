@@ -10,6 +10,7 @@
 
 import sys
 import io
+from utils.model_utils import get_model
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
 
 
@@ -18,6 +19,12 @@ Agent 记忆 vs 手动记忆：
 
   前面学的（05_memory）: 手动用 list 保存历史
   Agent 记忆:            InMemorySaver 自动持久化，通过 thread_id 分组
+  
+  在LangChain1.0版本中，Agent 记忆是通过 checkpointer 实现的。
+  checkpointer 是 LangChain 1.0 新增的功能，用于持久化 Agent 的状态。
+  它可以用于保存 Agent 的历史消息、工具状态等。
+  
+  conversationMemery 是 checkpointer 的实现之一，用于保存 Agent 的历史消息。
 
   thread_id 就像聊天软件的"会话 ID"——同一个会话的消息自动关联，
   不同会话互不干扰。
@@ -51,9 +58,11 @@ def simple_memory_demo():
         """查询指定城市的天气。"""
         return {"北京": "晴，25°C", "上海": "多云，28°C"}.get(city, f"暂无 {city} 数据")
 
-    model = ChatOllama(model="qwen3.5:2b")
+    # model = ChatOllama(model="qwen3.5:2b")
+    model = get_model("qwen")
     agent = create_agent(model=model, tools=[get_weather],
                          system_prompt="你是一个有用的助手，请简洁回答。",
+                         # 增加了一个记忆点的参数
                          checkpointer=InMemorySaver())
 
     config: RunnableConfig = {"configurable": {"thread_id": "1"}}
@@ -69,7 +78,7 @@ def simple_memory_demo():
 
     # 换个线程 —— Agent 不记得小明
     other_config: RunnableConfig = {"configurable": {"thread_id": "2"}}
-    r = agent.invoke({"messages": [HumanMessage("还记得我的名字吗？")]}, other_config)
+    r = agent.invoke({"messages": [HumanMessage("还记得我的名字吗？")]},  config)
     print(f"[线程2] {r['messages'][-1].content}")
     print("  ↑ 不同线程，记忆隔离")
 
@@ -96,9 +105,13 @@ def trim_messages_demo():
 
     @before_model
     def trim(state: AgentState, runtime: Runtime) -> dict | None:
+        # 从 state 中获取完整的消息列表 是全局的
         messages = state["messages"]
+        print(f"AgentState中Messages的数量：{len(messages)}")
+        # 如果消息数小于等于 KEEP + 1 个，则不修剪
         if len(messages) <= KEEP + 1:
             return None
+        # 获取第一条和最后 KEEP 条消息
         first = messages[0]  # 系统提示
         recent = messages[-KEEP:]
         removed = len(messages) - len([first] + recent)
@@ -129,7 +142,7 @@ def trim_messages_demo():
 if __name__ == '__main__':
     print("\n>>> 09_agent/agent_memory — Agent 记忆管理\n")
 
-    simple_memory_demo()
+    # simple_memory_demo()
     trim_messages_demo()
 
     # 接下来学习: middleware.py（中间件拦截器）

@@ -10,6 +10,7 @@
 
 import sys
 import io
+from utils.model_utils import get_model
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
 
 
@@ -27,6 +28,15 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='repla
 
   生活化比喻: 中间件 = 安检站
     旅客必须经过安检站 → 检查、记录、放行或拦截
+    
+    
+  测试驱动开发  TDD
+  领域驱动开发  DDD
+  
+  面向对象编程： OOP
+  面向切面编程： AOP
+  在不改变原有代码的基础上，为原有的业务逻辑增强功能
+  
 """
 
 from langchain_core.tools import tool
@@ -83,7 +93,8 @@ def decorator_middleware_demo():
         """查询天气。"""
         return {"北京": "晴，25°C", "上海": "多云，28°C"}.get(city, "暂无数据")
 
-    model = ChatOllama(model="qwen3.5:2b")
+    # model = ChatOllama(model="qwen3.5:2b")
+    model = get_model("qwen")
     agent = create_agent(model=model, tools=[get_weather],
                          system_prompt="你是一个有用的助手，请简洁回答。",
                          middleware=[log_before, check_response, timing])
@@ -112,19 +123,22 @@ def builtin_middleware_demo():
         """查询天气。"""
         return {"北京": "晴，25°C", "上海": "多云"}.get(city, "暂无数据")
 
-    model = ChatOllama(model="qwen3.5:2b")
-
+    # model = ChatOllama(model="qwen3.5:2b")
+    model = get_model("qwen")
     # 用本地轻量模型做摘要（省钱）
     summary_model = ChatOllama(model="qwen3.5:2b")
 
     agent = create_agent(
-        model=model, tools=[get_weather],
+        model=model,
+        tools=[get_weather],
         system_prompt="你是一个有用的助手。",
         middleware=[
             SummarizationMiddleware(
                 model=summary_model,        # 用于生成摘要的模型
-                max_tokens_before_summary=4000,  # 超过 4000 token 触发
-                messages_to_keep=10,         # 保留最近 10 条
+                # max_tokens_before_summary=4000,  # 超过 4000 token 触发
+                trigger=('tokens', 400),
+                # messages_to_keep=10,         # 保留最近 10 条
+                keep=('messages', 10)
             ),
             ModelCallLimitMiddleware(
                 run_limit=10,       # 每次运行最多 10 次模型调用
@@ -145,7 +159,7 @@ def builtin_middleware_demo():
 if __name__ == '__main__':
     print("\n>>> 09_agent/middleware — 中间件拦截器\n")
 
-    decorator_middleware_demo()
+    # decorator_middleware_demo()
     builtin_middleware_demo()
 
     # 接下来学习: human_in_the_loop.py（人在回路）

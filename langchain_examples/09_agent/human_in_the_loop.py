@@ -17,6 +17,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.types import Command
 from langchain_core.tools import tool
 from langchain_core.messages import HumanMessage
+from utils.model_utils import get_model
 
 
 """
@@ -28,6 +29,10 @@ from langchain_core.messages import HumanMessage
   生活化比喻: HITL = 双人复核制
     财务大额转账 → 需要主管签字
     Agent 调用敏感工具 → 需要人类点头
+    
+  人在回路在实际场景中的使用：
+  1. 当遇到需要审批的操作的时候，中断agent，等待审批
+  2. 可以把当前的状态写入到数据库中，等待审批后继续agent的执行
 """
 
 
@@ -87,11 +92,12 @@ def run():
     """完整的 HITL 流程：用户请求 → Agent 准备 → 中断 → 人类审批 → 恢复执行。"""
     print(f"\n-- 人在回路 — 邮件发送审批")
 
+    # 设定当触发调用send_email的工具的时候会被中断，等待人类的审批
     hitl = HumanInTheLoopMiddleware(interrupt_on={
         "send_email": {"allowed_decisions": ["approve", "edit", "reject"]},
     })
 
-    model = get_qwen_client()
+    model = get_model("qwen")
     if model is None:
         return
 
@@ -119,5 +125,4 @@ def run():
 
 if __name__ == '__main__':
     print("\n>>> 09_agent/human_in_the_loop — 人在回路审批\n")
-    print("⚠️ 本文件需要 ALIYUN_API_KEY 环境变量\n")
     run()

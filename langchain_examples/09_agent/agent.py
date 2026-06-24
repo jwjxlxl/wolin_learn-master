@@ -5,6 +5,7 @@
 # 学完本文件你将能够：
 #   ✅ 理解 Agent = LLM + 工具 + 决策循环
 #   ✅ 使用 create_agent() 一行创建 Agent
+#   在LangChain1.0+中，create_agent是推荐的Agent创建方式
 #   ✅ 观察 ReAct 模式（思考 → 行动 → 观察 → 循环）
 # =============================================================================
 
@@ -36,7 +37,7 @@ from langchain_ollama import ChatOllama
 # 示例 1: 最简单的 Agent — bind_tools
 # =============================================================================
 
-def bind_tools_demo():
+def bind_tools_demo(question: str = "北京今天天气怎么样？"):
     """
     用 model.bind_tools() 让模型知道有哪些工具可用。
 
@@ -55,7 +56,7 @@ def bind_tools_demo():
     agent = create_agent(model=model, tools=[get_weather],
                          system_prompt=SystemMessage("你是一个有用的助手"))
 
-    response = agent.invoke({"messages": [HumanMessage("北京今天天气怎么样？")]})
+    response = agent.invoke({"messages": [HumanMessage(question)]})
     print(f"回复: {response['messages'][-1].content}")
 
 
@@ -75,7 +76,7 @@ def create_agent_demo():
     @tool
     def get_weather(city: str) -> str:
         """查询指定城市的天气。"""
-        weather_db = {"北京": "晴，25°C", "上海": "多云，28°C", "深圳": "晴，29°C"}
+        weather_db = {"北京": "晴，20°C", "上海": "多云，28°C", "深圳": "晴，29°C"}
         return weather_db.get(city, f"暂无 {city} 的天气数据")
 
     @tool
@@ -104,7 +105,7 @@ def create_agent_demo():
 if __name__ == '__main__':
     print("\n>>> 09_agent/agent — create_agent 智能体\n")
 
-    bind_tools_demo()
+    # bind_tools_demo()
     create_agent_demo()
 
     # 接下来学习: agent_memory.py（Agent 记忆管理）

@@ -92,6 +92,7 @@ def code_optimizer():
     # 2. 定义状态
     class OptimizerState(TypedDict):
         task: str              # 编程任务描述
+        is_good_enough: bool    # 是否达标
         code: str              # 当前代码
         score: int             # 当前评分
         issues: str            # 当前问题
@@ -117,6 +118,7 @@ def code_optimizer():
                 f"请只输出改进后的完整代码。"
             )
 
+        model1 = get_model()
         response = model.invoke(prompt)
         new_code = response.content
         return {
@@ -134,7 +136,7 @@ def code_optimizer():
             f"```python\n{state['code']}\n```"
         )
         print(f"    评分: {evaluation.score}/10 — {'达标' if evaluation.is_good_enough else '需改进'}")
-        print(f"    问题: {evaluation.issues[:60]}...")
+        print(f"    问题: {evaluation.issues}...")
         return {
             "score": evaluation.score,
             "is_good_enough": evaluation.is_good_enough,
@@ -149,6 +151,7 @@ def code_optimizer():
         return {}  # generate 节点会读取 state 中的 issues
 
     def should_continue(state: OptimizerState):
+        print(state["is_good_enough"])
         """路由函数：决定继续循环还是结束"""
         if state.get("is_good_enough"):
             print(f"  [路由] 质量达标 (评分 {state['score']}/10) → 结束")
@@ -171,6 +174,14 @@ def code_optimizer():
         .add_edge("optimize", "generate")  # ★ 循环的关键：优化后回到生成
         .compile()
     )
+
+    # 保存图为 PNG
+    # images_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'images')
+    # os.makedirs(images_dir, exist_ok=True)
+    # png_path = os.path.join(images_dir, 'evaluate.png')
+    # with open(png_path, 'wb') as f:
+    #     f.write(graph.get_graph().draw_mermaid_png())
+    # print(f"  图已保存到: {png_path}\n")
 
 
     # 5. 测试
@@ -282,10 +293,10 @@ if __name__ == '__main__':
     print("=" * 70 + "\n")
 
     # 示例 2 不需要 LLM
-    evaluator_optimizer_no_llm()
+    # evaluator_optimizer_no_llm()
 
     # 示例 1 需要 LLM
-    # code_optimizer()
+    code_optimizer()
 
     print("=" * 70)
     print("  接下来学习：parallelization.py（并行化 — Send API）")

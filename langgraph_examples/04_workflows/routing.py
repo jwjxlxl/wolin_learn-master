@@ -68,7 +68,7 @@ def routing_demo():
     """
     print(f"\n-- 示例: 路由 — LLM 判断问题类型后选择回答路径")
 
-    model = get_model()
+    model = get_model("qwen")
     if model is None:
         print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
         return
@@ -80,6 +80,7 @@ def routing_demo():
             description="问题类型：technical(技术问题)、philosophical(哲学问题)、creative(创意问题)"
         )
 
+    # 就是对llm返回的结果做结构化的转换 相当于： PydanticOutputParser
     router = model.with_structured_output(RouteDecision)
 
     # 2. 定义状态
@@ -157,12 +158,6 @@ if __name__ == '__main__':
     print("  路由（Routing）— 基于 LLM 判断选择路径")
     print("  用结构化输出让 LLM 做智能分类")
     print("=" * 70 + "\n")
-
-    print("【运行前检查】")
-    print("  1. 已安装依赖：pip install langgraph langchain-core langchain-ollama pydantic")
-    print("  2. 已安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
-    print("  3. 云端 API（可选）：代码改用 get_model(use_cloud=True)")
-    print()
 
     routing_demo()
 

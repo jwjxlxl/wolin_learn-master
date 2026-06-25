@@ -165,12 +165,6 @@ if __name__ == '__main__':
     print("  理解工作流（Workflow）的确定性编排")
     print("=" * 70 + "\n")
 
-    print("【运行前检查】")
-    print("  1. 已安装依赖：pip install langgraph langchain-core langchain-ollama pydantic")
-    print("  2. 已安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
-    print("  3. 云端 API（可选）：代码改用 get_model(use_cloud=True)")
-    print()
-
     prompt_chain_demo()
 
     print("=" * 70)

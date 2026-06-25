@@ -179,7 +179,6 @@ def remote_mcp_demo():
 
     load_dotenv()
     amap_key = os.getenv("AMAP_KEY")
-    print(amap_key)
     if not amap_key:
         print("【跳过】未配置 AMAP_KEY")
         print("  请在 .env 文件中添加高德地图 API Key：")

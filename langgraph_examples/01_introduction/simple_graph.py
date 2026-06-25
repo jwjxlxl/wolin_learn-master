@@ -84,15 +84,17 @@ def simple_two_node_graph():
         """节点 2：添加回应消息，读取上一步的 step_count 并 +1"""
         print("  [节点: respond] 添加回应")
         return {
-            "messages": ["你好！我也很高兴！"],
+            "messages": state["messages"] + ["你好！我也很高兴！"],
             "step_count": state["step_count"] + 1
         }
 
     # 3. 构建图：连接节点
     graph = (
         StateGraph(GraphState)
+        # 添加节点
         .add_node("greet", greet)
         .add_node("respond", respond)
+        # 添加边
         .add_edge(START, "greet")       # 起点 → greet
         .add_edge("greet", "respond")   # greet → respond
         .add_edge("respond", END)       # respond → 终点

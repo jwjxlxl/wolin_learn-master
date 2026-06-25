@@ -15,6 +15,9 @@
 import sys
 import os
 import io
+
+from langchain.agents import create_agent
+
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 # 确保项目根目录可导入（用于 utils/ 共享模块）
@@ -95,20 +98,30 @@ def agent_with_prebuilt():
         """计算两个数的乘积"""
         return a * b
 
-    tools = [add, multiply]
+    @tool
+    def devile(a: int, b: int) -> int:
+        """计算两个数的相除的结果"""
+        return a / b
+
+    @tool
+    def decus(a: int, b: int) -> int:
+        """计算两个数的减法"""
+        return a - b
+
+    tools = [add, multiply, devile, decus]
 
     # 2. 获取模型
-    model = get_model()
+    model = get_model("qwen")
     if model is None:
         print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
         return
 
     # 3. ★ 一行创建 Agent！底层就是 agent_react.py 中手写的所有逻辑
-    agent = create_react_agent(model, tools)
+    agent = create_agent(model, tools)
 
     # 4. 测试
     print("  【测试】(3 + 4) × 5 = ?")
-    result = agent.invoke({"messages": [HumanMessage(content="(3 + 4) × 5 等于多少？")]})
+    result = agent.invoke({"messages": [HumanMessage(content="(3 + 4) × 5 + (12.5 - 2.3) / 3 等于多少？")]})
 
     # 提取最终回答
     for msg in result["messages"]:
@@ -162,11 +175,11 @@ def agent_manual():
 
     tools = [add, multiply]
 
-    model = get_model()
+    model = get_model("qwen")
     if model is None:
         print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
         return
-
+    # 模型绑定工具列表
     model_with_tools = model.bind_tools(tools)
 
     # 手动构建 — 这就是 create_react_agent() 内部做的事
@@ -177,24 +190,28 @@ def agent_manual():
     class AgentState(TypedDict):
         messages: Annotated[list, add_messages]
 
+    # 大模型的节点
     def llm_call(state: AgentState):
         response = model_with_tools.invoke(state["messages"])
+        print(f"LLM response: {response}")
         return {"messages": [response]}
 
-    # 工具执行节点
+    # 工具执行节点 tools_by_name = {"add":add, "multiply":multiply}
     tools_by_name = {t.name: t for t in tools}
     def tool_executor(state: AgentState):
         last_msg = state["messages"][-1]
         results = []
         for tc in last_msg.tool_calls:
             func = tools_by_name[tc["name"]]
+            print(f"Tool call: {tc["name"]}")
             results.append(ToolMessage(
                 content=str(func.invoke(tc["args"])),
                 tool_call_id=tc["id"]
             ))
         return {"messages": results}
 
-    # 条件路由
+
+    # 条件路由, 作用是
     def router(state: AgentState):
         last_msg = state["messages"][-1]
         if hasattr(last_msg, 'tool_calls') and last_msg.tool_calls:
@@ -212,7 +229,7 @@ def agent_manual():
     )
 
     print("  【测试】同样的输入 → 同样的结果")
-    result = graph.invoke({"messages": [HumanMessage(content="(3 + 4) × 5 等于多少？")]})
+    result = graph.invoke({"messages": [HumanMessage(content="(3 + 4) × 5 + (12.5 - 2.3) / 3 等于多少？")]})
 
     final_msg = result["messages"][-1]
     print(f"  【回答】{final_msg.content if hasattr(final_msg, 'content') and final_msg.content else '（查看工具调用结果）'}")
@@ -230,12 +247,17 @@ if __name__ == '__main__':
     print("  理解内置函数的底层原理")
     print("=" * 70 + "\n")
 
-    print("【运行前检查】")
-    print("  1. 已安装依赖：pip install langgraph langchain-core langchain-ollama")
-    print("  2. 已安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
-    print()
-
+    '''
+        agent_with_prebuilt():
+        我们直接调用Agent创建的过程，底层运行的逻辑和原理，不关注
+        它能帮忙我们完成ReAct模式的Agent
+    '''
     # agent_with_prebuilt()
+    '''
+        agent_manual():
+        手动创建一个ReAct模式的Agent，用Langgraph来实现它的每一个步骤，节点，边，router判断都是自己手动实现
+        因为Langgraph是最底层的实现
+    '''
     agent_manual()
 
     print("=" * 70)

@@ -63,6 +63,7 @@ def conditional_branch_graph():
     from typing import TypedDict
     from langgraph.graph import StateGraph, START, END
 
+    # 定义State
     class SentimentState(TypedDict):
         text: str
         category: str
@@ -112,6 +113,7 @@ def conditional_branch_graph():
     # 构建图
     graph = (
         StateGraph(SentimentState)
+        # 添加节点
         .add_node("classify", classify)
         .add_node("positive_reply", positive_reply)
         .add_node("negative_reply", negative_reply)

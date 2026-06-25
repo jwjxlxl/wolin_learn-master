@@ -36,6 +36,8 @@ from utils.model_utils import get_model
 # 核心概念：ReAct Agent 循环
 # =============================================================================
 """
+    ReAct 模式 Agent工作的原理，流程？   -- 面试题
+    create_agent()
 什么是 ReAct Agent？
 
   ReAct = Reasoning（推理） + Acting（行动）
@@ -209,10 +211,19 @@ def multi_tool_agent():
         """计算两个数的乘积"""
         return a * b
 
-    tools = [add, multiply]
+    @tool
+    def divide(a: int, b: int) -> float:
+        """计算 a 除以 b 的商"""
+        if b == 0:
+            return "错误：除数不能为 0"
+        result = a / b
+        print(f"  [工具: divide] {a} ÷ {b} = {result}")
+        return result
+
+    tools = [add, multiply, divide]
     tools_by_name = {t.name: t for t in tools}
 
-    model = get_model()
+    model = get_model("qwen")
     if model is None:
         print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
         return

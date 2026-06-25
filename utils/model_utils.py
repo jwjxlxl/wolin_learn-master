@@ -39,10 +39,11 @@ def get_qwen_client(model_name="qwen-plus"):
 def get_model(provider: str = None):
     """
         根据服务商名称返回对应的模型实例。
+        默认使用 Ollama 本地模型（qwen3.5:2b）。
 
         好处：切换模型只改一行参数，不需要到处改代码。
         """
-    if provider == "ollama":
+    if provider is None or provider == "ollama":
         from langchain_ollama import ChatOllama
         return ChatOllama(model="qwen3.5:2b")
 

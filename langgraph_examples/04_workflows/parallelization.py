@@ -68,17 +68,17 @@ def parallel_joke_generation():
     演示 Send() 的基本用法：为多个主题并行生成笑话。
 
     图结构：
-      START → planner（分派任务）→ Send → generate_joke × 3（并行）
-                                               ↘ summarizer（汇总）→ END
+      START → planner（分派任务）→ 条件边 Send → generate_joke × 3（并行）
+                                                      ↘ summarizer（汇总）→ END
 
     关键点：
-      - planner 返回 [Send("generate_joke", {"topic": t}) for t in topics]
+      - 条件边返回 [Send("generate_joke", {"topics": [t]}) for t in topics]
       - 3 个 generate_joke 节点可以同时运行
       - summarizer 在所有 generate_joke 完成后才执行
     """
     print(f"\n-- 示例 1: Send() 基础 — 并行生成笑话")
 
-    model = get_model()
+    model = get_model("qwen")
     if model is None:
         print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
         return
@@ -94,18 +94,17 @@ def parallel_joke_generation():
         """
         规划节点：为每个主题创建一个 Send()，派发给 generate_joke 节点。
 
-        这行是 Send() 的用法精髓：
-          Send("generate_joke", {"topic": "程序员"})
-          Send("generate_joke", {"topic": "产品经理"})
-          Send("generate_joke", {"topic": "设计师"})
+        条件边（add_conditional_edges）负责返回 Send 列表：
+          Send("generate_joke", {"topics": ["程序员"]})
+          Send("generate_joke", {"topics": ["产品经理"]})
+          Send("generate_joke", {"topics": ["设计师"]})
 
         每个 Send 会在目标节点中作为一个独立执行分支，
         传入的参数会合并到该分支的状态中。
         """
         print(f"  [节点: planner] 为 {len(state['topics'])} 个主题分配任务")
-        topics = state["topics"]
-        # 返回 Send 列表 — 每个 Send 一个并行分支
-        return [Send("generate_joke", {"topics": [topic]}) for topic in topics]
+        # 节点本身不做路由，由条件边负责扇出
+        return {}
 
     def generate_joke(state: JokeState):
         """Worker 节点：为分配到的主题生成笑话"""
@@ -119,18 +118,18 @@ def parallel_joke_generation():
 
     def summarizer(state: JokeState):
         """汇总节点：所有并行分支完成后，汇总结果"""
-        print(f"  [节点: summarizer] 汇总 {len(state['jokes'])} 个笑话")
+        jokes = state.get("jokes", [])
+        if not jokes:
+            print(f"  [节点: summarizer] 等待笑话生成...")
+            return {"summary": "（无笑话可汇总）"}
+        print(f"  [节点: summarizer] 汇总 {len(jokes)} 个笑话")
         response = model.invoke(
             f"以下是几个笑话，请给一个幽默的总评（15字以内）：\n" +
-            "\n".join(state["jokes"])
+            "\n".join(jokes)
         )
         return {"summary": response.content}
 
-    # 3. 继续路由：从 planner 返回 Send 列表（条件扇出）
-    #    注意：这里不是普通的条件边，而是用 Send 实现动态扇出
-    def continue_to_jokes(state: JokeState):
-        """从 planner 发出的 Send 列表 — LangGraph 自动并行执行"""
-        return [Send("generate_joke", {"topics": [topic]}) for topic in state["topics"]]
+    # 3. 条件扇出：从 planner 返回 Send 列表（条件边直接定义在图中）
 
     # 4. 构建图
     graph = (
@@ -139,8 +138,9 @@ def parallel_joke_generation():
         .add_node("generate_joke", generate_joke)
         .add_node("summarizer", summarizer)
         .add_edge(START, "planner")
-        # ★ Send 条件边：planner 返回 Send 列表，LangGraph 并行执行
-        .add_conditional_edges("planner", continue_to_jokes, ["generate_joke"])
+        # ★ Send 条件边：planner 节点返回 Send 列表，LangGraph 自动并行执行
+        # 注意：planner 函数的返回值就是 Send 列表，不需要额外的 continue_to_jokes
+        .add_conditional_edges("planner", lambda state: [Send("generate_joke", {"topics": [topic]}) for topic in state["topics"]], ["generate_joke"])
         .add_edge("generate_joke", "summarizer")
         .add_edge("summarizer", END)
         .compile()
@@ -240,10 +240,11 @@ def multi_source_search():
 
     def fan_out(state: SearchState):
         """扇出函数：返回 Send 列表，每个 Send 指向不同数据源"""
+        # 必须把 query 传入每个 Send，否则 worker 分支拿不到原始查询
         return [
-            Send("search_news", {}),
-            Send("search_wiki", {}),
-            Send("search_forum", {}),
+            Send("search_news", {"query": state["query"]}),
+            Send("search_wiki", {"query": state["query"]}),
+            Send("search_forum", {"query": state["query"]}),
         ]
 
     graph = (
@@ -285,16 +286,11 @@ if __name__ == '__main__':
     print("  Fan-out（扇出）→ 并行处理 → Fan-in（扇入）")
     print("=" * 70 + "\n")
 
-    print("【运行前检查】")
-    print("  1. 已安装依赖：pip install langgraph langchain-core langchain-ollama")
-    print("  2. 示例 2 无需 LLM（纯并行编排演示）")
-    print()
-
     # 示例 2 不需要 LLM，先运行
     multi_source_search()
 
     # 示例 1 需要 LLM
-    parallel_joke_generation()
+    # parallel_joke_generation()
 
     print("=" * 70)
     print("  五大工作流模式已全部覆盖：")

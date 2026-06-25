@@ -75,7 +75,7 @@ def code_optimizer():
     """
     print(f"\n-- 示例: 评估器-优化器 — 代码优化循环")
 
-    model = get_model()
+    model = get_model("qwen")
     if model is None:
         print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
         return
@@ -172,6 +172,7 @@ def code_optimizer():
         .compile()
     )
 
+
     # 5. 测试
     result = graph.invoke({
         "task": "判断一个字符串是否是回文（忽略大小写和空格）",
@@ -258,6 +259,7 @@ def evaluator_optimizer_no_llm():
         .compile()
     )
 
+
     # 测试
     import random
     target = random.randint(1, 100)
@@ -279,16 +281,11 @@ if __name__ == '__main__':
     print("  生成 → 评估 → 不满意则改进 → 再评估 → ...")
     print("=" * 70 + "\n")
 
-    print("【运行前检查】")
-    print("  1. 已安装依赖：pip install langgraph langchain-core langchain-ollama pydantic")
-    print("  2. 示例 2 无需 LLM（纯逻辑演示）")
-    print()
-
     # 示例 2 不需要 LLM
     evaluator_optimizer_no_llm()
 
     # 示例 1 需要 LLM
-    code_optimizer()
+    # code_optimizer()
 
     print("=" * 70)
     print("  接下来学习：parallelization.py（并行化 — Send API）")

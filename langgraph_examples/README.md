@@ -3,14 +3,14 @@
 ## 学习路线
 
 ```
-01_introduction         02_state_and_branching     03_agent_loop          04_workflows            05_practical
-    │                        │                         │                      │                      │
-    ▼                        ▼                         ▼                      ▼                      ▼
- 概念认知  ──────────→  状态+条件分支  ──────────→  ReAct Agent  ──────────→  工作流模式  ──────────→  综合实战
- (无需API)              (无需API)                 ★核心技能              (需要LLM)              (需要LLM)
-                                                    ├─ agent_react         ├─ prompt_chain
-                                                    ├─ create_agent_demo   ├─ routing
-                                                    │                      ├─ parallelization
+01_introduction         02_state_and_branching     03_agent_loop          04_workflows            05_practical            06_multi_agent          07_deep_agents
+    │                        │                         │                      │                      │                      │                      │
+    ▼                        ▼                         ▼                      ▼                      ▼                      ▼                      ▼
+ 概念认知  ──────────→  状态+条件分支  ──────────→  ReAct Agent  ──────────→  工作流模式  ──────────→  综合实战  ──────────→  多智能体模式  ──────→  DeepAgents 框架
+ (无需API)              (无需API)                 ★核心技能              (需要LLM)              (需要LLM)              (需要LLM)              (需要LLM+deepagents)
+                                                    ├─ agent_react         ├─ prompt_chain          ├─ search_qa_agent       ├─ agent_as_tool
+                                                    ├─ create_agent_demo   ├─ routing                                        ├─ handoffs
+                                                    │                      ├─ parallelization                                └─ supervisor
                                                     │                      └─ evaluator_optimizer
 ```
 
@@ -23,6 +23,8 @@
 | 03 | `03_agent_loop/` | **ReAct Agent 循环 + 构建方式对比** | Agent 手动构建 vs create_react_agent() | ❌ Ollama |
 | 04 | `04_workflows/` | 四大工作流模式全覆盖 | 提示链 / LLM 路由 / 并行化 / 评估器-优化器 | ❌ Ollama |
 | 05 | `05_practical/` | 智能问答 Agent 综合实战 | 知识搜索 + 计算 + 日期 | ❌ Ollama |
+| 06 | `06_multi_agent/` | **三大多智能体模式** | Agent-as-Tool / Handoff / Supervisor | ❌ Ollama |
+| 07 | `07_deep_agents/` | **DeepAgents 开箱即用框架** | 一行创建 + 文件系统 / 子代理 / Skills | ❌ Ollama + `deepagents` |
 
 ## 文件清单
 
@@ -55,6 +57,19 @@ langgraph_examples/
 ├── 05_practical/                       ← 综合实战
 │   └── search_qa_agent.py + .ipynb     知识库 + 计算 + 日期 Agent
 │
+├── 06_multi_agent/                     ← 多智能体模式（三大架构）
+│   ├── __init__.py
+│   ├── agent_as_tool.py                Agent-as-Tool（主Agent调用子Agent为工具）
+│   ├── handoffs.py                     Handoff 模式（控制权接力传递）
+│   └── supervisor.py                   Supervisor 模式（主管分配+审查）
+│
+├── 07_deep_agents/                     ← DeepAgents 开箱即用框架
+│   ├── __init__.py
+│   ├── what_is_deepagent.py            ★ 概念认知（DeepAgents 定位 + 六大能力）
+│   ├── quickstart.py + .ipynb          最简入门 + 文件系统操作
+│   ├── subagents_and_skills.py + .ipynb 子代理委派 + Skills 加载
+│   └── README.md                       教学大纲
+│
 ├── tests/                              ← 测试
 │   ├── __init__.py
 │   ├── test_graph_helpers.py           11 个单元测试（tool_node + router）
@@ -72,6 +87,10 @@ langgraph_examples/
    pip install langgraph langchain-core langchain-ollama
    # 部分模块需要：
    pip install langchain-openai pydantic
+   # 模块 06（多智能体）无需额外安装 langgraph-supervisor
+   # 模块 07（DeepAgents）需要额外安装：
+   pip install deepagents
+   # 所有模式均用原生 langgraph 实现，教底层原理而非黑盒
    ```
 
 2. **安装 Ollama 并下载模型**（所有需要的模块默认使用 Ollama）：

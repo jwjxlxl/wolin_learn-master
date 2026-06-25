@@ -269,13 +269,7 @@ if __name__ == '__main__':
     print("  理解思考→行动→观察→再思考的核心循环")
     print("=" * 70 + "\n")
 
-    print("【运行前检查】")
-    print("  1. 已安装依赖：pip install langgraph langchain-core langchain-ollama")
-    print("  2. 已安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
-    print("  3. 云端 API（可选）：在 .env 中配置 ALIYUN_API_KEY，代码改用 get_model(use_cloud=True)")
-    print()
-
-    simple_math_agent()
+    # simple_math_agent()
     multi_tool_agent()
 
     print("=" * 70)

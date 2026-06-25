@@ -13,6 +13,7 @@
 # =============================================================================
 
 import sys
+import os
 import io
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
@@ -128,6 +129,14 @@ def conditional_branch_graph():
         .compile()
     )
 
+    # 保存图为 PNG
+    images_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'images')
+    os.makedirs(images_dir, exist_ok=True)
+    png_path = os.path.join(images_dir, 'conditional_branch.png')
+    with open(png_path, 'wb') as f:
+        f.write(graph.get_graph().draw_mermaid_png())
+    print(f"  图已保存到: {png_path}\n")
+
     # 测试不同输入
     print("【测试 1: 正面输入】")
     r1 = graph.invoke({"text": "今天天气真好，心情不错！", "category": "", "reply": ""})
@@ -147,11 +156,6 @@ if __name__ == '__main__':
     print("  条件分支 — 根据状态选择不同路径")
     print("  理解条件边（Conditional Edge）的工作原理")
     print("=" * 70 + "\n")
-
-    print("【运行前检查】")
-    print("  1. 已安装依赖：pip install langgraph langchain-core")
-    print("  2. 无需 API Key（本示例不调用模型，纯本地执行）")
-    print()
 
     conditional_branch_graph()
 

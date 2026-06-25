@@ -34,11 +34,17 @@ TEACHING_FILES = [
     "04_workflows/parallelization.py",
     "04_workflows/evaluator_optimizer.py",
     "05_practical/search_qa_agent.py",
+    "06_multi_agent/agent_as_tool.py",
+    "06_multi_agent/handoffs.py",
+    "06_multi_agent/supervisor.py",
+    "07_deep_agents/quickstart.py",
+    "07_deep_agents/subagents_and_skills.py",
 ]
 
 # 不需要转换的文件
 EXCLUDE = [
     "what_is_langgraph.py",  # 纯概念文件
+    "what_is_deepagent.py",  # 纯概念文件
     "utils/graph_helpers.py",  # 共享工具
     "__init__.py",
     "convert_py_to_ipynb.py",

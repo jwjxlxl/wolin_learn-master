@@ -235,7 +235,7 @@ if __name__ == '__main__':
     print("  2. 已安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
     print()
 
-    agent_with_prebuilt()
+    # agent_with_prebuilt()
     agent_manual()
 
     print("=" * 70)

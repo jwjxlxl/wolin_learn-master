@@ -113,11 +113,6 @@ if __name__ == '__main__':
     print("  理解 StateGraph 的四个核心元素")
     print("=" * 70 + "\n")
 
-    print("【运行前检查】")
-    print("  1. 已安装依赖：pip install langgraph langchain-core")
-    print("  2. 无需 API Key（本示例不调用模型，纯本地执行）")
-    print()
-
     simple_two_node_graph()
 
     print("=" * 70)

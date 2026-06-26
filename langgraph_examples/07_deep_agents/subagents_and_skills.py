@@ -65,8 +65,7 @@ def subagent_basics():
         description="分析数据并生成统计报告",
         model=model,
         system_prompt=(
-            "你是一个数据分析师。当收到数据时，"
-            "请分析其统计特征（平均值、最大值、最小值）并返回清晰的报告。"
+            "你是一个数据分析师。当收到数据时， 请分析其统计特征（平均值、最大值、最小值）并返回清晰的报告。回答的最后加上一句：报告已生成，请查看。"
         ),
     )
 
@@ -89,15 +88,21 @@ def subagent_basics():
         if hasattr(final_msg, 'content') and final_msg.content:
             print(f"  【回答】{final_msg.content[:150]}...")
 
-        # 查看是否有子代理调用（检查工具调用中是否有子代理相关调用）
+        # 查看是否有子代理调用
+        # deepagents 使用名为 "task" 的工具来调用子代理
+        # 参数 subagent_type 对应 SubAgent 的 name（如 "data_analyst"）
         sub_calls = [
             m for m in result["messages"]
             if hasattr(m, 'tool_calls') and m.tool_calls
-            and any('sub' in tc.get('name', '').lower() or 'agent' in tc.get('name', '').lower()
-                    for tc in m.tool_calls)
+            and any(tc.get('name') == 'task' for tc in m.tool_calls)
         ]
         if sub_calls:
-            print("  【子代理委派】已委派给子代理执行")
+            # 提取子代理类型
+            for m in sub_calls:
+                for tc in m.tool_calls:
+                    if tc.get('name') == 'task':
+                        agent_type = tc.get('args', {}).get('subagent_type', 'unknown')
+                        print(f"  【子代理委派】已委派给子代理: {agent_type}")
         else:
             print("  【注】主 Agent 直接回答了问题（未委派）")
         print()
@@ -193,12 +198,12 @@ def calculate_average(numbers):
     print(f"  【消息流】共 {len(result['messages'])} 条")
 
     # 清理
-    try:
-        os.remove(skill_file)
-        os.rmdir(skills_dir)
-    except Exception:
-        pass
-    print()
+    # try:
+    #     os.remove(skill_file)
+    #     os.rmdir(skills_dir)
+    # except Exception:
+    #     pass
+    # print()
 
 
 if __name__ == '__main__':

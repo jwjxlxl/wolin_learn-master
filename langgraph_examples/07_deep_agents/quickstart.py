@@ -137,12 +137,12 @@ def agent_with_filesystem():
         backend=backend,
         system_prompt=(
             "你是一个写作助手。你可以使用文件系统来读写文件。"
-            "当用户要求创建文件时，请在工作目录中操作。"
+            "当用户要求创建文件时，请在工作目录{{workspace}}中操作。"
         ),
     )
 
     # 4. 让 Agent 创建文件
-    print("  【用户】请创建一个名为 hello.txt 的文件，里面写一句问候语。")
+    # print("  【用户】请创建一个名为 hello.txt 的文件，里面写一句问候语。")
     result = agent.invoke({
         "messages": [HumanMessage(
             content="请创建一个名为 hello.txt 的文件，里面写一句问候语。"
@@ -173,12 +173,12 @@ def agent_with_filesystem():
         print(f"    [{i}] {msg_type}: {preview}")
 
     # 清理
-    try:
-        if os.path.exists(created_file):
-            os.remove(created_file)
-        os.rmdir(workspace)
-    except Exception:
-        pass
+    # try:
+    #     if os.path.exists(created_file):
+    #         os.remove(created_file)
+    #     os.rmdir(workspace)
+    # except Exception:
+    #     pass
     print()
 
 

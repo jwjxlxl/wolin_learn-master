@@ -83,7 +83,7 @@ except ImportError:
 #
 # =============================================================================
 
-def local_mcp_demo():
+def local_mcp_demo(question:str):
     """
     连接本地 MCP 服务器，将 MCP 工具转换为 LangChain 工具并用于 Agent。
 
@@ -101,7 +101,7 @@ def local_mcp_demo():
         print("【跳过】未配置阿里云 API Key，无法运行此示例")
         return
 
-    async def run_with_mcp():
+    async def run_with_mcp(query:str):
         try:
             # 通过 stdio 启动本地 MCP 服务器
             # command 指定启动命令，args 指定参数
@@ -131,11 +131,11 @@ def local_mcp_demo():
                 system_prompt="你是一个智能助手，请使用工具来回答用户问题。",
             )
 
-            question = "北京的天气怎么样？"
-            print(f"【用户提问】{question}")
+
+            print(f"【用户提问】{query}")
 
             result = await agent.ainvoke(
-                {"messages": [{"role": "user", "content": question}]}
+                {"messages": [{"role": "user", "content": query}]}
             )
             last_msg = result["messages"][-1]
             print(f"【Agent 回答】{last_msg.content}")
@@ -144,7 +144,7 @@ def local_mcp_demo():
             print(f"  注意：本地 MCP 服务连接失败: {e}")
             print("  提示：实际使用时需要确保 MCP 服务正在运行")
 
-    asyncio.run(run_with_mcp())
+    asyncio.run(run_with_mcp(question))
     print()
 
 
@@ -529,7 +529,7 @@ if __name__ == '__main__':
     print()
     print("=" * 70 + "\n")
 
-    # local_mcp_demo()
+    # local_mcp_demo("上海的天气怎么样，空气质量好不好？")
     # remote_mcp_demo()
-    # multi_server_mcp_demo()
-    github_mcp_demo()
+    multi_server_mcp_demo()
+    # github_mcp_demo()

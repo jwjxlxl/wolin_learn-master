@@ -146,6 +146,14 @@ def parallel_joke_generation():
         .compile()
     )
 
+    # 保存图为 PNG
+    images_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'images')
+    os.makedirs(images_dir, exist_ok=True)
+    png_path = os.path.join(images_dir, 'parallelization.png')
+    with open(png_path, 'wb') as f:
+        f.write(graph.get_graph().draw_mermaid_png())
+    print(f"  图已保存到: {png_path}\n")
+
     # 5. 执行
     print("  【测试：3 个主题并行生成笑话】")
     start = time.time()
@@ -287,10 +295,10 @@ if __name__ == '__main__':
     print("=" * 70 + "\n")
 
     # 示例 2 不需要 LLM，先运行
-    multi_source_search()
+    # multi_source_search()
 
     # 示例 1 需要 LLM
-    # parallel_joke_generation()
+    parallel_joke_generation()
 
     print("=" * 70)
     print("  五大工作流模式已全部覆盖：")

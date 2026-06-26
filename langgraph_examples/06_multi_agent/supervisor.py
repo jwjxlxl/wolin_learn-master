@@ -204,7 +204,7 @@ def supervisor_with_llm():
     from pydantic import BaseModel, Field
     from typing import Literal
 
-    model = get_model()
+    model = get_model("qwen")
     if model is None:
         print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
         return
@@ -327,6 +327,14 @@ def supervisor_with_llm():
         .compile()
     )
 
+    # 保存图为 PNG
+    images_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'images')
+    os.makedirs(images_dir, exist_ok=True)
+    png_path = os.path.join(images_dir, 'supervisor_with_llm.png')
+    with open(png_path, 'wb') as f:
+        f.write(graph.get_graph().draw_mermaid_png())
+    print(f"  图已保存到: {png_path}\n")
+
     # ===== 测试 =====
     tasks = [
         "搭建一个能搜索公司知识库的智能问答 Agent",
@@ -361,7 +369,7 @@ if __name__ == '__main__':
     print("  3. 示例 1 无需 LLM 即可运行（规则模拟）")
     print()
 
-    dev_team_demo()
+    # dev_team_demo()
     supervisor_with_llm()
 
     print("=" * 70)

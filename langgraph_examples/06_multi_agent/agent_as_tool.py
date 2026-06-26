@@ -441,7 +441,7 @@ def agent_as_tool_with_llm():
     """
     print(f"\n-- 示例 2: LLM 版 — 真正的 Agent-as-Tool")
 
-    model = get_model()
+    model = get_model("qwen")
     if model is None:
         print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
         return
@@ -463,6 +463,8 @@ def agent_as_tool_with_llm():
 
     from langgraph_examples.utils.graph_helpers import build_react_agent
     it_model = model.bind_tools(it_tools)
+    # 用于解决IT系统问题的子Agent
+    # 这个子Agent拥有自己的LLM，有自己的工具集，可以解决IT系统相关的问题
     it_sub_agent = build_react_agent(it_model, it_tools,
                                       system_prompt="你是 IT 支持专员，擅长解决密码、系统等技术问题。")
 
@@ -485,6 +487,7 @@ def agent_as_tool_with_llm():
 
     hr_tools = [check_leave_balance, lookup_policy]
     hr_model = model.bind_tools(hr_tools)
+    # 构建HR的子Agent
     hr_sub_agent = build_react_agent(hr_model, hr_tools,
                                       system_prompt="你是 HR 专员，擅长解答假期、政策等人事问题。")
 
@@ -595,7 +598,7 @@ if __name__ == '__main__':
     print("  公司智能客服总台：前台接待员转接各部门专员")
     print("=" * 70 + "\n")
 
-    reception_desk_demo()
+    # reception_desk_demo()
     agent_as_tool_with_llm()
 
     print("=" * 70)

@@ -216,7 +216,7 @@ def handoff_with_llm():
     from pydantic import BaseModel, Field
     from typing import Literal
 
-    model = get_model()
+    model = get_model("qwen")
     if model is None:
         print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
         return
@@ -228,6 +228,7 @@ def handoff_with_llm():
         )
         reason: str = Field(description="分诊理由")
 
+    # 定义一个带有结构化输出的模型
     triage_model = model.with_structured_output(TriageDecision)
 
     class HandoffState(TypedDict):
@@ -334,6 +335,14 @@ def handoff_with_llm():
         .compile()
     )
 
+    # 保存图为 PNG
+    images_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'images')
+    os.makedirs(images_dir, exist_ok=True)
+    png_path = os.path.join(images_dir, 'handoff_with_llm.png')
+    with open(png_path, 'wb') as f:
+        f.write(graph.get_graph().draw_mermaid_png())
+    print(f"  图已保存到: {png_path}\n")
+
     # ===== 测试 =====
     cases = [
         "胸闷、心悸一周，偶有胸痛",
@@ -361,7 +370,7 @@ if __name__ == '__main__':
     print("=" * 70 + "\n")
 
 
-    hospital_triage_demo()
+    # hospital_triage_demo()
     handoff_with_llm()
 
     print("=" * 70)

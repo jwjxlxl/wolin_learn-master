@@ -46,13 +46,13 @@ def subagent_basics():
     print(f"\n-- 示例 1: 子代理基础 — 委派专业任务")
 
     try:
-        from deepagents import create_deep_agent, Subagent
+        from deepagents import create_deep_agent, SubAgent
         from deepagents.backends import FilesystemBackend
-    except ImportError:
-        print("  【跳过】请安装 deepagents：pip install deepagents")
+    except ImportError as e:
+        print(f"  【跳过】请安装 deepagents：pip install deepagents{e}")
         return
 
-    model = get_model()
+    model = get_model("qwen")
     if model is None:
         print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
         return
@@ -60,7 +60,7 @@ def subagent_basics():
     # 1. 定义子代理
     # 子代理是独立的 Agent，有自己的模型和指令
     # 这里用一个简化的配置（实际中可指定不同模型）
-    data_analyst = Subagent(
+    data_analyst = SubAgent(
         name="data_analyst",
         description="分析数据并生成统计报告",
         model=model,
@@ -74,7 +74,7 @@ def subagent_basics():
     agent = create_deep_agent(
         model=model,
         subagents=[data_analyst],
-        instructions="你是项目经理。遇到数据分析任务请委派给数据分析师。",
+        system_prompt="你是项目经理。遇到数据分析任务请委派给数据分析师。",
     )
 
     # 3. 测试：让主 Agent 判断是否委派
@@ -89,11 +89,12 @@ def subagent_basics():
         if hasattr(final_msg, 'content') and final_msg.content:
             print(f"  【回答】{final_msg.content[:150]}...")
 
-        # 查看是否有子代理调用
+        # 查看是否有子代理调用（检查工具调用中是否有子代理相关调用）
         sub_calls = [
             m for m in result["messages"]
             if hasattr(m, 'tool_calls') and m.tool_calls
-            and any(tc['name'] == 'SubAgent' for tc in m.tool_calls)
+            and any('sub' in tc.get('name', '').lower() or 'agent' in tc.get('name', '').lower()
+                    for tc in m.tool_calls)
         ]
         if sub_calls:
             print("  【子代理委派】已委派给子代理执行")
@@ -156,18 +157,18 @@ triggers: 当用户请求审查代码、检查代码质量时
     print(f"  【技能文件】{skill_file}")
     print(f"  【技能内容】代码审查 — 审查代码并指出问题")
 
-    model = get_model()
+    model = get_model("qwen")
     if model is None:
         print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
         return
 
     # 3. 创建 Agent，加载 Skills + 文件后端
-    backend = FilesystemBackend(root_dir=skills_dir)
+    backend = FilesystemBackend(root_dir=skills_dir, virtual_mode=False)
     agent = create_deep_agent(
         model=model,
         backend=backend,
         skills=[skills_dir],  # Agent 自动扫描 SKILL.md 文件
-        instructions=(
+        system_prompt=(
             "你是一个多功能助手。请根据用户的需求自动使用合适的技能。"
             "当用户请求审查代码时，请使用代码审查技能。"
         ),

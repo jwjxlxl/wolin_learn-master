@@ -53,7 +53,7 @@ def simplest_deep_agent():
             return f"计算错误: {e}"
 
     # 2. 获取模型
-    model = get_model()
+    model = get_model("qwen")
     if model is None:
         print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
         return
@@ -68,7 +68,7 @@ def simplest_deep_agent():
     agent = create_deep_agent(
         model=model,
         tools=[calculate],
-        instructions="你是一个智能助手。你可以使用计算工具执行数学运算。",
+        system_prompt="你是一个智能助手。你可以使用计算工具执行数学运算。",
     )
 
     # 4. 测试
@@ -123,9 +123,10 @@ def agent_with_filesystem():
     print(f"  【工作目录】{workspace}")
 
     # 2. 配置文件系统后端
-    backend = FilesystemBackend(root_dir=workspace)
+    # virtual_mode=False: 允许在 root_dir 内使用绝对路径
+    backend = FilesystemBackend(root_dir=workspace, virtual_mode=False)
 
-    model = get_model()
+    model = get_model("qwen")
     if model is None:
         print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
         return
@@ -134,7 +135,7 @@ def agent_with_filesystem():
     agent = create_deep_agent(
         model=model,
         backend=backend,
-        instructions=(
+        system_prompt=(
             "你是一个写作助手。你可以使用文件系统来读写文件。"
             "当用户要求创建文件时，请在工作目录中操作。"
         ),
@@ -156,19 +157,19 @@ def agent_with_filesystem():
         print(f"  【文件内容】{content.strip()}")
         print("  ✅ Agent 成功创建了 hello.txt！")
     else:
-        print("  ⚠️ 文件未创建（模型可能未调用文件工具）")
+        print("  ⚠️ 文件未创建")
         print(f"  【目录内容】{os.listdir(workspace)}")
 
-    # 6. 展示消息流
+    # 6. 展示消息流（含调试信息）
     print(f"  【消息流】共 {len(result['messages'])} 条")
     for i, msg in enumerate(result["messages"]):
         msg_type = msg.__class__.__name__
         if hasattr(msg, 'tool_calls') and msg.tool_calls:
             preview = f"调用工具: {[tc['name'] for tc in msg.tool_calls]}"
         elif hasattr(msg, 'content') and msg.content:
-            preview = msg.content[:50]
+            preview = msg.content[:80]
         else:
-            preview = "(空)"
+            preview = f"(空内容 — 可能模型未响应, 请确认 ollama serve 已启动)"
         print(f"    [{i}] {msg_type}: {preview}")
 
     # 清理

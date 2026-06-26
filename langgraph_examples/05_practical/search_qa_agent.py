@@ -111,10 +111,11 @@ def search_qa_agent():
     tools_by_name = {t.name: t for t in tools}
 
     # 2. 获取模型并绑定工具
-    model = get_model()
+    model = get_model("qwen")
     if model is None:
         print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
         return
+    # 把工具列表绑定到模型上
     model_with_tools = model.bind_tools(tools)
 
     # 3. 添加系统提示词

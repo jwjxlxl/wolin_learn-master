@@ -1,27 +1,35 @@
+﻿# =============================================================================
+# MCP (Model Context Protocol) 实战演示
+# =============================================================================
+#
+# 学完本文件你将能够：
+#   ✅ 连接本地 MCP 服务器（stdio 方式）
+#   ✅ 连接远程 MCP 服务器（SSE 方式，以高德地图为例）
+#   ✅ 同时管理多个 MCP 服务器（本地 + 远程混合编排）
+#   ✅ 连接 GitHub 官方 MCP 服务
+#   ✅ 将 MCP 工具接入 LangChain Agent
+#
+# 建议阅读顺序：
+#   1. what_is_mcp.py         - 理解 MCP 概念
+#   2. mcp_resources_prompts_demo.py - 理解 Tool/Resource/Prompt 区别
+#   3. 本文件（按阶段顺序学习）
+#   4. enterprise_api_mcp_demo.py    - 企业实战
+#   5. gaode_skill_test.py    - 生产级 Skill
+# =============================================================================
+
+import os
 from langchain.agents import create_agent
 from langchain_core.messages import HumanMessage
 
-from utils.model_utils import get_qwen_client
+from utils.model_utils import get_model
 
 
 # =============================================================================
-# MCP (Model Context Protocol) 演示
-# =============================================================================
-#
-# 用途：教学演示 - 理解 MCP 协议及其在 LangChain 中的使用
-#
-# 核心概念：
-#   - MCP = Model Context Protocol（模型上下文协议）
-#   - 统一的标准协议，让 AI 模型能够安全地连接外部工具和数据源
-#   - 类似 "USB-C" 接口，统一了 AI 与外部世界的连接方式
-# =============================================================================
-
-# -----------------------------------------------------------------------------
 # 运行前检查
-# -----------------------------------------------------------------------------
+# =============================================================================
 # 1. 已安装 mcp 包：pip install mcp
 # 2. 已安装 langchain-mcp-adapters：pip install langchain-mcp-adapters
-# -----------------------------------------------------------------------------
+# =============================================================================
 
 # 检查依赖
 try:
@@ -34,30 +42,30 @@ except ImportError:
 
 
 # =============================================================================
-# 第一部分：理解 MCP
+# 核心概念：理解 MCP
 # =============================================================================
 """
 什么是 MCP（Model Context Protocol）？
 
-🤖 定义
+📻 定义
    MCP = Model Context Protocol（模型上下文协议）
    由 Anthropic 提出的一种开放标准协议，用于连接 AI 模型与外部数据源和工具
 
-🔌 类比理解
+🔲 类比理解
    MCP 就像 "USB-C 接口"：
    - 以前：每个设备用不同的接口（Mini-USB、Micro-USB、Lightning...）
    - 现在：统一用 USB-C，一个接口连所有设备
    - AI 领域：以前每个模型用不同方式连接工具，现在用 MCP 统一
 
-📐 架构组成
-   ┌──────────┐         MCP 协议          ┌──────────┐
-   │  AI 模型  │ ←─── Transport (传输) ───→ │ MCP 服务器 │
-   │ (Client) │         Tools (工具)        │ (Server) │
-   │  Claude  │ ←─── Resources (资源) ────→ │  文件系统  │
-   │  Qwen    │         Prompts (提示)       │  数据库    │
-   └──────────┘                            └──────────┘
+📊 架构组成
+   ┌──────────┐        MCP 协议           ┌──────────────┐
+   │ AI 模型   │←────── Transport (传输) ───→│ MCP 服务器    │
+   │ (Client) │        Tools (工具)         │ (Server)     │
+   │ Claude   │←────── Resources (资源) ───→│ 文件系统      │
+   │ Qwen     │        Prompts (提示)       │ 数据库       │
+   └──────────┘                            └──────────────┘
 
-🎯 三种核心能力
+📦 三种核心能力
    1. Tools（工具）：模型可调用的函数（如搜索、计算、API调用）
    2. Resources（资源）：模型可读取的数据（如文件内容、数据库记录）
    3. Prompts（提示）：预定义的交互模板（如代码审查、摘要生成）
@@ -70,29 +78,28 @@ except ImportError:
 
 
 # =============================================================================
-# 示例 1: 使用本地 MCP 服务器（stdio 方式）
+#
+# 【第一阶段：入门】单服务 MCP — 本地 stdio 方式
+#
 # =============================================================================
 
 def local_mcp_demo():
     """
-    连接本地 MCP 服务器，将 MCP 工具转换为 LangChain 工具并用于 Agent
+    连接本地 MCP 服务器，将 MCP 工具转换为 LangChain 工具并用于 Agent。
 
     这是最常见的 MCP 使用场景：通过 stdio 启动本地 MCP 服务器，
-    将其中的工具加载到 LangChain Agent 中使用
+    将其中的工具加载到 LangChain Agent 中使用。
 
     API 用法（langchain-mcp-adapters >= 0.1.0）：
       client = MultiServerMCPClient({"server_name": {"command": ..., "args": ...}})
       tools = await client.get_tools()
     """
-
     import asyncio
 
-    # 实例化大模型的客户端
-    model = get_qwen_client()
+    model = get_model("qwen")
     if model is None:
         print("【跳过】未配置阿里云 API Key，无法运行此示例")
         return
-
 
     async def run_with_mcp():
         try:
@@ -121,10 +128,10 @@ def local_mcp_demo():
             agent = create_agent(
                 model,
                 tools=tools,
-                system_prompt="你是一个智能助手，请使用工具来回答用户问题。"
+                system_prompt="你是一个智能助手，请使用工具来回答用户问题。",
             )
 
-            question = "东京的天气怎么样？"
+            question = "北京的天气怎么样？"
             print(f"【用户提问】{question}")
 
             result = await agent.ainvoke(
@@ -142,12 +149,14 @@ def local_mcp_demo():
 
 
 # =============================================================================
-# 示例 2: 使用远程 MCP 服务器（高德地图 MCP - SSE 方式）
+#
+# 【第二阶段：进阶】单服务 MCP — 远程 SSE 方式（高德地图）
+#
 # =============================================================================
 
 def remote_mcp_demo():
     """
-    连接高德地图官方 MCP 服务器（SSE 远程传输）
+    连接高德地图官方 MCP 服务器（SSE 远程传输）。
 
     高德地图 MCP Server 提供的工具：
     - amap_maps_geo: 地理编码（地址转经纬度）
@@ -169,7 +178,6 @@ def remote_mcp_demo():
 
     SSE 端点：https://mcp.amap.com/sse?key=AMAP_KEY
     """
-
     if not MCP_AVAILABLE:
         print("【跳过】缺少依赖包，请先安装：pip install mcp langchain-mcp-adapters")
         return
@@ -182,13 +190,13 @@ def remote_mcp_demo():
     if not amap_key:
         print("【跳过】未配置 AMAP_KEY")
         print("  请在 .env 文件中添加高德地图 API Key：")
+        print("  获取 Key：https://lbs.amap.com/ → 创建应用 → 添加 Key → 选 Web服务")
         return
 
-    model = get_qwen_client()
+    model = get_model("qwen")
     if model is None:
         print("【跳过】未配置阿里云 API Key，无法运行此示例")
         return
-
 
     async def run_with_amap_mcp():
         try:
@@ -217,7 +225,7 @@ def remote_mcp_demo():
                     "你是一个地图助手，使用高德地图工具来回答用户问题。"
                     "当用户询问某地的位置时，使用地理编码工具获取经纬度；"
                     "当用户需要查天气、路线规划、地点搜索等问题时，请调用相应的高德地图工具。"
-                )
+                ),
             )
 
             questions = [
@@ -244,19 +252,20 @@ def remote_mcp_demo():
 
 
 # =============================================================================
-# 示例 3: 同时连接多个 MCP 服务器（本地 + 远程混合）
+#
+# 【第三阶段：实战】多服务 MCP — 本地 + 远程 混合编排
+#
 # =============================================================================
 
 def multi_server_mcp_demo():
     """
-    同时连接本地和远程 MCP 服务器
+    同时连接本地和远程 MCP 服务器。
 
     MultiServerMCPClient 的核心优势：
     - 一个客户端管理多个 MCP 服务器连接
     - 本地 stdio + 远程 SSE 可以混合使用
     - 所有服务器的工具自动合并到一个列表中
     """
-
     if not MCP_AVAILABLE:
         print("【跳过】缺少依赖包，请先安装：pip install mcp langchain-mcp-adapters")
         return
@@ -270,11 +279,10 @@ def multi_server_mcp_demo():
         print("【跳过】未配置 AMAP_KEY，请先在 .env 中设置高德地图 Key")
         return
 
-    model = get_qwen_client()
+    model = get_model("qwen")
     if model is None:
         print("【跳过】未配置阿里云 API Key，无法运行此示例")
         return
-
 
     async def run_with_multi_server():
         try:
@@ -307,7 +315,7 @@ def multi_server_mcp_demo():
             agent = create_agent(
                 model,
                 tools=tools,
-                system_prompt="你是一个智能助手，可以使用可用工具来回答问题。"
+                system_prompt="你是一个智能助手，可以使用可用工具来回答问题。",
             )
 
             question = "今天北京的天气怎么样？"
@@ -333,12 +341,15 @@ def multi_server_mcp_demo():
     print()
 
 
-
-
+# =============================================================================
+#
+# 【扩展阅读】第三方 MCP 服务 — GitHub 仓库操作
+#
+# =============================================================================
 
 def github_mcp_demo():
     """
-    连接 GitHub 官方 MCP 服务器，实现对 GitHub 仓库的操作
+    连接 GitHub 官方 MCP 服务器，实现对 GitHub 仓库的操作。
 
     GitHub MCP Server 是 GitHub 官方提供的 MCP 服务，支持：
     - 搜索代码和仓库
@@ -355,14 +366,13 @@ def github_mcp_demo():
 
     连接方式：通过 npx 启动 @modelcontextprotocol/server-github
     """
-
     if not MCP_AVAILABLE:
         print("【跳过】缺少依赖包，请先安装：pip install mcp langchain-mcp-adapters")
         return
 
     import asyncio
 
-    model = get_qwen_client()
+    model = get_model("qwen")
     if model is None:
         print("【跳过】未配置阿里云 API Key，无法运行此示例")
         return
@@ -413,11 +423,11 @@ def github_mcp_demo():
             agent = create_agent(
                 model,
                 tools=tools,
-                system_prompt="你是一个 GitHub 助手，可以使用 GitHub 工具来回答问题。"
+                system_prompt="你是一个 GitHub 助手，可以使用 GitHub 工具来回答问题。",
             )
 
             # 示例问题 - 查询自己的仓库
-            question = "搜索一下 langchain 相关的公开仓库"
+            question = "搜索一个 langchain 相关的公开仓库"
             print(f"【用户提问】{question}")
 
             result = await agent.ainvoke(
@@ -453,33 +463,33 @@ def github_mcp_demo():
 3. 在 LangChain 中连接 MCP 服务器
 
    本地 stdio 方式（langchain-mcp-adapters >= 0.1.0）：
-   ┌──────────────────────────────────────────────────┐
-   │ from langchain_mcp_adapters.client import        │
-   │     MultiServerMCPClient                         │
-   │                                                  │
-   │ client = MultiServerMCPClient({                  │
-   │     "my_server": {                               │
-   │         "command": "python",                     │
-   │         "args": ["my_mcp_server.py"],            │
-   │         "transport": "stdio"                     │
-   │     }                                            │
-   │ })                                               │
-   │                                                  │
-   │ tools = await client.get_tools()                 │
-   │ agent = create_agent(model, tools=tools)         │
-   │ result = await agent.ainvoke({"messages": [...]})│
-   └──────────────────────────────────────────────────┘
+   ┌──────────────────────────────────────────────────────┐
+   │ from langchain_mcp_adapters.client import           │
+   │     MultiServerMCPClient                            │
+   │                                                      │
+   │ client = MultiServerMCPClient({                     │
+   │     "my_server": {                                  │
+   │         "command": "python",                        │
+   │         "args": ["my_mcp_server.py"],               │
+   │         "transport": "stdio"                        │
+   │     }                                               │
+   │ })                                                  │
+   │                                                      │
+   │ tools = await client.get_tools()                    │
+   │ agent = create_agent(model, tools=tools)            │
+   │ result = await agent.ainvoke({"messages": [...]})   │
+   └──────────────────────────────────────────────────────┘
 
    远程 SSE 方式：
-   ┌──────────────────────────────────────────────────┐
-   │ client = MultiServerMCPClient({                  │
-   │     "amap": {                                    │
-   │         "url": "https://mcp.amap.com/sse?key=YOUR_KEY", │
-   │         "transport": "sse"                       │
-   │     }                                            │
-   │ })                                               │
-   │ tools = await client.get_tools()                 │
-   └──────────────────────────────────────────────────┘
+   ┌──────────────────────────────────────────────────────┐
+   │ client = MultiServerMCPClient({                     │
+   │     "amap": {                                       │
+   │         "url": "https://mcp.amap.com/sse?key=KEY",  │
+   │         "transport": "sse"                          │
+   │     }                                               │
+   │ })                                                  │
+   │ tools = await client.get_tools()                    │
+   └──────────────────────────────────────────────────────┘
 
 4. 常见的公开 MCP 服务器
    - 高德地图：https://mcp.amap.com/sse?key=AMAP_KEY（SSE，需要 AMAP_KEY）
@@ -496,6 +506,28 @@ def github_mcp_demo():
 # =============================================================================
 
 if __name__ == '__main__':
+
+    # =========================================================================
+    # 学习阶段总览：
+    #   第一阶段（入门）：local_mcp_demo()       — 本地 stdio MCP 服务
+    #   第二阶段（进阶）：remote_mcp_demo()      — 远程 SSE MCP 服务
+    #   第三阶段（实战）：multi_server_mcp_demo() — 多服务混合编排
+    #   扩展阅读        ：github_mcp_demo()      — 第三方 MCP 生态
+    # =========================================================================
+
+    print("\n" + "=" * 70)
+    print("  MCP 学习阶段总览")
+    print("=" * 70)
+    print()
+    print("  第一阶段（入门）：local_mcp_demo()")
+    print("  第二阶段（进阶）：remote_mcp_demo()")
+    print("  第三阶段（实战）：multi_server_mcp_demo()")
+    print("  扩展阅读：github_mcp_demo()")
+    print()
+    print("  建议按顺序运行：local → remote → multi")
+    print("  当前默认运行：扩展阅读 — GitHub MCP 演示")
+    print()
+    print("=" * 70 + "\n")
 
     # local_mcp_demo()
     # remote_mcp_demo()

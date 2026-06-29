@@ -27,8 +27,9 @@ what_is_mcp   mcp_demo         mcp_resources_     enterprise_     skill_demo    
 | 3 | `mcp_resources_prompts_demo.py` | Tool vs Resource vs Prompt 对比 | 是 | 15 min |
 | 4 | `mcp_client_config_guide.py` | Claude Desktop / Cursor / Codex 配置指南 | 否 | 15 min |
 | 5 | `skill_demo.py` | Skill 是什么、两种实现方式、对比演示 | 是 | 15 min |
+| 5.5 | `skill_agent_demo.py` | 自建 Agent 加载并执行 SKILL.md | 是 | 20 min |
 | 6* | `enterprise_api_mcp_demo.py` | 企业 REST API → FastMCP 封装 → Agent 接入 | 是 | 20 min |
-| 7 | `gaode_skill_test.py` | 高德地图 6 大场景 + 智能旅游规划 | 是 | 20 min |
+| 7 | `gaode_api_tool_demo.py` | 手动封装高德 REST API 为 Agent Tool | 是 | 20 min |
 | 8 | `multiple_agent.py` | Supervisor 多 Agent 调度模式 | 是 | 15 min |
 | 9* | `a2a_demo.py` | A2A 协议：Agent 之间通过 HTTP/JSON-RPC 通信 | 否 | 20 min |
 
@@ -128,8 +129,27 @@ what_is_mcp   mcp_demo         mcp_resources_     enterprise_     skill_demo    
 - **方式 B**：封装函数作为 Skill，内部调用多个子 Tool
 - **价值对比**：没有 Skill 编排的 Agent vs 有 Skill 编排的 Agent
 
-#### `gaode_skill_test.py` — 高德地图综合实战
-覆盖高德官方 Skill 6 大场景 + 1 个组合 Skill：
+#### `skill_agent_demo.py` — 自建 Agent 执行 SKILL.md ⭐
+
+⚠️ 本文件不是给 Codex/OpenClaw 配置 SKILL.md，而是**自己构建一个 Python Agent**，让它能读取、解析、匹配并执行 SKILL.md。
+
+核心流程：
+- **Skill 发现**：扫描 `skills/` 目录下所有 SKILL.md 文件
+- **Skill 解析**：解析 YAML 前端（name + description）和 Markdown 正文
+- **LLM 匹配**：把所有 Skill 的 description 发给 LLM，让它判断哪个最匹配用户问题
+- **动态注入**：命中 Skill 后，将其 Markdown 正文注入 Agent 的 system_prompt
+- **Agent 执行**：带着对应的 Skill 说明去回答用户问题
+
+示例 Skill（`skills/` 目录）：
+- `weather-reporter/` — 天气报告助手（触发词：天气、温度、天气预报）
+- `code-reviewer/` — 代码审查助手（触发词：review、审查代码、代码质量）
+- `translator/` — 翻译助手（触发词：翻译、translate、中英互译）
+
+#### `gaode_api_tool_demo.py` — 高德 API 手动封装实战
+
+⚠️ 本文件**不是**连接高德官方 Skill 或 MCP Server，而是手动用 `requests` 调用高德 Web Service REST API，将每个接口封装为 LangChain `@tool`。
+
+覆盖高德 6 大场景 + 1 个组合 Tool：
 
 | 场景 | Tool | 说明 |
 |------|------|------|
@@ -205,8 +225,11 @@ python enterprise_api_mcp_demo.py
 # 4. Skill 编排
 python skill_demo.py
 
-# 5. 高德地图综合实战
-python gaode_skill_test.py
+# 4.5 自建 Agent 执行 SKILL.md
+python skill_agent_demo.py
+
+# 5. 高德 API 手动封装演示
+python gaode_api_tool_demo.py
 
 # 6. 多 Agent 调度
 python multiple_agent.py
@@ -222,7 +245,8 @@ python a2a_demo.py
 ```
                     ┌─────────────────────────────────────┐
                     │          应用层：Skill                │
-                    │   skill_demo.py, gaode_skill_test.py │
+                    │   skill_demo.py, skill_agent_demo.py │
+                    │   gaode_api_tool_demo.py             │
                     └─────────────────┬───────────────────┘
                                       │
                     ┌─────────────────┴───────────────────┐

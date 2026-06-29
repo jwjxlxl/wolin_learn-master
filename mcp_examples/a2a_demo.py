@@ -18,12 +18,6 @@
 #   1. 核心演示无需额外依赖，内置模拟 HTTP 通信（示例 1-5 可直接运行）
 #   2. 可选：配置 ALIYUN_API_KEY 用于 LLM 增强回复（示例 6）
 #   3. 可选：pip install fastapi uvicorn httpx（用于运行真实 HTTP 服务，见文件末尾）
-#
-# 建议阅读顺序：
-#   1. what_is_mcp.py          - 理解 MCP 概念
-#   2. mcp_demo.py             - 理解 MCP 实战
-#   3. multiple_agent.py       - 理解多 Agent Supervisor 模式
-#   4. 本文件（a2a_demo.py）   - 理解 Agent 之间的通信协议 A2A
 # =============================================================================
 
 import sys
@@ -39,12 +33,16 @@ from enum import Enum
 # 设置标准输出编码为 UTF-8，避免 Windows GBK 编码错误
 if sys.stdout.encoding and sys.stdout.encoding.lower() != 'utf-8':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-if sys.stderr.encoding and sys.stderr.encoding.lower() != 'utf-8':
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 # 添加项目根目录到 Python 路径
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-from utils.model_utils import get_model
+
+
+# A2A latest-spec constants used by this teaching simulation
+A2A_AGENT_CARD_PATH = "/.well-known/agent-card.json"
+A2A_RPC_PATH = "/rpc"
+A2A_METHOD_SEND_MESSAGE = "SendMessage"
+A2A_METHOD_GET_TASK = "GetTask"
 
 
 # =============================================================================
@@ -91,17 +89,18 @@ from utils.model_utils import get_model
       - skills: 提供的技能列表
       - url: 通信端点
       类似于企业的"服务目录"，告诉别人"我能做什么"
-      真实协议中通过 /.well-known/agent.json 端点暴露
+      真实协议中通过 /.well-known/agent-card.json 端点暴露
 
    2. Task（任务）
       A2A 中的核心工作单元，有完整的生命周期：
       SUBMITTED（已提交）→ WORKING（处理中）→ COMPLETED（完成）
-                                             → FAILED（失败）
-      类似于"工单系统"，可以追踪进度
+              ↘ INPUT_REQUIRED（需要用户补充信息）
+              ↘ FAILED / CANCELED / REJECTED（终止态）
+      类似于"工单系统"，可以追踪进度，也可以暂停等待补充信息。
 
    3. Message（消息）
       通信的基本单位，使用 JSON-RPC 2.0 格式：
-      {"jsonrpc": "2.0", "method": "tasks/send", "params": {...}, "id": 1}
+      {"jsonrpc": "2.0", "method": "SendMessage", "params": {...}, "id": 1}
 
    4. Artifact（产出物）
       任务完成后返回的结果，包含文本、文件、结构化数据等
@@ -127,6 +126,12 @@ from utils.model_utils import get_model
    | 部署       | 单体应用                   | 微服务架构                |
    | 发现       | 代码中硬编码                | Agent Card 动态发现       |
    | 优势       | 低延迟、简单                | 跨团队、跨语言、可独立部署 |
+
+本文件是教学模拟版，不是完整 A2A SDK：
+   - 为了能直接运行，HTTP 服务用内存函数模拟
+   - 真实 Agent Card 路径是 /.well-known/agent-card.json
+   - JSON-RPC 绑定常见入口是 /rpc，方法名使用 SendMessage / GetTask
+   - 真实企业场景还要考虑认证、授权、流式更新、Push 通知和版本协商
 """
 
 
@@ -135,38 +140,62 @@ from utils.model_utils import get_model
 # =============================================================================
 
 class TaskStatus(str, Enum):
-    """A2A 任务状态枚举"""
-    SUBMITTED = "submitted"
-    WORKING = "working"
-    COMPLETED = "completed"
-    FAILED = "failed"
-    CANCELED = "canceled"
+    """A2A 任务状态枚举（使用 A2A 规范中的 TaskState 命名）。"""
+    SUBMITTED = "TASK_STATE_SUBMITTED"
+    WORKING = "TASK_STATE_WORKING"
+    INPUT_REQUIRED = "TASK_STATE_INPUT_REQUIRED"
+    COMPLETED = "TASK_STATE_COMPLETED"
+    FAILED = "TASK_STATE_FAILED"
+    CANCELED = "TASK_STATE_CANCELED"
+    REJECTED = "TASK_STATE_REJECTED"
 
 
 class A2AAgentCard:
     """
     A2A Agent Card — Agent 的"名片"，描述 Agent 的身份和能力。
 
-    在真实 A2A 协议中，Agent Card 通过 /.well-known/agent.json 端点暴露，
+    在真实 A2A 协议中，Agent Card 通过 /.well-known/agent-card.json 端点暴露，
     其他 Agent 可以通过 HTTP GET 读取这张名片来了解对方能做什么。
     """
 
     def __init__(self, name: str, description: str, skills: list[dict],
-                 url: str, version: str = "1.0.0"):
+                 url: str, version: str = "1.0.0",
+                 capabilities: Optional[dict] = None,
+                 default_input_modes: Optional[list[str]] = None,
+                 default_output_modes: Optional[list[str]] = None,
+                 security_schemes: Optional[dict] = None,
+                 security: Optional[list[dict]] = None):
         self.name = name
         self.description = description
         self.skills = skills
         self.url = url
         self.version = version
+        self.capabilities = capabilities or {
+            "streaming": False,
+            "pushNotifications": False,
+            "extendedAgentCard": False,
+        }
+        self.default_input_modes = default_input_modes or ["text/plain"]
+        self.default_output_modes = default_output_modes or ["text/plain", "application/json"]
+        self.security_schemes = security_schemes or {}
+        self.security = security or []
 
     def to_dict(self) -> dict:
-        return {
+        card = {
             "name": self.name,
             "description": self.description,
             "version": self.version,
             "url": self.url,
+            "capabilities": self.capabilities,
+            "defaultInputModes": self.default_input_modes,
+            "defaultOutputModes": self.default_output_modes,
             "skills": self.skills,
         }
+        if self.security_schemes:
+            card["securitySchemes"] = self.security_schemes
+        if self.security:
+            card["security"] = self.security
+        return card
 
     def to_json(self, indent: int = 2) -> str:
         return json.dumps(self.to_dict(), ensure_ascii=False, indent=indent)
@@ -217,6 +246,19 @@ def create_jsonrpc_response(result: dict, request_id: int = 1) -> dict:
         "id": request_id,
         "result": result,
     }
+
+
+
+def _print_jsonrpc_message(title: str, payload: dict, verbose: bool = False):
+    """Print JSON-RPC message. Compact by default to keep teaching output readable."""
+    method = payload.get("method") or "response"
+    print(f"  [{title}] {method}")
+    if verbose:
+        formatted = json.dumps(payload, ensure_ascii=False, indent=2)
+        for line in formatted.split("\n"):
+            print(f"    {line}")
+    else:
+        print("    (full JSON omitted; set verbose_json=True to show details)")
 
 
 # =============================================================================
@@ -322,17 +364,18 @@ class A2AClient:
     A2A 协议客户端 — 用于与远程 Agent 通信。
 
     在真实 A2A 协议中，此类通过 HTTP 发送 JSON-RPC 2.0 请求：
-      - 获取 Agent Card: GET  http://{host}:{port}/.well-known/agent.json
-      - 提交任务:        POST http://{host}:{port}/a2a (JSON-RPC 消息)
+      - 获取 Agent Card: GET  http://{host}:{port}/.well-known/agent-card.json
+      - 提交任务:        POST http://{host}:{port}/rpc (JSON-RPC 消息)
 
     本演示中使用内存模拟 HTTP 通信，展示完全相同的消息格式。
     """
 
     def __init__(self, agent_url: str, agent_card: A2AAgentCard,
-                 agent_type: str):
+                 agent_type: str, verbose_json: bool = False):
         self.agent_url = agent_url
         self.agent_card = agent_card
         self.agent_type = agent_type  # "weather" | "hotel"
+        self.verbose_json = verbose_json
         self._request_id = 0
 
     def discover_agent_card(self) -> dict:
@@ -340,7 +383,7 @@ class A2AClient:
         发现 Agent Card — A2A 协议的第一步。
 
         真实实现：
-          response = httpx.get(f"{self.agent_url}/.well-known/agent.json")
+          response = httpx.get(f"{self.agent_url}/.well-known/agent-card.json")
           return response.json()
         """
         card = self.agent_card.to_dict()
@@ -354,7 +397,7 @@ class A2AClient:
           request = {
               "jsonrpc": "2.0",
               "id": 1,
-              "method": "tasks/send",
+              "method": "SendMessage",
               "params": {
                   "message": {
                       "role": "user",
@@ -363,7 +406,7 @@ class A2AClient:
                   "contextId": context_id or str(uuid.uuid4())
               }
           }
-          response = httpx.post(f"{self.agent_url}/a2a", json=request)
+          response = httpx.post(f"{self.agent_url}/rpc", json=request)
         """
         self._request_id += 1
         task = A2ATask(
@@ -374,7 +417,7 @@ class A2AClient:
 
         # 打印 JSON-RPC 请求
         jsonrpc_req = create_jsonrpc_request(
-            method="tasks/send",
+            method=A2A_METHOD_SEND_MESSAGE,
             params={
                 "message": {
                     "role": "user",
@@ -384,10 +427,8 @@ class A2AClient:
             },
             request_id=self._request_id,
         )
-        print(f"  [HTTP] POST {self.agent_url}/a2a")
-        print(f"  [JSON-RPC 请求]")
-        for line in json.dumps(jsonrpc_req, ensure_ascii=False).replace(",", ",\n    ").replace("{", "{\n    ").replace("}", "\n  }").split("\n"):
-            print(f"    {line}")
+        print(f"  [HTTP] POST {self.agent_url}{A2A_RPC_PATH}")
+        _print_jsonrpc_message("JSON-RPC request", jsonrpc_req, self.verbose_json)
 
         # 模拟 Agent 处理
         time.sleep(0.3)
@@ -395,7 +436,7 @@ class A2AClient:
         task.history.append({"role": "user", "content": message})
         task.updated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        print(f"  [Task 状态] SUBMITTED → WORKING")
+        print("  [Task] TASK_STATE_SUBMITTED -> TASK_STATE_WORKING")
 
         return task
 
@@ -405,9 +446,9 @@ class A2AClient:
         获取任务结果（模拟 Agent 处理完成并返回）。
 
         真实实现：
-          response = httpx.post(f"{self.agent_url}/a2a", json={
+          response = httpx.post(f"{self.agent_url}/rpc", json={
               "jsonrpc": "2.0",
-              "method": "tasks/get",
+              "method": "GetTask",
               "params": {"taskId": task.id}
           })
         """
@@ -440,11 +481,9 @@ class A2AClient:
             request_id=self._request_id,
         )
         print(f"  [HTTP] 200 OK")
-        print(f"  [JSON-RPC 响应]")
-        for line in json.dumps(jsonrpc_resp, ensure_ascii=False).replace(",", ",\n    ").replace("{", "{\n    ").replace("}", "\n  }").split("\n"):
-            print(f"    {line}")
+        _print_jsonrpc_message("JSON-RPC response", jsonrpc_resp, self.verbose_json)
 
-        print(f"  [Task 状态] WORKING → COMPLETED")
+        print("  [Task] TASK_STATE_WORKING -> TASK_STATE_COMPLETED")
 
         return task
 
@@ -554,7 +593,7 @@ def example2_agent_card_discovery():
         url="http://localhost:8003",
     )
 
-    print("【步骤 1】A2A 客户端发现可用的 Agent 服务\n")
+    print("【步骤 1】A2A 客户端通过 /.well-known/agent-card.json 发现可用 Agent\n")
 
     for i, card in enumerate([weather_card, hotel_card, travel_card], 1):
         print(f"  ┌─ Agent {i}: {card.name}")
@@ -610,7 +649,7 @@ def example3_direct_weather_call():
     )
 
     # 创建 A2A 客户端
-    client = A2AClient("http://localhost:8001", weather_card, "weather")
+    client = A2AClient("http://localhost:8001", weather_card, "weather", verbose_json=True)
 
     # Step 1: 发现 Agent Card
     print("[步骤 1] 发现天气 Agent...")
@@ -641,70 +680,9 @@ def example3_direct_weather_call():
     print()
 
     print("💡 注意看上面的 JSON-RPC 消息格式：")
-    print("   - 请求包含 method='tasks/send'，消息内容是用户问题")
+    print("   - 请求包含 method='SendMessage'，消息内容是用户问题")
     print("   - 响应包含 task 的 ID、状态和结果")
     print("   - 这就是 A2A 协议的真实通信格式！")
-    print()
-
-
-# =============================================================================
-# 示例 4: 客户端 → 酒店 Agent 直接 A2A 调用
-# =============================================================================
-
-def example4_direct_hotel_call():
-    """
-    示例 4: 通过 A2A 协议调用酒店 Agent。
-
-    展示带参数过滤的酒店查询（预算、区域筛选）。
-
-    无需 API Key，纯本地运行。
-    """
-    print("\n" + "=" * 70)
-    print("  示例 4: 客户端 → 酒店 Agent 直接 A2A 调用")
-    print("=" * 70)
-    print()
-
-    hotel_card = A2AAgentCard(
-        name="酒店预订 Agent",
-        description="提供酒店搜索和推荐服务",
-        skills=[{"name": "find_hotels", "description": "搜索酒店", "tags": ["hotel"]}],
-        url="http://localhost:8002",
-    )
-
-    # 场景 A: 按城市搜索（无过滤）
-    print("─" * 50)
-    print("  场景 A: 搜索北京所有酒店")
-    print("─" * 50)
-    print()
-
-    client = A2AClient("http://localhost:8002", hotel_card, "hotel")
-
-    task = client.submit_task("查找北京的酒店")
-    task = client.get_task_result(task, {"city": "北京"})
-    print()
-
-    hotels = task.artifacts[0]["parts"][0]["data"]
-    print(f"  找到 {len(hotels)} 家酒店:")
-    for i, h in enumerate(hotels, 1):
-        print(f"    {i}. {h['name']} | {h['area']} | ¥{h['price']}/晚 | 评分 {h['rating']}")
-    print()
-
-    # 场景 B: 带预算过滤
-    print("─" * 50)
-    print("  场景 B: 搜索北京 1000 元以下的酒店")
-    print("─" * 50)
-    print()
-
-    client2 = A2AClient("http://localhost:8002", hotel_card, "hotel")
-
-    task2 = client2.submit_task("查找北京1000元以下的酒店")
-    task2 = client2.get_task_result(task2, {"city": "北京", "budget": 1000})
-    print()
-
-    hotels2 = task2.artifacts[0]["parts"][0]["data"]
-    print(f"  找到 {len(hotels2)} 家符合条件的酒店:")
-    for i, h in enumerate(hotels2, 1):
-        print(f"    {i}. {h['name']} | {h['area']} | ¥{h['price']}/晚 | 评分 {h['rating']}")
     print()
 
 
@@ -851,163 +829,6 @@ def _synthesize_plan(city: str, days: int, weather_data: dict,
 
 
 # =============================================================================
-# 示例 6: LLM 增强回复（可选，需要 API Key）
-# =============================================================================
-
-def example6_llm_enhanced_response():
-    """
-    示例 6: 使用 LLM 生成更自然的旅行计划。
-
-    先用 A2A 协议从天气和酒店 Agent 获取结构化数据，
-    再用 LLM 将这些数据转换为自然语言旅行计划。
-
-    需要配置 API Key（阿里云 Qwen 或 Ollama 本地模型）。
-    """
-    print("\n" + "=" * 70)
-    print("  示例 6: LLM 增强 — 生成自然语言旅行计划")
-    print("=" * 70)
-    print()
-
-    model = get_model()
-    if model is None:
-        print("  【跳过】未配置 API Key，此示例需要模型支持")
-        print("  提示：配置 ALIYUN_API_KEY 或使用 Ollama 本地模型")
-        return
-
-    from langchain_core.messages import HumanMessage
-
-    # 先用 A2A 协议获取数据
-    weather_data = simulate_weather_query("北京")
-    hotels = simulate_hotel_query("北京", budget=1000)
-
-    print("  【用户请求】请帮我规划北京 3 天的旅行\n")
-    print("  【Agent 数据收集】")
-    print(f"    天气: {weather_data['condition']}, {weather_data['temperature']}")
-    print(f"    空气质量: {weather_data['air_quality']}")
-    print(f"    酒店: 找到 {len(hotels)} 家 1000 元以下的酒店")
-    for h in hotels:
-        print(f"      - {h['name']} | ¥{h['price']}/晚 | 评分 {h['rating']}")
-    print()
-    print("  【LLM 生成旅行计划】")
-    print("  " + "─" * 50)
-
-    prompt = (
-        f"你是一个旅行规划助手。请根据以下信息，为用户生成一份详细的北京 3 天旅行计划：\n\n"
-        f"天气信息：{json.dumps(weather_data, ensure_ascii=False)}\n"
-        f"酒店选项：{json.dumps(hotels, ensure_ascii=False)}\n\n"
-        f"要求：\n"
-        f"1. 根据天气给出穿衣建议和出行提示\n"
-        f"2. 推荐性价比最高的酒店并说明理由\n"
-        f"3. 给出 3 天的行程建议（包括景点和活动）\n"
-        f"4. 语气友好，像专业的旅行顾问"
-    )
-
-    try:
-        response = model.invoke([HumanMessage(content=prompt)])
-        for line in response.content.split("\n"):
-            print(f"  {line}")
-    except Exception as e:
-        print(f"  【错误】LLM 调用失败: {e}")
-
-    print("  " + "─" * 50)
-    print()
-
-
-# =============================================================================
-# 示例 7: 交互式旅行规划
-# =============================================================================
-
-def interactive_mode():
-    """
-    交互式旅行规划 — 用户可以输入城市和预算，
-    旅行协调员会通过 A2A 协议调用天气和酒店 Agent。
-
-    无需 API Key，纯本地运行。
-    """
-    print("\n" + "=" * 70)
-    print("  示例 7: 交互式旅行规划")
-    print("=" * 70)
-    print()
-
-    # 定义 Agent 名片
-    weather_card = A2AAgentCard(
-        name="天气查询 Agent",
-        description="提供城市天气查询服务",
-        skills=[{"name": "check_weather", "description": "查询城市天气", "tags": ["weather"]}],
-        url="http://localhost:8001",
-    )
-
-    hotel_card = A2AAgentCard(
-        name="酒店预订 Agent",
-        description="提供酒店搜索和推荐服务",
-        skills=[{"name": "find_hotels", "description": "搜索酒店", "tags": ["hotel"]}],
-        url="http://localhost:8002",
-    )
-
-    print("  输入格式：城市 [天数] [预算]")
-    print("  示例：北京 3 1000")
-    print("  输入 '退出' 或 'quit' 结束")
-    print()
-
-    while True:
-        try:
-            user_input = input("  【请输入】> ").strip()
-        except (EOFError, KeyboardInterrupt):
-            print("\n  再见！")
-            break
-
-        if not user_input or user_input.lower() in ("退出", "quit", "exit", "q"):
-            print("  再见！")
-            break
-
-        parts = user_input.split()
-        if not parts:
-            continue
-
-        city = parts[0]
-        days = int(parts[1]) if len(parts) > 1 else 2
-        budget = int(parts[2]) if len(parts) > 2 else None
-
-        print()
-        travel_coordinator_interactive(city, days, budget, weather_card, hotel_card)
-        print()
-
-
-def travel_coordinator_interactive(city: str, days: int,
-                                   budget: Optional[int],
-                                   weather_card: A2AAgentCard,
-                                   hotel_card: A2AAgentCard):
-    """交互式旅行协调员逻辑。"""
-    print(f"  【旅行协调员】收到任务: 规划 {city} {days} 天旅行")
-    if budget:
-        print(f"  【旅行协调员】预算限制: ¥{budget}/晚")
-    print()
-
-    print("  ┌─ 调用天气 Agent ────────────────────")
-    wc = A2AClient("http://localhost:8001", weather_card, "weather")
-    wt = wc.submit_task(f"查询{city}的天气")
-    wt = wc.get_task_result(wt, {"city": city})
-    wd = wt.artifacts[0]["parts"][0]["data"]
-    print(f"  └─ 返回: {wd.get('condition', wd.get('error', '未知'))}, {wd.get('temperature', '')}")
-    print()
-
-    print("  ┌─ 调用酒店 Agent ────────────────────")
-    hc = A2AClient("http://localhost:8002", hotel_card, "hotel")
-    hp: dict = {"city": city}
-    if budget:
-        hp["budget"] = budget
-    ht = hc.submit_task(f"查找{city}的酒店")
-    ht = hc.get_task_result(ht, hp)
-    hotels = ht.artifacts[0]["parts"][0]["data"]
-    print(f"  └─ 返回: 找到 {len(hotels)} 家酒店")
-    print()
-
-    print("  ┌─ 旅行计划 ────────────────────")
-    _synthesize_plan(city, days, wd, hotels, budget)
-    print()
-
-
-# =============================================================================
 # 主程序入口
 # =============================================================================
 
@@ -1022,30 +843,21 @@ if __name__ == '__main__':
     print("    示例 3: 客户端 → 天气 Agent 直接调用（无需 API Key）")
     print("    示例 4: 客户端 → 酒店 Agent 直接调用（无需 API Key）")
     print("    示例 5: 旅行协调员 — 多 Agent A2A 协作 ★ 核心（无需 API Key）")
-    print("    示例 6: LLM 增强回复（需要 API Key）")
-    print("    示例 7: 交互式旅行规划（无需 API Key）")
     print()
     print("  建议按顺序学习：1 → 2 → 3 → 4 → 5")
     print()
     print("=" * 70 + "\n")
 
     # 示例 1: 概念讲解（无需 API Key）
-    example1_what_is_a2a()
+    # example1_what_is_a2a()
 
     # 示例 2: Agent Card 发现（无需 API Key）
-    example2_agent_card_discovery()
+    # example2_agent_card_discovery()
 
     # 示例 3: 直接调用天气 Agent（无需 API Key）
-    example3_direct_weather_call()
+    # example3_direct_weather_call()
 
-    # 示例 4: 直接调用酒店 Agent（无需 API Key）
-    example4_direct_hotel_call()
-
-    # 示例 5: 旅行协调员多 Agent 协作（无需 API Key，核心示例）
+    # 示例 4: 旅行协调员多 Agent 协作（无需 API Key，核心示例）
     example5_travel_coordinator()
 
-    # 示例 6: LLM 增强（需要 API Key，取消注释后运行）
-    # example6_llm_enhanced_response()
 
-    # 示例 7: 交互式模式（需要手动输入）
-    # interactive_mode()

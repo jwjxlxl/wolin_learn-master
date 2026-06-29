@@ -384,7 +384,7 @@ def demo5_full_comparison():
     print("  1. Skill = Tool + 编排规则         → LangChain 体系")
     print("  2. Skill = domain knowledge in text → .md 体系")
     print()
-    print("本课程已覆盖左边（skill_demo.py / gaode_skill_test.py）。")
+    print("本课程已覆盖左边（skill_demo.py / gaode_api_tool_demo.py）。")
     print("本文件让你也掌握了右边。")
     print("两者结合，你能在任何 AI 编程助手中发挥最大效能。")
     print()

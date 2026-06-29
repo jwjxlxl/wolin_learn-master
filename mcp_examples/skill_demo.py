@@ -482,7 +482,7 @@ if __name__ == '__main__':
     # demo3_skill_via_function()
 
     # 示例 4: Skill 价值对比（需要 API Key）
-    demo4_skill_value()
+    # demo4_skill_value()
 
     # 示例 5: 原理总结（无需 API Key，直接运行）
-    # demo5_summary()
+    demo5_summary()

@@ -528,5 +528,5 @@ if __name__ == '__main__':
     demo_enterprise_mcp_agent()
 
     print("=" * 70)
-    print("  继续学习：gaode_skill_test.py（生产级 Skill 实战）")
+    print("  继续学习：gaode_api_tool_demo.py（手动封装 API 为 Tool）")
     print("=" * 70 + "\n")

@@ -4,8 +4,8 @@
 
 | 我想... | 去这里 |
 |---------|--------|
-| 修改 LangChain 教学内容 | `langchain_examples/` → 改 `.py` → 运行 `convert_py_to_ipynb.py` |
-| 修改 LangGraph/Agent 教学内容 | `langgraph_examples/` → 改 `.py` → 运行 `convert_py_to_ipynb.py` |
+| 修改 LangChain 教学内容 | `langchain_examples/` |
+| 修改 LangGraph/Agent 教学内容 | `langgraph_examples/` |
 | 修改 RAG/Milvus 教学内容 | `rag_examples/`（基础）→ `rag_demo/`（实战） |
 | 添加新的教学模块 | 遵循对应子目录的格式规范（见下方"关键规则"） |
 | 获取通用模型/工具 | `utils/model_utils.py`（`get_model` / `get_qwen_client`） |
@@ -19,7 +19,6 @@
 - **环境变量优先**：API Key、Milvus URI、数据库名一律用 `os.getenv()` 读取，提供合理默认值。**绝不硬编码** IP 地址、密码、API Key。
 - **向量维度 = 1024**：与 `text-embedding-v4` 一致。改维度前审计全项目所有 `1024`、`DEFAULT_DIMENSION`、`DEFAULT_EMBEDDING_DIMENSION` 引用。**1024 维向量插入非 1024 维 Collection 会直接失败**。
 - **中文母语学生，Windows 为主**：注释、docstring、打印输出全部中文；变量/函数/类名英文 snake_case。
-- **双格式 (.py + .ipynb)**：`.py` 是源文件（规范格式），`.ipynb` 通过转换脚本生成。**修改代码改 .py，不要直接改 .ipynb JSON**。
 
 ### langchain_examples/ 专属（LangChain 教程，9 模块）
 
@@ -37,8 +36,6 @@
 
 - **默认使用 Ollama 本地模型 `qwen3.5:2b`**，确保学生无需 API Key 即可运行。
 - 云端 API 示例（`first_chain.cloud_api_call()`、`human_in_the_loop.py`）用 `utils/model_utils.get_qwen_client()` 统一获取客户端。
-- **`human_in_the_loop.py` 不转 .ipynb**（交互式 `input()` 不适合 notebook）。
-- **`utils/` 和 `学习路线.py` 不转 .ipynb**（工具/元信息文件）。
 - 每个教学文件 2-3 个示例，用 `print(f"\n-- 示例 N: 标题")` 分隔。
 
 ### langgraph_examples/ 专属（LangGraph Agent 教程，5 模块）
@@ -53,10 +50,8 @@
 
 - **默认使用 Ollama 本地模型**：通过 `utils/model_utils.get_model()` 获取（默认 `qwen3.5:2b`）。
 - 云端 API 切换：`get_model(use_cloud=True)` → 自动使用 `get_qwen_client()`。
-- `.ipynb` 转换脚本：`convert_py_to_ipynb.py`（9 个 notebook）。
 - 测试：`tests/`，pytest 框架（11 个测试）。
 - 共享工具：`utils/graph_helpers.py`（`create_tool_node` / `create_router` / `build_react_agent`）。
-- **`what_is_langgraph.py` 不转 .ipynb**（纯概念文件，类似 `what_is_langchain.py`）。
 - 每个教学文件含 2 个示例（1 个 LLM + 1 个纯逻辑），确保无 API Key 也能跑通至少一个。
 
 ### rag_examples/ 专属（RAG + Milvus 主课程）
@@ -75,11 +70,9 @@
 
 - 配置入口：`milvus_config.py`（`DEFAULT_DIMENSION = 1024`、`MILVUS_URI`、`MILVUS_DB_NAME`）
 - 导入方式：**统一使用** `from rag_examples.milvus_config import MILVUS_URI, DEFAULT_DIMENSION`，**禁止** `sys.path.insert()` hack 导入包内模块
-- `.ipynb` 转换脚本：`convert_py_to_ipynb.py`（8 个模块 27 个 notebook）
-- 语法验证：`run_tests.py`（同时支持 .py 和 .ipynb，含降级逻辑）
+- 语法验证：`run_tests.py`（支持 .py 语法检查）
 - 共享工具：`utils/helpers.py`（`ensure_env_loaded` / `get_api_key` / `safe_milvus_operation` / `format_score` / `truncate_text`）
-- 新增模块后需同步更新 `run_tests.py` 的 `modules_*` 列表和 `convert_py_to_ipynb.py` 的 `files_to_convert` 列表
-- `.py` 是源文件（规范格式），`.ipynb` 通过转换脚本生成。**所有模块必须有对应的 .py 文件**
+- 新增模块后需同步更新 `run_tests.py` 的 `modules_*` 列表
 - 每个教学文件用 `print(f"\n-- 示例 N: 标题")` 分隔
 
 ### rag_demo/ 专属（综合实战项目）
@@ -94,11 +87,10 @@
 |---|-----------|-----------|------|
 | 1 | 在子模块文件中用 `sys.path.insert()` hack 导入其他子模块的函数 | 共享代码放项目根 `utils/`；教学文件统一 `sys.path.insert(0, os.path.join(...))` 仅用于导入 `utils/` | 跨子模块 hack 已全清理；导入 `utils/` 的路径设置是必要且统一的 |
 | 2 | `print(f"\n{'─'*50}")\nprint("标题")\nprint(f"{'─'*50}")` | `print(f"\n-- 标题")` | 3 行冗余，刚全局清洗过 100+ 处 |
-| 3 | 用 Read/Write 直接编辑 .ipynb JSON | NotebookEdit 工具 / 修改 .py 后重新转换 | 直接编辑易破坏 JSON 结构 |
-| 4 | 在多个文件重复定义相同函数 | 提取到 `util/` 共享模块 | 已去重 `generate_embedding()`（原 3 处重复） |
-| 5 | 在入门文件（`01_introduction/`）加入 Agent/HITL/Memory 代码 | 入门只讲基础调用，高级概念留在对应模块 | 已从 `first_chain.py` 剥离 Agent 代码 |
-| 6 | 硬编码 `47.115.57.130` 等 IP / 数据库名 | `os.getenv("MILVUS_URI")` | 安全风险 + 多学生冲突，已全部替换 |
-| 7 | 用玩笑/人身数据做测试用例 | 用与课程主题相关的专业数据 | `qa_paris_additional.json` 已替换为三国 QA |
+| 3 | 在多个文件重复定义相同函数 | 提取到 `util/` 共享模块 | 已去重 `generate_embedding()`（原 3 处重复） |
+| 4 | 在入门文件（`01_introduction/`）加入 Agent/HITL/Memory 代码 | 入门只讲基础调用，高级概念留在对应模块 | 已从 `first_chain.py` 剥离 Agent 代码 |
+| 5 | 硬编码 `47.115.57.130` 等 IP / 数据库名 | `os.getenv("MILVUS_URI")` | 安全风险 + 多学生冲突，已全部替换 |
+| 6 | 用玩笑/人身数据做测试用例 | 用与课程主题相关的专业数据 | `qa_paris_additional.json` 已替换为三国 QA |
 
 ## 技术栈与约束
 
@@ -137,7 +129,7 @@ MILVUS_DB_NAME=default
 ### 2026-06-13 — langgraph_examples 三阶段重构
 
 - **Phase 1 — 工程基础**：修复 `model_untils` 拼写错误，消除 `sys.path` hack，创建 5 子模块结构（`01_introduction` ~ `05_practical`），提取共享函数到 `utils/graph_helpers.py`
-- **Phase 2 — 教学体验**：全部文件默认 Ollama 本地模型（`get_model()`），统一分隔符格式，`.py→.ipynb` 批量转换（9 个 notebook），README 教学大纲
+- **Phase 2 — 教学体验**：全部文件默认 Ollama 本地模型（`get_model()`），统一分隔符格式，README 教学大纲
 - **Phase 3 — 内容充实**：新增并行化（Send API）、评估器-优化器、`create_react_agent()` 对比示例，11 个 pytest 测试
 - **全局影响**：`get_model()` 提升至 `utils/model_utils.py`（跨子项目共享），`utils/model_untils.py` 更名为 `utils/model_utils.py`，mcp_examples 四个文件随同修正导入
 - 详情见 `langgraph_examples/README.md`
@@ -149,14 +141,11 @@ MILVUS_DB_NAME=default
 - **导入路径修复**：09_agent 全部文件改为标准包导入
 - **入门文件去杂**：`first_chain.py` 移除 Agent/HITL 代码，回归基础
 - **分隔符统一**：100+ 处 3 行 `print` 块 → 1 行格式
-- **.ipynb 批量生成**：编写 `convert_py_to_ipynb.py`（状态机架构），24/24 转换成功
-- **自动剥离**：Windows 编码样板（`sys.stdout = io.TextIOWrapper(...)`）、空单元检测
-- **验证**：215 个单元，JSON 有效、函数完整、中文无乱码、无空单元
 
 ### 2026-06-13 — rag_examples 全面规范化修复
 
-- **P0 — 阻塞性修复**：`rag_step_by_step.py` 768→1024 维统一；`02_create_collection.ipynb` 清除硬编码 IP/db_name/768（6 个 cell）；为 02/03/04 模块补建 12 个 .py 源文件
-- **P1 — 工程规范**：`__init__.py` 移除 sys.path hack 改用相对导入；`rag_full_pipeline.py` 删除重复 sys.path；05_rag_pipeline 统一导入方式（3 文件）；`rag_step_by_step.py` 7 处分隔符统一；`utils/__init__.py` 补全导出；`convert_py_to_ipynb.py` 补全 06 系列模块 + 修复硬编码路径
+- **P0 — 阻塞性修复**：`rag_step_by_step.py` 768→1024 维统一；清除硬编码 IP/db_name/768；为 02/03/04 模块补建 12 个 .py 源文件
+- **P1 — 工程规范**：`__init__.py` 移除 sys.path hack 改用相对导入；`rag_full_pipeline.py` 删除重复 sys.path；05_rag_pipeline 统一导入方式（3 文件）；`rag_step_by_step.py` 7 处分隔符统一；`utils/__init__.py` 补全导出
 - **P2 — 教学润色**：`01_connect_milvus.py` 默认密码安全注释；`01_embedding_basics.py` 维度标准标注
 
 ### 2026-06-13 — rag_demo 规范化修复

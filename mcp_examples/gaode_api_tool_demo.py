@@ -1,15 +1,20 @@
 """
-高德地图综合服务 Skill 测试案例
+高德 Web Service API → LangChain Tool 封装演示
 
-参照高德官方 Skill 文档：https://lbs.amap.com/api/skill/ready-to-use/summary
-实现 6 大场景：关键词搜索、周边搜索、路径规划、天气查询、POI 详情搜索、旅游规划
+⚠️ 注意：本文件不是连接高德官方 Skill 或 MCP Server。
+   而是手动用 requests 调用高德 Web Service REST API，
+   将每个 API 封装为 LangChain @tool，再通过 Agent + system_prompt 编排。
 
-运行前准备：
-1. 高德开放平台注册账号：https://lbs.amap.com/
-2. 创建应用 → 添加 Key，服务平台选择 "Web服务"
-3. 将 Key 设置到 .env 文件的 AMAP_KEY 变量中
+为什么要保留这种模式（教学价值）：
+  1. 理解如何手动将任意 REST API 封装为 Agent Tool
+  2. 理解 Tool + system_prompt 编排 = Skill 的设计模式
+  3. 不依赖 mcp 包、langchain-mcp-adapters 等额外依赖
 
-依赖：pip install requests python-dotenv
+如果要使用高德官方 MCP Server（推荐的生产集成方式）：
+  参考 mcp_demo.py 的 remote_mcp_demo()，
+  通过 MultiServerMCPClient 连接 https://mcp.amap.com/sse?key=AMAP_KEY
+
+依赖：pip install requests python-dotenv langchain langchain-core
 """
 
 import sys

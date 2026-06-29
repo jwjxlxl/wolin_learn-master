@@ -14,7 +14,8 @@
 #   2. mcp_resources_prompts_demo.py - 理解 Tool/Resource/Prompt 区别
 #   3. 本文件（按阶段顺序学习）
 #   4. enterprise_api_mcp_demo.py    - 企业实战
-#   5. gaode_skill_test.py    - 生产级 Skill
+#   5. skill_agent_demo.py   - 自建 Agent 执行 SKILL.md
+#   6. gaode_api_tool_demo.py - 手动封装 API 为 Tool
 # =============================================================================
 
 import os

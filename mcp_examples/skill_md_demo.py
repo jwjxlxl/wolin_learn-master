@@ -401,7 +401,7 @@ if __name__ == "__main__":
 
     # 全部示例都不需要 API Key，可直接运行
     # demo1_three_skills_overview()
-    # demo2_anatomy_of_skill_md()
-    demo3_create_git_commit_skill()
+    demo2_anatomy_of_skill_md()
+    # demo3_create_git_commit_skill()
     # demo4_progressive_disclosure()
     # demo5_full_comparison()

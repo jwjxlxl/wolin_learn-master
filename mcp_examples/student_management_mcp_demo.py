@@ -199,6 +199,7 @@ def create_mcp_server(student_api: StudentManagementAPI):
     """
     from mcp.server.fastmcp import FastMCP
 
+    # 实例化mcp服务
     mcp = FastMCP("学生管理系统")
 
     # ---- Tool 1: 查询学生 ----
@@ -275,6 +276,7 @@ def create_mcp_server(student_api: StudentManagementAPI):
 
 
 # =============================================================================
+# 到这里为止，MCP的服务已经创建完成，其实就是把学生管理系统的API 接口包装成了MCP服务
 # 第三步：在 LangChain Agent 中接入学生管理 MCP 服务
 # =============================================================================
 
@@ -417,6 +419,7 @@ def demo_student_mcp_agent():
 
 # =============================================================================
 # 第四步：企业实际部署建议
+# 做的事情，就是把原本的已经存在的业务系统，不管是什么语言开发的，对它进行解耦，把已经存在的API封装成mcp服务，让不同的大模型都可以调用
 # =============================================================================
 
 def student_mcp_deployment_guide():
@@ -482,7 +485,7 @@ def student_mcp_deployment_guide():
 │         "url": "https://api.school.com/mcp/students",            │
 │         "transport": "sse",                                      │
 │         "headers": {"Authorization": "Bearer <token>"}           │
-│       }                                                          │
+│       }  │
 │     }                                                            │
 │   }                                                              │
 └─────────────────────────────────────────────────────────────────┘

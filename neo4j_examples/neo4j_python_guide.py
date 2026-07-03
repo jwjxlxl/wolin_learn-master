@@ -5,8 +5,10 @@ Neo4j Python 驱动使用指南
 """
 
 import os
+import csv
+from pathlib import Path
 from dotenv import load_dotenv
-from neo4j import GraphDatabase, Result, Session, Transaction
+from neo4j import GraphDatabase, Session, Transaction
 from typing import Optional, List, Dict, Any
 
 # 加载环境变量
@@ -19,14 +21,14 @@ load_dotenv()
 # 从环境变量读取配置 (推荐方式)
 NEO4J_URI = os.getenv("NEO4J_URI", "bolt://localhost:7687")
 NEO4J_USER = os.getenv("NEO4J_USER", "neo4j")
-NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD", "neo4j123")
+NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
 NEO4J_DATABASE = os.getenv("NEO4J_DATABASE", "neo4j")
 
 
 class Neo4jClient:
     """Neo4j 数据库客户端封装类"""
 
-    def __init__(self, uri: str = NEO4J_URI, user: str = NEO4J_USER, password: str = NEO4J_PASSWORD, database: str = NEO4J_DATABASE):
+    def __init__(self, uri: str = NEO4J_URI, user: str = NEO4J_USER, password: Optional[str] = NEO4J_PASSWORD, database: str = NEO4J_DATABASE):
         """
         初始化 Neo4j 客户端
 
@@ -36,6 +38,8 @@ class Neo4jClient:
             password: 密码
             database: 数据库名称
         """
+        if not password:
+            raise ValueError("请先在 .env 中设置 NEO4J_PASSWORD，或在创建 Neo4jClient 时传入 password 参数")
         self.driver = GraphDatabase.driver(uri, auth=(user, password))
         self.database = database
         self._verify_connection()
@@ -132,6 +136,52 @@ class Neo4jClient:
         """
         result = self.execute_query(query, {"title": title, "released": released, "rating": rating})
         return result[0]["m"] if result else {}
+
+    def bulk_create_movies(self, movies: List[Dict[str, Any]]) -> int:
+        """
+        批量创建电影节点
+
+        Args:
+            movies: 电影列表，每个元素包含 title、released、rating
+
+        Returns:
+            导入的电影数量
+
+        Cypher 说明:
+            UNWIND - 把列表拆成多行，适合批量写入
+            MERGE - 已存在则匹配，不存在则创建，避免重复导入
+        """
+        query = """
+        UNWIND $movies AS row
+        MERGE (m:Movie {title: row.title})
+        SET m.released = row.released,
+            m.rating = row.rating
+        RETURN count(m) AS imported_count
+        """
+        result = self.execute_query(query, {"movies": movies})
+        return result[0]["imported_count"] if result else 0
+
+    def load_movies_from_csv(self, csv_path: str) -> int:
+        """
+        从本地 CSV 文件读取电影数据，并批量写入 Neo4j
+
+        CSV 示例表头:
+            title,released,rating
+
+        说明:
+            这里用 Python 读取 CSV，再通过 UNWIND 写入 Neo4j。
+            这种方式不依赖 Neo4j 服务器的 import 目录，Windows 学员更容易跑通。
+        """
+        movies = []
+        with Path(csv_path).open("r", encoding="utf-8-sig", newline="") as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                movies.append({
+                    "title": row["title"],
+                    "released": int(row["released"]),
+                    "rating": float(row["rating"]),
+                })
+        return self.bulk_create_movies(movies)
 
     def create_director(self, name: str, birth_year: int) -> Dict[str, Any]:
         """
@@ -549,7 +599,7 @@ class Neo4jClient:
             ON (n.prop) - 在指定属性上创建索引
         """
         query = f"""
-        CREATE INDEX {label}_{property_name}_index
+        CREATE INDEX {label}_{property_name}_index IF NOT EXISTS
         FOR (n:{label}) ON (n.{property_name})
         """
         try:
@@ -569,6 +619,112 @@ class Neo4jClient:
         """显示所有索引"""
         query = "SHOW INDEXES"
         return self.execute_query(query)
+
+    def create_movie_fulltext_index(self) -> bool:
+        """
+        创建电影全文索引
+
+        适用场景:
+            用户输入关键词，例如 Matrix、Dark、Interstellar，
+            希望按文本相关度搜索电影标题。
+        """
+        query = """
+        CREATE FULLTEXT INDEX movie_fulltext_index IF NOT EXISTS
+        FOR (m:Movie) ON EACH [m.title]
+        """
+        try:
+            self.execute_write(query)
+            return True
+        except Exception as e:
+            print(f"创建全文索引失败：{e}")
+            return False
+
+    def search_movies_fulltext(self, keyword: str, limit: int = 5) -> List[Dict[str, Any]]:
+        """
+        使用全文索引搜索电影
+
+        Args:
+            keyword: 搜索关键词
+            limit: 返回数量
+        """
+        query = """
+        CALL db.index.fulltext.queryNodes('movie_fulltext_index', $keyword)
+        YIELD node, score
+        RETURN node.title AS title,
+               node.released AS released,
+               node.rating AS rating,
+               score
+        ORDER BY score DESC
+        LIMIT $limit
+        """
+        return self.execute_query(query, {"keyword": keyword, "limit": limit})
+
+    def create_movie_vector_index(self, dimension: int = 3) -> bool:
+        """
+        创建电影向量索引
+
+        教学说明:
+            真实项目中 embedding 通常来自文本向量模型。
+            这里用 3 维模拟向量，便于学生理解 GraphRAG 的检索思路。
+        """
+        query = f"""
+        CREATE VECTOR INDEX movie_embedding_index IF NOT EXISTS
+        FOR (m:Movie) ON (m.embedding)
+        OPTIONS {{
+            indexConfig: {{
+                `vector.dimensions`: {dimension},
+                `vector.similarity_function`: 'cosine'
+            }}
+        }}
+        """
+        try:
+            self.execute_write(query)
+            return True
+        except Exception as e:
+            print(f"创建向量索引失败：{e}")
+            return False
+
+    def set_demo_movie_embeddings(self) -> int:
+        """
+        为示例电影写入模拟 embedding
+
+        注意:
+            这是教学用的简化向量，不代表真实语义效果。
+            真实 GraphRAG 会把电影简介、知识文本等送入 Embedding 模型生成向量。
+        """
+        embeddings = [
+            {"title": "The Matrix", "embedding": [0.90, 0.10, 0.20]},
+            {"title": "Inception", "embedding": [0.80, 0.25, 0.30]},
+            {"title": "Interstellar", "embedding": [0.20, 0.90, 0.35]},
+            {"title": "The Dark Knight", "embedding": [0.65, 0.30, 0.70]},
+        ]
+        query = """
+        UNWIND $embeddings AS row
+        MATCH (m:Movie {title: row.title})
+        SET m.embedding = row.embedding
+        RETURN count(m) AS updated_count
+        """
+        result = self.execute_query(query, {"embeddings": embeddings})
+        return result[0]["updated_count"] if result else 0
+
+    def search_similar_movies_by_vector(self, query_vector: List[float], limit: int = 3) -> List[Dict[str, Any]]:
+        """
+        使用向量索引查询相似电影
+
+        GraphRAG 思路:
+            先用向量召回相关节点，再沿着图关系扩展导演、演员、公司等上下文。
+        """
+        query = """
+        CALL db.index.vector.queryNodes('movie_embedding_index', $limit, $query_vector)
+        YIELD node, score
+        OPTIONAL MATCH (node)<-[:DIRECTED]-(d:Director)
+        RETURN node.title AS title,
+               node.rating AS rating,
+               d.name AS director,
+               score
+        ORDER BY score DESC
+        """
+        return self.execute_query(query, {"query_vector": query_vector, "limit": limit})
 
     # ==================== 复杂查询 ====================
 
@@ -722,34 +878,120 @@ def example_usage():
         client.close()
 
 
+def example_advanced_usage():
+    """
+    进阶示例：批量导入、全文检索、向量检索/GraphRAG 雏形
+
+    这个方法的作用:
+        把前面学到的基础 CRUD，进一步连接到真实项目中常见的三类能力：
+
+        1. 批量导入:
+           企业数据通常来自 CSV、Excel、数据库导出文件，不会一条一条手动 CREATE。
+           本示例用 Python 读取 data/movies.csv，再通过 UNWIND 批量写入 Neo4j。
+
+        2. 全文检索:
+           当用户输入关键词时，例如 "Matrix"，系统需要按文本相关度查找电影。
+           本示例创建 FULLTEXT INDEX，并用 db.index.fulltext.queryNodes() 查询。
+
+        3. 向量检索 / GraphRAG:
+           GraphRAG 常见流程是“先用向量召回相关节点，再沿图关系扩展上下文”。
+           本示例用 3 维模拟 embedding 演示语义召回，再把电影、导演等图结构信息一起返回。
+
+    适合解决的问题:
+        - 业务数据如何批量进入图数据库？
+        - 用户关键词如何在 Neo4j 中搜索？
+        - 图数据库如何和 RAG、Embedding、语义检索结合？
+
+    说明:
+        这部分依赖 Neo4j 5.x 的全文索引和向量索引能力。
+        如果本地 Neo4j 版本较低，可以先学习 example_usage()。
+    """
+
+    client = Neo4jClient()
+
+    try:
+        # 第一步：模拟真实项目中的“数据接入”
+        # 学生可以把 data/movies.csv 理解成业务系统导出的电影数据。
+        print("\n=== 进阶示例：批量导入 CSV ===")
+        csv_path = Path(__file__).parent / "data" / "movies.csv"
+        if csv_path.exists():
+            imported_count = client.load_movies_from_csv(str(csv_path))
+            print(f"  从 CSV 导入/更新电影数量：{imported_count}")
+        else:
+            print(f"  未找到示例 CSV：{csv_path}")
+
+        # 第二步：模拟搜索框能力
+        # 适合“用户输入关键词，系统返回相关节点”的场景。
+        print("\n=== 进阶示例：全文检索 ===")
+        if client.create_movie_fulltext_index():
+            results = client.search_movies_fulltext("Matrix")
+            for item in results:
+                print(f"  {item}")
+
+        # 第三步：模拟 GraphRAG 的召回阶段
+        # 真实项目中 query_vector 会来自 Embedding 模型，这里用固定向量降低学习门槛。
+        print("\n=== 进阶示例：向量检索 / GraphRAG 雏形 ===")
+        if client.create_movie_vector_index():
+            updated_count = client.set_demo_movie_embeddings()
+            print(f"  写入模拟向量数量：{updated_count}")
+            results = client.search_similar_movies_by_vector([0.85, 0.15, 0.25])
+            for item in results:
+                print(f"  {item}")
+
+    finally:
+        client.close()
+
+
 def example_transaction_usage():
-    """演示事务用法"""
+    """
+    演示 Neo4j Python Driver 的事务写入用法
+
+    这个函数的作用:
+        通过 session.execute_write() 执行一个写事务，在事务中创建电影节点。
+
+    为什么要学习事务:
+        1. 事务可以保证一组数据库操作要么全部成功，要么全部失败。
+        2. 真实项目中经常需要在一次业务操作里同时创建多个节点和关系。
+        3. 使用 execute_write() 可以让 Neo4j Driver 帮我们管理事务生命周期。
+
+    重要注意:
+        tx.run() 返回的 Result 只能在事务函数内部读取。
+        不要把 Result 直接 return 到事务外再调用 result.single()，
+        因为事务关闭后 Result 游标会失效，可能触发 ResultConsumedError。
+    """
 
     client = Neo4jClient()
 
     try:
         with client.driver.session(database=client.database) as session:
-            # 使用事务
-            def create_movie_tx(tx: Transaction, title: str, year: int, rating: float) -> Result:
+            # 定义事务函数：所有需要放在同一个事务里的数据库操作，都写在这个函数中。
+            def create_movie_tx(tx: Transaction, title: str, year: int, rating: float) -> Dict[str, Any]:
                 query = """
                 CREATE (m:Movie {title: $title, released: $year, rating: $rating})
-                RETURN m
+                RETURN m.title AS title, m.released AS released, m.rating AS rating
                 """
-                return tx.run(query, title=title, year=year, rating=rating)
+                result = tx.run(query, title=title, year=year, rating=rating)
 
-            # 执行事务
-            result = session.execute_write(create_movie_tx, "Tenet", 2020, 7.3)
-            print(f"创建的电影：{result.single()}")
+                # 在事务函数内部消费 Result，并转换成普通 dict 再返回。
+                # 这样事务关闭后，外部拿到的是普通 Python 数据，不会依赖已关闭的数据库游标。
+                record = result.single()
+                return record.data() if record else {}
+
+            # 执行写事务：Neo4j Driver 会自动打开事务、提交事务，并在异常时回滚。
+            movie = session.execute_write(create_movie_tx, "Tenet", 2020, 7.3)
+            print(f"创建的电影：{movie}")
 
     finally:
         client.close()
 
 
 if __name__ == "__main__":
-    # 运行示例
+    # 默认运行完整可见示例，适合第一次学习时直接执行：
+    # python neo4j_python_guide.py
     # example_usage()
-    client = Neo4jClient()
-    alice = client.get_person_by_name("Alice")
-    print(f"  Alice: {alice}")
-    # 演示事务用法
-    # example_transaction_usage()
+
+    # 进阶示例依赖 Neo4j 5.x 的全文索引和向量索引，如需学习可取消注释：
+    # example_advanced_usage()
+
+    # 演示事务用法，如需学习可取消注释：
+    example_transaction_usage()

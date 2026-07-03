@@ -185,7 +185,7 @@ def demo2_skill_via_system_prompt():
     print("=" * 70)
     print()
 
-    model = get_qwen_client()
+    model = get_model('qwen')
     if model is None:
         print("【跳过】未配置阿里云 API Key，无法运行此示例")
         return
@@ -482,7 +482,7 @@ if __name__ == '__main__':
     # demo3_skill_via_function()
 
     # 示例 4: Skill 价值对比（需要 API Key）
-    # demo4_skill_value()
+    demo4_skill_value()
 
     # 示例 5: 原理总结（无需 API Key，直接运行）
-    demo5_summary()
+    # demo5_summary()

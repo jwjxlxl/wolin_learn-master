@@ -199,9 +199,9 @@ WHERE p.name =~ 'A.*'
 RETURN p.name;
 
 // --- 5.7 检查属性是否存在 ---
-// exists() - 函数，检查属性或模式是否存在
+// Neo4j 5.x 推荐使用 IS NOT NULL 判断属性存在
 MATCH (n)
-WHERE exists(n.released)
+WHERE n.released IS NOT NULL
 RETURN labels(n), count(n);
 
 // --- 5.8 OR 条件 ---
@@ -422,7 +422,8 @@ RETURN p;
 //DROP CONSTRAINT person_name_unique;
 
 // --- 14.8 删除索引 ---
-DROP INDEX person_age_index;
+// IF EXISTS - 如果索引不存在也不报错，适合教学中反复执行
+DROP INDEX person_age_index IF EXISTS;
 
 // ============================================================
 // 第十五部分：复杂查询示例
@@ -572,7 +573,10 @@ CREATE (Eve)-[:ACTED_IN {roles: ['Ariadne']}]->(Inception);
 MATCH (Lana:Director {name: 'Lana Wachowski'}), (Matrix:Movie {title: 'The Matrix'})
 CREATE (Lana)-[:DIRECTED {year: 1999}]->(Matrix);
 
-MATCH (Nolan:Director {name: 'Christopher Nolan'})
+MATCH (Nolan:Director {name: 'Christopher Nolan'}),
+      (Inception:Movie {title: 'Inception'}),
+      (Interstellar:Movie {title: 'Interstellar'}),
+      (DarkKnight:Movie {title: 'The Dark Knight'})
 CREATE (Nolan)-[:DIRECTED {year: 2010}]->(Inception),
        (Nolan)-[:DIRECTED {year: 2014}]->(Interstellar),
        (Nolan)-[:DIRECTED {year: 2008}]->(DarkKnight);
@@ -618,6 +622,88 @@ RETURN d.name AS `导演`,
        movieCount AS `作品数`,
        round(avgRating * 10) / 10.0 AS `平均评分`
 ORDER BY movieCount DESC, avgRating DESC;
+
+// ============================================================
+// 第十八部分：进阶实战 - 批量导入、全文检索、向量检索、GraphRAG
+// ============================================================
+
+// --- 18.1 批量导入思路：UNWIND 批量写入 ---
+// UNWIND - 把列表拆成多行，适合从程序中一次性传入多条数据
+// MERGE - 避免重复创建同名电影
+WITH [
+    {title: 'Avatar', released: 2009, rating: 7.9},
+    {title: 'Titanic', released: 1997, rating: 7.8},
+    {title: 'Dune', released: 2021, rating: 8.0}
+] AS rows
+UNWIND rows AS row
+MERGE (m:Movie {title: row.title})
+SET m.released = row.released,
+    m.rating = row.rating
+RETURN count(m) AS `批量写入电影数`;
+
+// --- 18.2 CSV 导入思路：LOAD CSV ---
+// 真实项目常把业务系统导出的 CSV 放到 Neo4j import 目录，再用 LOAD CSV 导入。
+// Windows 学员也可以参考 neo4j_python_guide.py 中的 load_movies_from_csv()，
+// 由 Python 读取本地 CSV，再用 UNWIND 写入 Neo4j，更容易跑通。
+//
+// LOAD CSV WITH HEADERS FROM 'file:///movies.csv' AS row
+// MERGE (m:Movie {title: row.title})
+// SET m.released = toInteger(row.released),
+//     m.rating = toFloat(row.rating)
+// RETURN count(m);
+
+// --- 18.3 全文检索：按关键词搜索电影 ---
+// FULLTEXT INDEX - 适合处理用户输入的关键词搜索
+CREATE FULLTEXT INDEX movie_fulltext_index IF NOT EXISTS
+FOR (m:Movie) ON EACH [m.title];
+
+CALL db.index.fulltext.queryNodes('movie_fulltext_index', 'Matrix')
+YIELD node, score
+RETURN node.title AS `电影`, node.rating AS `评分`, score AS `相关度`
+ORDER BY score DESC
+LIMIT 5;
+
+// --- 18.4 向量检索：GraphRAG 的语义召回基础 ---
+// 真实项目中 embedding 来自文本向量模型；这里用 3 维模拟向量讲清楚原理。
+MATCH (m:Movie)
+WHERE m.title IN ['The Matrix', 'Inception', 'Interstellar', 'The Dark Knight']
+SET m.embedding =
+    CASE m.title
+        WHEN 'The Matrix' THEN [0.90, 0.10, 0.20]
+        WHEN 'Inception' THEN [0.80, 0.25, 0.30]
+        WHEN 'Interstellar' THEN [0.20, 0.90, 0.35]
+        WHEN 'The Dark Knight' THEN [0.65, 0.30, 0.70]
+    END
+RETURN m.title, m.embedding;
+
+// Neo4j 5.11+ 支持向量索引；如果版本较低，可先跳过本小节。
+CREATE VECTOR INDEX movie_embedding_index IF NOT EXISTS
+FOR (m:Movie) ON (m.embedding)
+OPTIONS {
+    indexConfig: {
+        `vector.dimensions`: 3,
+        `vector.similarity_function`: 'cosine'
+    }
+};
+
+CALL db.index.vector.queryNodes('movie_embedding_index', 3, [0.85, 0.15, 0.25])
+YIELD node, score
+RETURN node.title AS `相似电影`, node.rating AS `评分`, score AS `相似度`
+ORDER BY score DESC;
+
+// --- 18.5 GraphRAG 雏形：向量召回后沿图关系扩展上下文 ---
+// 第一步：用向量找到相关电影节点
+// 第二步：沿着电影节点扩展导演、演员、公司等结构化上下文
+CALL db.index.vector.queryNodes('movie_embedding_index', 2, [0.85, 0.15, 0.25])
+YIELD node AS movie, score
+OPTIONAL MATCH (movie)<-[:DIRECTED]-(director:Director)
+OPTIONAL MATCH (actor:Person)-[:ACTED_IN]->(movie)
+OPTIONAL MATCH (movie)-[:PRODUCED_BY]->(company:Company)
+RETURN movie.title AS `召回电影`,
+       score AS `语义相似度`,
+       director.name AS `导演`,
+       collect(DISTINCT actor.name) AS `演员`,
+       company.name AS `制作公司`;
 
 // ============================================================
 // 结束 - 以上语句可依次执行学习 Neo4j Cypher 语法

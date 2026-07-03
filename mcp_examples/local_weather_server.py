@@ -9,6 +9,7 @@
 
 from mcp.server.fastmcp import FastMCP
 
+# 创建 MCP 服务器  类似于 FastAPI 的 app = FastAPI()
 mcp = FastMCP("LocalWeather")
 
 

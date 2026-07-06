@@ -369,6 +369,7 @@ DELETE n;
 
 // --- 13.1 MERGE - 查找或创建节点 ---
 // MERGE - 合并关键字，查找匹配的节点，不存在则创建
+// 已经有了一份演员的数据，已经存入到了neo4j数据库中：现在来了一份名单，需要把这份名单中的演员数据插入到neo4j数据库中，如果数据库中已经有这份演员的数据，则更新，如果数据库中没有这份演员的数据，则插入。
 // 类似"查找或创建"操作，保证数据唯一性
 MERGE (p:Person {name: 'Eve'})
 RETURN p;
@@ -499,11 +500,11 @@ WITH collect(p.age) AS ages
 RETURN reduce(sum = 0, age IN ages | sum + age) AS `年龄总和`;
 
 // --- 16.4 filter - 列表过滤 ---
-// filter() - 函数，过滤列表中满足条件的元素
-// 语法：filter(变量 IN 列表 WHERE 条件)
+// 列表推导 - 过滤列表中满足条件的元素
+// 语法：[变量 IN 列表 WHERE 条件]
 MATCH (m:Movie)
 WITH collect(m) AS movies
-RETURN filter(m IN movies WHERE m.rating > 8.7) AS `高分电影`;
+RETURN [m IN movies WHERE m.rating > 8.7] AS `高分电影`;
 
 // --- 16.5 CASE WHEN - 条件表达式 ---
 // CASE WHEN - 条件表达式，类似编程中的 if-else
@@ -630,12 +631,11 @@ ORDER BY movieCount DESC, avgRating DESC;
 // --- 18.1 批量导入思路：UNWIND 批量写入 ---
 // UNWIND - 把列表拆成多行，适合从程序中一次性传入多条数据
 // MERGE - 避免重复创建同名电影
-WITH [
+UNWIND [
     {title: 'Avatar', released: 2009, rating: 7.9},
     {title: 'Titanic', released: 1997, rating: 7.8},
     {title: 'Dune', released: 2021, rating: 8.0}
-] AS rows
-UNWIND rows AS row
+] AS row
 MERGE (m:Movie {title: row.title})
 SET m.released = row.released,
     m.rating = row.rating
@@ -652,16 +652,28 @@ RETURN count(m) AS `批量写入电影数`;
 //     m.rating = toFloat(row.rating)
 // RETURN count(m);
 
-// --- 18.3 全文检索：按关键词搜索电影 ---
-// FULLTEXT INDEX - 适合处理用户输入的关键词搜索
-CREATE FULLTEXT INDEX movie_fulltext_index IF NOT EXISTS
-FOR (m:Movie) ON EACH [m.title];
+// --- 18.3 关键词检索：按电影名搜索电影 ---
+// 说明：
+// 1. 下面这段 CONTAINS 查询是普通 Cypher，Neo4j 4.x/5.x 都容易跑通。
+// 2. FULLTEXT INDEX 属于进阶索引语法，不同 Neo4j 版本和 IDE 插件支持程度不一致；
+//    为了保证整份文件可以从头运行，这里默认先用 CONTAINS 演示关键词检索。
+MATCH (m:Movie)
+WHERE m.title CONTAINS 'Matrix'
+RETURN m.title AS `电影`, m.rating AS `评分`;
 
-CALL db.index.fulltext.queryNodes('movie_fulltext_index', 'Matrix')
-YIELD node, score
-RETURN node.title AS `电影`, node.rating AS `评分`, score AS `相关度`
-ORDER BY score DESC
-LIMIT 5;
+// 可选进阶：Neo4j 5.x 全文索引写法
+// 如果你在 Neo4j Browser 中确认版本支持，可以单独复制下面几句执行：
+//
+// CREATE FULLTEXT INDEX movie_fulltext_index IF NOT EXISTS
+// FOR (m:Movie) ON EACH [m.title];
+//
+// CALL db.awaitIndexes();
+//
+// CALL db.index.fulltext.queryNodes('movie_fulltext_index', 'Matrix')
+// YIELD node, score
+// RETURN node.title AS `电影`, node.rating AS `评分`, score AS `相关度`
+// ORDER BY score DESC
+// LIMIT 5;
 
 // --- 18.4 向量检索：GraphRAG 的语义召回基础 ---
 // 真实项目中 embedding 来自文本向量模型；这里用 3 维模拟向量讲清楚原理。
@@ -676,31 +688,40 @@ SET m.embedding =
     END
 RETURN m.title, m.embedding;
 
-// Neo4j 5.11+ 支持向量索引；如果版本较低，可先跳过本小节。
-CREATE VECTOR INDEX movie_embedding_index IF NOT EXISTS
-FOR (m:Movie) ON (m.embedding)
-OPTIONS {
-    indexConfig: {
-        `vector.dimensions`: 3,
-        `vector.similarity_function`: 'cosine'
-    }
-};
+// 用普通查询查看已经写入的模拟向量，保证整份文件默认可以跑通。
+MATCH (m:Movie)
+WHERE m.embedding IS NOT NULL
+RETURN m.title AS `电影`, m.embedding AS `模拟向量`;
 
-CALL db.index.vector.queryNodes('movie_embedding_index', 3, [0.85, 0.15, 0.25])
-YIELD node, score
-RETURN node.title AS `相似电影`, node.rating AS `评分`, score AS `相似度`
-ORDER BY score DESC;
+// 可选进阶：Neo4j 5.11+ 向量索引写法
+// 如果你的 Neo4j 版本支持向量索引，可以单独复制下面几句执行：
+//
+// CREATE VECTOR INDEX movie_embedding_index IF NOT EXISTS
+// FOR (m:Movie) ON (m.embedding)
+// OPTIONS {
+//     indexConfig: {
+//         `vector.dimensions`: 3,
+//         `vector.similarity_function`: 'cosine'
+//     }
+// };
+//
+// CALL db.awaitIndexes();
+//
+// CALL db.index.vector.queryNodes('movie_embedding_index', 3, [0.85, 0.15, 0.25])
+// YIELD node, score
+// RETURN node.title AS `相似电影`, node.rating AS `评分`, score AS `相似度`
+// ORDER BY score DESC;
 
 // --- 18.5 GraphRAG 雏形：向量召回后沿图关系扩展上下文 ---
 // 第一步：用向量找到相关电影节点
 // 第二步：沿着电影节点扩展导演、演员、公司等结构化上下文
-CALL db.index.vector.queryNodes('movie_embedding_index', 2, [0.85, 0.15, 0.25])
-YIELD node AS movie, score
+// 默认用普通 MATCH 选出一部电影，模拟“已召回相关节点”之后的图扩展过程。
+// 真正的 GraphRAG 会先用向量检索得到 movie，再继续执行下面的关系扩展。
+MATCH (movie:Movie {title: 'The Matrix'})
 OPTIONAL MATCH (movie)<-[:DIRECTED]-(director:Director)
 OPTIONAL MATCH (actor:Person)-[:ACTED_IN]->(movie)
 OPTIONAL MATCH (movie)-[:PRODUCED_BY]->(company:Company)
 RETURN movie.title AS `召回电影`,
-       score AS `语义相似度`,
        director.name AS `导演`,
        collect(DISTINCT actor.name) AS `演员`,
        company.name AS `制作公司`;

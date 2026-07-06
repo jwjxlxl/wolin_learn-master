@@ -60,7 +60,7 @@ class Neo4jClient:
             print("Neo4j 连接已关闭")
 
     # --------------------------------------------------------
-    # 第二部分：基本查询方法
+    # 第二部分：基本查询方法， 跟具体的某个节点无关，跟你想查电影，还是演员，都无关
     # --------------------------------------------------------
 
     def execute_query(self, query: str, parameters: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
@@ -688,6 +688,10 @@ class Neo4jClient:
         """
         为示例电影写入模拟 embedding
 
+        neo4j 支持向量化的数据和检索，但是实际中不常使用向量化的检索
+        实际中：从向量库中做召回相似度匹配的数据，从图数据库中检索实体之间的关联关系，一起交给LLM做推理和回答
+
+
         注意:
             这是教学用的简化向量，不代表真实语义效果。
             真实 GraphRAG 会把电影简介、知识文本等送入 Embedding 模型生成向量。
@@ -988,10 +992,10 @@ def example_transaction_usage():
 if __name__ == "__main__":
     # 默认运行完整可见示例，适合第一次学习时直接执行：
     # python neo4j_python_guide.py
-    # example_usage()
+    example_usage()
 
     # 进阶示例依赖 Neo4j 5.x 的全文索引和向量索引，如需学习可取消注释：
     # example_advanced_usage()
 
     # 演示事务用法，如需学习可取消注释：
-    example_transaction_usage()
+    # example_transaction_usage()

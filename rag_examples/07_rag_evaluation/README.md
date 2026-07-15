@@ -299,7 +299,7 @@ evaluator.print_report(result)
 
 ```bash
 # 运行完整评估演示
-python 06_rag_evaluation/01_rag_evaluation.py
+python 07_rag_evaluation/01_rag_evaluation.py
 ```
 
 ## ⚠️ 常见问题

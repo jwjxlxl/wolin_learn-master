@@ -273,7 +273,7 @@ def migration_checklist():
 □ 5. 质量评估
      □ 构建测试问题集
      □ 人工评估前 10 条检索结果的相关性
-     □ 考虑引入 RAGAS 评估框架（见 06_rag_evaluation/）
+     □ 考虑引入 RAGAS 评估框架（见 07_rag_evaluation/）
 """)
 
 

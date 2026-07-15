@@ -296,7 +296,7 @@ BM25 稀疏向量检索 → 双集合架构设计 → 真实向量替换 Mock
 
 | 文件 | 内容 | 难度 | 核心收获 |
 |------|------|------|---------|
-| [01_rag_evaluation.py](06_rag_evaluation/01_rag_evaluation.py) | RAGAS 评估框架 | ⭐⭐⭐ | 四大指标自动化评估 |
+| [01_rag_evaluation.py](07_rag_evaluation/01_rag_evaluation.py) | RAGAS 评估框架 | ⭐⭐⭐ | 四大指标自动化评估 |
 
 **为什么需要评估？**
 - 换了 Embedding 模型 → 效果变好还是变差？**不知道**

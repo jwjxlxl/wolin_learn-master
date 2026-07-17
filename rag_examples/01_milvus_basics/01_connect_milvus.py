@@ -73,39 +73,6 @@ def demo_database_operations():
     print(f"   如果在不存在的数据库中操作 Collection，会触发异常。")
 
 
-def connect_local_milvus():
-    """连接本地 Milvus 服务（Milvus Lite）
-
-    ⚠️ 注意：Milvus Lite 不支持 Windows。Windows 用户请使用 Docker 方式，
-    参见 MILVUS_CONFIG.md。
-    """
-    uri = "milvus_demo.db"
-    print(f"正在连接到 {uri}...")
-
-    client = MilvusClient(uri=uri)
-
-    version = client.get_server_version()
-    print(f"Milvus 版本：{version}")
-    print("✓ 连接成功！")
-
-    return client
-
-
-def connect_remote_milvus():
-    """连接远程 Milvus 服务
-
-    使用 milvus_config.py 中配置的 MILVUS_URI（从环境变量读取）。
-    """
-    print(f"正在连接到 {MILVUS_URI}...")
-
-    client = MilvusClient(uri=MILVUS_URI)
-
-    version = client.get_server_version()
-    print(f"Milvus 版本：{version}")
-    print("✓ 连接成功！")
-
-    return client
-
 
 def connect_with_auth():
     """带用户名密码认证的连接

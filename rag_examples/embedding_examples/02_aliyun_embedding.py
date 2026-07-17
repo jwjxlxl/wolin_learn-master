@@ -497,16 +497,16 @@ if __name__ == '__main__':
     basic_embedding_with_sdk()
     print()
 
-    batch_embedding()
-    print()
-
-    demo_embedding_tool()
-    print()
-
-    similarity_applications()
-    print()
-
-    error_handling_and_best_practices()
+    # batch_embedding()
+    # print()
+    #
+    # demo_embedding_tool()
+    # print()
+    #
+    # similarity_applications()
+    # print()
+    #
+    # error_handling_and_best_practices()
 
     print()
     print("=" * 70)

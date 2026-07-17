@@ -134,6 +134,7 @@ def generate_embedding_with_llm(texts, model="text-embedding-v4", api_key=None):
     except Exception as e:
         print(f"Embedding API 调用失败：{e}")
         print("退化为模拟 Embedding 生成...")
+        # 兜底策略
         return generate_mock_embeddings(texts if not single_input else texts[0])
 
 

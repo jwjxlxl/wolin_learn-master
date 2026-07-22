@@ -23,6 +23,9 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='repla
   → 程序直接 json.loads() 就能用，准确可靠
 
   生活化比喻: JSON 输出 = 让 AI 填表格而不是写作文
+  
+  输入一段文本，实现添加学生的功能
+  先要把文本解析成json格式 ， 调用添加学生的接口，把json格式数据传给接口，接口会把数据存储到数据库中
 """
 
 from langchain_core.prompts import PromptTemplate
@@ -47,6 +50,7 @@ def using_json_parser():
     """
     print(f"\n-- 示例 1: JsonOutputParser 提取人物信息")
 
+    # 实例化一个json的解析器
     parser = JsonOutputParser()
 
     prompt = PromptTemplate.from_template("""
@@ -66,7 +70,7 @@ JSON:""")
     chain = prompt | model | parser
 
     result = chain.invoke({})
-    print(f"  解析结果: {result}")
+    print(f"  解析结果: {result}, {type(result)}")
     print(f"  name: {result.get('name')}, age: {result.get('age')}, job: {result.get('job')}")
 
 

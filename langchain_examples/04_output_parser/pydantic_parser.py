@@ -143,7 +143,7 @@ JSON:""")
     result = chain.invoke({})
     print(f"  标题: {result.title} ({result.year})")
     print(f"  导演: {result.director}")
-    print(f"  类型: {', '.join(result.genres)}（自动变成 list）")
+    print(f"  类型: {result.genres}（自动变成 list）{type(result.genres)}")
     print(f"  评分: {result.rating}（自动变成 float）")
 
 

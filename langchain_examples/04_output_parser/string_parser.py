@@ -57,6 +57,7 @@ def compare_with_without_parser():
 
     # 用 Parser
     print(f"\n[用 StrOutputParser]")
+    # 构建Chain，使用管道符 |
     chain = model | StrOutputParser()
     result = chain.invoke(question)
     print(f"  返回类型: {type(result).__name__}")
@@ -101,7 +102,16 @@ def pipeline_with_batch():
 if __name__ == '__main__':
     print("\n>>> 04_output_parser/string_parser — StrOutputParser\n")
 
-    # compare_with_without_parser()
-    pipeline_with_batch()
+    compare_with_without_parser()
+    # pipeline_with_batch()
+    '''
+    model
+    chain
+    
+    model.invoke()
+    model.stream()
+    model.batch()
+    
+    '''
 
     # 接下来学习: json_parser.py（JSON 结构化输出）

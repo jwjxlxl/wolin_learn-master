@@ -100,8 +100,10 @@ def collect_while_streaming():
 
     print(f"\n-- 示例 3: 边显示边收集完整内容")
 
-    model = ChatOllama(model="qwen3.5:2b")
+    # model = ChatOllama(model="qwen3.5:2b")
+    model = get_model("qwen")
     collected = []
+
 
     print("AI 正在输入: ", end="", flush=True)
     for chunk in model.stream("请用一句话介绍机器学习。"):

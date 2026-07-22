@@ -37,44 +37,9 @@ def ollama_basic():
     response = model.invoke("你好，请用一句话介绍你自己。")
     print(f"回复: {response.content}")
 
-
-# =============================================================================
-# 示例 2: 多轮对话（带消息历史）
-# =============================================================================
-
-def ollama_multiturn():
-    """
-    使用消息列表实现多轮对话。
-
-    核心概念：
-    - SystemMessage: 设定 AI 的角色和行为准则（像导演给演员剧本）
-    - HumanMessage:  用户的输入
-    - AIMessage:     AI 的回复（手动添加到历史中，让 AI "记住"之前说过的话）
-
-    为什么需要消息列表？
-    LLM 本身是"无状态"的——每次调用都是全新的对话。
-    要让它"记住"上下文，必须把历史消息一起传给它。
-    """
-    from langchain_ollama import ChatOllama
-    from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
-
-    print(f"\n-- 示例 2: 多轮对话（带消息历史）")
-
-    model = ChatOllama(model="qwen3.5:2b")
-
-    messages = [
-        SystemMessage(content="你是一位友好的助手，说话简洁。"),
-        HumanMessage(content="我叫小明，今年 10 岁。"),
-        AIMessage(content="你好小明！很高兴认识你。有什么问题吗？"),
-        HumanMessage(content="你还记得我叫什么吗？"),
-    ]
-
-    response = model.invoke(messages)
-    print(f"回复: {response.content}")
-
-
 # =============================================================================
 # 示例 3: 统一模型封装（本地 ↔ 云端自由切换）
+# 设计模式：工厂模式
 # =============================================================================
 
 def get_model(provider: str = "ollama"):
@@ -112,6 +77,45 @@ def get_model(provider: str = "ollama"):
     else:
         raise ValueError(f"不支持的服务商: {provider}")
 
+# =============================================================================
+# 示例 2: 多轮对话（带消息历史）
+# =============================================================================
+
+def ollama_multiturn():
+    """
+    使用消息列表实现多轮对话。
+
+    核心概念：
+    - SystemMessage: 设定 AI 的角色和行为准则（像导演给演员剧本）
+    - HumanMessage:  用户的输入
+    - AIMessage:     AI 的回复（手动添加到历史中，让 AI "记住"之前说过的话）
+
+    为什么需要消息列表？
+    LLM 本身是"无状态"的——每次调用都是全新的对话。
+    要让它"记住"上下文，必须把历史消息一起传给它。
+    """
+    from langchain_ollama import ChatOllama
+    from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+
+    print(f"\n-- 示例 2: 多轮对话（带消息历史）")
+
+    # model = ChatOllama(model="qwen3.5:2b")
+
+    model = get_model("qwen")
+    # 构建消息列表：有系统提示、用户输入、AI 回复
+    messages = [
+        SystemMessage(content="你是一位友好的助手，说话简洁。"),
+        HumanMessage(content="我叫小明，今年 10 岁。"),
+        AIMessage(content="你好小明！很高兴认识你。有什么问题吗？"),
+        HumanMessage(content="你还记得我叫什么吗？"),
+    ]
+
+    response = model.invoke(messages)
+    print(f"回复: {response.content}")
+
+
+
+
 
 def unified_model_demo():
     """
@@ -140,8 +144,12 @@ def unified_model_demo():
 if __name__ == '__main__':
     print("\n>>> 02_llm_call — LLM 基础调用\n")
 
-    ollama_basic()
+    # ollama_basic()
     ollama_multiturn()
-    unified_model_demo()
+    # unified_model_demo()
+    #
+    # model = get_model(provider="ollama")
+    # model_ds = get_model(provider="deepseek")
+    # model_qwen = get_model(provider="qwen")
 
     # 接下来学习: chat_model.py（消息类型详解）

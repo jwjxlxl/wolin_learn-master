@@ -530,10 +530,10 @@ if __name__ == "__main__":
     # explain_why_evaluate()
 
     # 2. 讲解 RAGAS 指标
-    explain_ragas_metrics()
+    # explain_ragas_metrics()
 
     # 3. 讲解数据集构建
-    explain_eval_dataset()
+    # explain_eval_dataset()
 
     # 4. 演示评估计算
     print("\n" + "=" * 60)
@@ -591,7 +591,7 @@ if __name__ == "__main__":
     evaluator.print_report(result)
 
     # 5. 最佳实践
-    evaluation_best_practices()
+    # evaluation_best_practices()
 
     print("\n" + "=" * 70)
     print("  评估学习完成！你可以：")

@@ -323,12 +323,12 @@ if __name__ == '__main__':
     print("  Rerank 重排序（Re-ranking）")
     print("=" * 70 + "\n")
 
-    mock_rerank_pipeline()
-    bge_reranker_demo()
-    cross_encoder_rerank()
+    # mock_rerank_pipeline()
+    # bge_reranker_demo()
+    # cross_encoder_rerank()
     rerank_performance_comparison()
-    complete_rag_rerank_pipeline()
-    rerank_best_practices()
+    # complete_rag_rerank_pipeline()
+    # rerank_best_practices()
 
     print("\n" + "=" * 70)
     print("  下一步：04_rag_api/（RAG API 封装）")

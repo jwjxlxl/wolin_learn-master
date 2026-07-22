@@ -306,7 +306,9 @@ def demo_basic_qna(question:str):
         llm_model="qwen-plus"
     )
 
+
     # 创建 Collection 并添加测试文档
+    qna.llm_model = "qwen-plus"
     qna.retriever.create_collection()
 
     documents = [
@@ -547,8 +549,8 @@ def demo_load_from_file():
 
 if __name__ == "__main__":
     # 示例 1: 基础问答
-    # demo_basic_qna("学习Python开发有什么好书？")
+    demo_basic_qna("学习Python开发有什么好书？")
 
-    demo_advanced_retrieval()
+    # demo_advanced_retrieval()
 
     # demo_load_from_file()

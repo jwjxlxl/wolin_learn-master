@@ -420,13 +420,13 @@ if __name__ == "__main__":
     print("  AI 辅助切片（AI-Assisted Chunking）")
     print("=" * 60)
 
-    demo_mock_ai_chunking()
+    # demo_mock_ai_chunking()
 
     # 示例 2 需要 API Key，如果不需要可以注释掉
-    # demo_real_ai_chunking()
+    demo_real_ai_chunking()
 
-    demo_sentence_clustering()
-    demo_langchain_splitter()
+    # demo_sentence_clustering()
+    # demo_langchain_splitter()
 
     test_text = """人工智能（AI）是模拟人类智能的计算机科学领域。它包括机器学习、深度学习、自然语言处理等多个分支。AI 从 1956 年诞生至今，已经经历了多次发展浪潮。
 
@@ -439,4 +439,4 @@ if __name__ == "__main__":
 计算机视觉（CV）让计算机能够"看懂"图像和视频。应用包括人脸识别、物体检测、医学图像分析等。深度学习大幅提升了 CV 的性能。"""
 
     compare_chunking_methods(test_text)
-    ai_chunking_best_practices()
+    # ai_chunking_best_practices()

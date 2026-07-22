@@ -17,6 +17,8 @@ import random
 import time
 from dotenv import load_dotenv
 from pymilvus import MilvusClient, FieldSchema, CollectionSchema, DataType
+from sympy.integrals.meijerint_doc import category
+
 from rag_examples.milvus_config import MILVUS_URI, DEFAULT_DIMENSION
 
 load_dotenv()
@@ -122,7 +124,7 @@ def basic_scalar_query(client, collection_name):
         collection_name=collection_name,
         filter="category == 'AI'",
         output_fields=["title", "category", "views"],
-        limit=10
+        limit=5
     )
     for res in results:
         print(f"  - {res['title']} | 类别：{res['category']} | 浏览：{res['views']}")
@@ -141,12 +143,12 @@ def basic_scalar_query(client, collection_name):
     results = client.query(
         collection_name=collection_name,
         filter="is_published == True",
-        output_fields=["title", "is_published"],
+        output_fields=["title", "is_published", "category"],
         limit=10
     )
     for res in results:
         status = "✓" if res['is_published'] else "✗"
-        print(f"  {status} {res['title']}")
+        print(f"  {status} {res['title']} {res['category']}")
 
 
 # =============================================================================
@@ -230,6 +232,7 @@ def range_query(client, collection_name):
 def scalar_plus_vector_search(client, collection_name):
     """演示向量检索与标量过滤结合使用"""
     random.seed(42)
+    # 对要检索的问题进行向量化
     query_vector = [random.random() for _ in range(DEFAULT_DIMENSION)]
 
     print(f"\n-- 示例 5.1: 向量检索（无过滤），返回 Top-3")
@@ -249,7 +252,7 @@ def scalar_plus_vector_search(client, collection_name):
         data=[query_vector],
         limit=3,
         output_fields=["title", "category", "views"],
-        filter="category == 'AI'"
+        filter="category == 'Product'"
     )
     print(f"  检索结果（仅 AI 类别）：")
     for hit in results[0]:
@@ -320,9 +323,11 @@ if __name__ == "__main__":
     print("  标量查询（Scalar Query）")
     print("=" * 70 + "\n")
 
-    client, collection_name = prepare_test_collection()
-    basic_scalar_query(client, collection_name)
-    compound_scalar_query(client, collection_name)
-    range_query(client, collection_name)
+    # client, collection_name = prepare_test_collection()
+    client = MilvusClient(uri=MILVUS_URI)
+    collection_name = "scalar_query_demo"
+    # basic_scalar_query(client, collection_name)
+    # compound_scalar_query(client, collection_name)
+    # range_query(client, collection_name)
     scalar_plus_vector_search(client, collection_name)
-    scalar_query_best_practices()
+    # scalar_query_best_practices()

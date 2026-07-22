@@ -330,7 +330,7 @@ def demo_hybrid_search(client, collection_name):
         data=[query_vector],
         anns_field="dense_vector",
         param={"nprobe": 10},
-        limit=5,
+        limit=3,
     )
 
     # 3. 创建稀疏检索请求（直接传入查询文本！BM25 Function 自动处理）
@@ -338,7 +338,7 @@ def demo_hybrid_search(client, collection_name):
         data=[query],  # 注意：这里传的是原始文本，不是向量
         anns_field="sparse_vector",
         param={"metric_type": "BM25"},
-        limit=5,
+        limit=3,
     )
 
     # 4. RRF 融合排序
@@ -432,13 +432,13 @@ if __name__ == "__main__":
     # explain_bm25_function()
 
     # 2. 创建 Collection
-    client, collection_name = create_hybrid_search_collection()
+    # client, collection_name = create_hybrid_search_collection()
 
     # 3. 插入测试数据
-    insert_demo_data(client, collection_name)
+    # insert_demo_data(client, collection_name)
 
     # 4. 加载集合（必须先加载才能检索）
-    client.load_collection(collection_name)
+    # client.load_collection(collection_name)
 
     # 5. 三种检索方式对比
     print("\n" + "=" * 60)
@@ -447,10 +447,25 @@ if __name__ == "__main__":
 
     # demo_pure_dense_search(client, collection_name)
     # demo_pure_sparse_search(client, collection_name)
-    demo_hybrid_search(client, collection_name)
+    # demo_hybrid_search(client, collection_name)
 
     # 6. RRF vs 加权排序
     # explain_ranking_strategies()
+
+    client = MilvusClient(uri=MILVUS_URI)
+    collection_name = "hybrid_search_demo"
+
+    res = client.search(
+        collection_name=collection_name,
+        # highlight-start
+        data=['机器学习'],
+        anns_field='sparse_vector',
+        output_fields=['text'],  # Fields to return in search results; sparse field cannot be output
+        # highlight-end
+        limit=3,
+    )
+
+    print(res)
 
     print("\n" + "=" * 70)
     print("  学习完成！接下来查看：")

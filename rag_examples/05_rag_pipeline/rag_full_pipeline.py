@@ -703,7 +703,7 @@ if __name__ == '__main__':
     demo_full_pipeline()
     print()
 
-    pipeline_summary()
+    # pipeline_summary()
 
     print()
     print("=" * 70)

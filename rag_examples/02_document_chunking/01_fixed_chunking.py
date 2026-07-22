@@ -240,7 +240,7 @@ def demo_overlap_chunking():
     chunks_no_overlap = fixed_char_chunking(text, chunk_size=50)
     print(f"无重叠切片数：{len(chunks_no_overlap)}")
 
-    chunks_with_overlap = fixed_chunking_with_overlap(text, chunk_size=50, overlap=10)
+    chunks_with_overlap = fixed_chunking_with_overlap(text, chunk_size=200, overlap=30)
     print(f"有重叠切片数：{len(chunks_with_overlap)}")
 
     print("\n对比最后两个切片的内容：")
@@ -299,9 +299,9 @@ if __name__ == "__main__":
     print("  固定规则切片（Fixed Chunking）")
     print("=" * 60)
 
-    demo_fixed_char_chunking()
-    demo_fixed_paragraph_chunking()
-    demo_fixed_sentence_chunking()
-    demo_file_chunking()
+    # demo_fixed_char_chunking()
+    # demo_fixed_paragraph_chunking()
+    # demo_fixed_sentence_chunking()
+    # demo_file_chunking()
     demo_overlap_chunking()
-    fixed_chunking_summary()
+    # fixed_chunking_summary()

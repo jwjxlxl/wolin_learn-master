@@ -198,6 +198,7 @@ def rag_with_summary_retrieval(query, chunks, summaries, use_llm=False, api_key=
     if api_key is None:
         api_key = os.getenv("DASHSCOPE_API_KEY") or os.getenv("ALIYUN_API_KEY")
 
+    # 1. 用问题匹配摘要
     relevant_chunks, relevant_summaries, scores = search_by_summary(
         query, chunks, summaries, top_k=2
     )

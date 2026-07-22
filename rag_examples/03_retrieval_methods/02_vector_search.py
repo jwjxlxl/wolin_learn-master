@@ -156,6 +156,7 @@ def basic_vector_search(client, collection_name):
     # 场景 1: 查询"机器学习是什么"
     print(f"\n-- 示例 2.1: 查询'机器学习是什么'（AI 相关）")
     query_text = "机器学习是什么"
+    # 把用户的问题向量化
     query_vector = get_embedding(query_text)
 
     results = client.search(
@@ -181,7 +182,13 @@ def basic_vector_search(client, collection_name):
         collection_name=collection_name,
         data=[query_vector],
         limit=3,
-        output_fields=["content", "category"]
+        output_fields=["content", "category"],
+        search_params={
+            "params": {
+                "radius": 0.5,
+                "range_filter": 0.9
+            }
+        }
     )
 
     print("  检索结果（Top-3）：")
@@ -433,10 +440,12 @@ if __name__ == "__main__":
     print("  向量检索（Vector Search）")
     print("=" * 70 + "\n")
 
-    client, collection_name = prepare_test_collection()
+    # client, collection_name = prepare_test_collection()
+    client = MilvusClient(uri=MILVUS_URI)
+    collection_name = "vector_search_demo"
     basic_vector_search(client, collection_name)
-    metric_type_comparison()
-    batch_vector_search(client, collection_name)
-    search_params_explained(client, collection_name)
-    embedding_quality_comparison()
-    vector_search_best_practices()
+    # metric_type_comparison()
+    # batch_vector_search(client, collection_name)
+    # search_params_explained(client, collection_name)
+    # embedding_quality_comparison()
+    # vector_search_best_practices()

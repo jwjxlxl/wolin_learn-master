@@ -271,7 +271,7 @@ class RAGRetriever:
 
             search_params = {"metric_type": "COSINE", "params": {
             "radius": 0.5,
-            "range_filter": 0.9
+            "range_filter": 1
             }}
             if filter:
                 search_params["filter"] = filter

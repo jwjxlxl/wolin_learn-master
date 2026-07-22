@@ -214,7 +214,10 @@ def demo_basic_sliding_window():
     """演示基础滑动窗口"""
     print(f"\n-- 示例 1: 基础滑动窗口")
 
-    text = '这是一段用于演示滑动窗口切片的测试文本。' * 5
+    text = """这是一段用于演示滑动窗口切片的测试文本。人工智能是计算机科学的一个分支。它试图理解智能的本质。
+机器学习是 AI 的核心技术。深度学习是机器学习的重要分支。
+自然语言处理让计算机理解人类语言。计算机视觉让机器看懂图像。
+推荐系统根据用户偏好推荐内容。知识图谱用图结构表示知识"""
     chunks = sliding_window_chunking(text, window_size=30, step_size=10)
     print(f"切片数量：{len(chunks)}")
     for i, chunk in enumerate(chunks):
@@ -293,9 +296,9 @@ if __name__ == "__main__":
     print("  滑动窗口切片（Sliding Window Chunking）")
     print("=" * 60)
 
-    demo_basic_sliding_window()
-    demo_visualize_window()
-    demo_word_sliding_window()
-    demo_sentence_boundary_window()
+    # demo_basic_sliding_window()
+    # demo_visualize_window()
+    # demo_word_sliding_window()
+    # demo_sentence_boundary_window()
     demo_parameter_comparison()
-    sliding_window_summary()
+    # sliding_window_summary()

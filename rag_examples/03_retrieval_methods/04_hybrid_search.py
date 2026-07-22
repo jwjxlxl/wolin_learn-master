@@ -250,7 +250,9 @@ class HybridSearcher:
             if "机器学习" in query:
                 query_vector[0:20] = [0.8] * 20
 
+        # 调用向量检索，得到得到十条检索的结果
         vector_results = self._vector_search(query_vector, top_k * 2)
+        # 调用关键字检索，得到得到十条检索的结果
         keyword_results = self._keyword_search(query, top_k * 2)
 
         if method == "rrf":
@@ -457,7 +459,7 @@ if __name__ == '__main__':
 
     # simple_hybrid_search()
     # rrf_fusion()
-    # demo_hybrid_searcher()
-    hybrid_search_best_practices()
+    demo_hybrid_searcher()
+    # hybrid_search_best_practices()
     # milvus_hybrid_search_info()
 

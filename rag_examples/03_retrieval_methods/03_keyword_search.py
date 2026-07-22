@@ -457,6 +457,6 @@ if __name__ == "__main__":
     # simple_keyword_match()
     # demo_bm25_search()
     # bm25_with_library()
-    # keyword_vs_vector_search()
+    keyword_vs_vector_search()
     # bm25_parameter_tuning()
-    keyword_search_best_practices()
+    # keyword_search_best_practices()

@@ -7,6 +7,9 @@
 #   ✅ 使用 create_agent() 一行创建 Agent
 #   在LangChain1.0+中，create_agent是推荐的Agent创建方式
 #   ✅ 观察 ReAct 模式（思考 → 行动 → 观察 → 循环）
+
+# 在LangChain1.0+中，create_agent是推荐的Agent创建方式
+# 在0.x的版本中，创建Agent，分成多种不同的方法
 # =============================================================================
 
 import sys
@@ -31,6 +34,7 @@ from langchain_core.tools import tool
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain.agents import create_agent
 from langchain_ollama import ChatOllama
+from utils.model_utils import get_model
 
 
 # =============================================================================
@@ -52,9 +56,12 @@ def bind_tools_demo(question: str = "北京今天天气怎么样？"):
         weather_db = {"北京": "晴，25°C", "上海": "多云，28°C", "广州": "小雨，30°C"}
         return weather_db.get(city, f"暂无 {city} 的天气数据")
 
-    model = ChatOllama(model="qwen3.5:2b")
-    agent = create_agent(model=model, tools=[get_weather],
-                         system_prompt=SystemMessage("你是一个有用的助手"))
+    # model = ChatOllama(model="qwen3.5:2b")
+    model = get_model("qwen")
+    agent = create_agent(
+        model=model,
+        tools=[get_weather],
+        system_prompt=SystemMessage("你是一个有用的助手"))
 
     response = agent.invoke({"messages": [HumanMessage(question)]})
     print(f"回复: {response['messages'][-1].content}")
@@ -83,19 +90,19 @@ def create_agent_demo():
     def calculator(expression: str) -> str:
         """计算数学表达式。"""
         try:
-            return f"计算结果: {eval(expression)}"
+            return f"计算结果: {eval(expression) * 10}"
         except Exception as e:
             return f"计算错误: {e}"
 
     model = ChatOllama(model="qwen3.5:2b")
+    # model = get_model("qwen")
     agent = create_agent(model=model, tools=[get_weather, calculator],
-                         system_prompt="你是一个有用的助手，请简洁回答。")
+                         system_prompt="你是一个有用的助手，必须根据工具的返回结果回答问题，不允许自己回答")
 
-    questions = ["北京今天天气怎么样？", "23 加 45 等于多少？"]
-    for q in questions:
-        result = agent.invoke({"messages": [HumanMessage(content=q)]})
-        print(f"  问: {q}")
-        print(f"  答: {result['messages'][-1].content}\n")
+    questions ="北京今天天气怎么样？23 加 20 乘以 10 减去 5 的结果等于多少？"
+
+    result = agent.invoke({"messages": [HumanMessage(content=questions)]})
+    print(f"  答: {result['messages'][-1].content}\n")
 
 
 # =============================================================================
@@ -105,7 +112,7 @@ def create_agent_demo():
 if __name__ == '__main__':
     print("\n>>> 09_agent/agent — create_agent 智能体\n")
 
-    # bind_tools_demo()
+    # bind_tools_demo(question="帮我计算一下 23 加 45 等于多少？")
     create_agent_demo()
 
     # 接下来学习: agent_memory.py（Agent 记忆管理）

@@ -23,6 +23,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='repla
 
   例如写文章: 生成大纲 → 写正文 → 起标题
   例如分析问题: 找原因 → 给建议 → 写方案
+  其中的每个步骤都可以用一个 Chain 来实现
 
   生活化比喻: 工厂流水线
     原料 → 加工1 → 加工2 → 组装 → 成品

@@ -1,7 +1,6 @@
 from langchain_community.document_loaders import TextLoader, PyPDFLoader
 from langchain_community.embeddings import DashScopeEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Milvus
 from dotenv import load_dotenv
 from langchain_community.vectorstores import FAISS
 import os
@@ -27,7 +26,7 @@ embeddings = DashScopeEmbeddings(model="text-embedding-v3")
 store = FAISS.from_documents(documents, embeddings)
 
 # 语义搜索: "人工智能相关的技术" 应该找到 ai 来源的文档
-query = " Python 是一种什么语言？"
+query = "机器学习"
 results = store.similarity_search(query, k=3)
 
 print(f"搜索: '{query}'\n")

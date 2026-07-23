@@ -1,12 +1,12 @@
-from langchain_community.document_loaders import TextLoader, PyPDFLoader
+from langchain_community.document_loaders import TextLoader, PDFMinerLoader, UnstructuredMarkdownLoader
 from langchain_community.embeddings import DashScopeEmbeddings
+from langchain_community.vectorstores.milvus import Milvus
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Milvus
-from langchain.retrievers import EnsembleRetriever
-from langchain_community.retrievers import BM25Retriever
+
 from dotenv import load_dotenv
 import os
 load_dotenv()
+# 把从.env文件中读取的阿里云的API key写入环境变量
 os.environ["DASHSCOPE_API_KEY"] = os.getenv("ALIYUN_API_KEY", "")
 
 # 1. 加载文档
@@ -23,11 +23,12 @@ documents = loader.load()
 splitter = RecursiveCharacterTextSplitter(
     chunk_size=80,      # 每片约 500 token
     chunk_overlap=20,    # 切片间重叠 50 token（防止信息在边界丢失）
-    separators=["\n", "。", "，", " "]
+    separators=["\n\n", "\n", "。", "，", " "]
 )
 chunks = splitter.split_documents(documents)
 
 # 3. 向量化并存入向量库
+# 实例化向量模型
 embeddings = DashScopeEmbeddings(model="text-embedding-v3")
 vectorstore = Milvus.from_documents(
     chunks,
@@ -49,23 +50,3 @@ for doc in docs:
     print(f"来源: {doc.metadata}")
     print(f"内容: {doc.page_content[:100]}...")
     print("---")
-
-def hhh():
-
-    # 关键词检索（BM25）
-    bm25 = BM25Retriever.from_documents(chunks)
-    bm25.k = 3
-
-    # 向量检索
-    vector_retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
-
-    # 混合检索（两者结合，效果通常优于单独使用）
-    ensemble = EnsembleRetriever(
-        retrievers=[bm25, vector_retriever],
-        weights=[0.3, 0.7],  # BM25 权重 30%，向量检索权重 70%
-    )
-
-    results = ensemble.invoke("年假多少天")
-
-if __name__ == '__main__':
-    hhh()

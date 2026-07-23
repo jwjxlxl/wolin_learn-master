@@ -86,7 +86,7 @@ def intelligent_router():
 
     # model = ChatOllama(model="qwen3.5:2b")
     model = get_model("qwen")
-    # 分类 Chain — 判断输入类型
+    # 分类 Chain — 判断输入类型 相当于意图识别
     classifier = (
         PromptTemplate.from_template("判断以下输入的类型，只输出一个词（translate/summarize/explain/other）:\n\n{input}\n\n类型:")
         | model | StrOutputParser()

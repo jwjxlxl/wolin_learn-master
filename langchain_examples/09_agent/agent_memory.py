@@ -20,7 +20,7 @@ Agent 记忆 vs 手动记忆：
   前面学的（05_memory）: 手动用 list 保存历史
   Agent 记忆:            InMemorySaver 自动持久化，通过 thread_id 分组
   
-  在LangChain1.0版本中，Agent 记忆是通过 checkpointer 实现的。
+  在LangChain1.0+版本中，Agent 记忆是通过 checkpointer 实现的。
   checkpointer 是 LangChain 1.0 新增的功能，用于持久化 Agent 的状态。
   它可以用于保存 Agent 的历史消息、工具状态等。
   
@@ -60,10 +60,12 @@ def simple_memory_demo():
 
     # model = ChatOllama(model="qwen3.5:2b")
     model = get_model("qwen")
-    agent = create_agent(model=model, tools=[get_weather],
-                         system_prompt="你是一个有用的助手，请简洁回答。",
-                         # 增加了一个记忆点的参数
-                         checkpointer=InMemorySaver())
+    agent = create_agent(
+        model=model,
+        tools=[get_weather],
+        system_prompt="你是一个有用的助手，请简洁回答。",
+        # 增加了一个记忆点的参数
+        checkpointer=InMemorySaver())
 
     config: RunnableConfig = {"configurable": {"thread_id": "1"}}
 
@@ -123,7 +125,8 @@ def trim_messages_demo():
         """查询天气。"""
         return {"北京": "晴，25°C"}.get(city, "暂无数据")
 
-    model = ChatOllama(model="qwen3.5:2b")
+    # model = ChatOllama(model="qwen3.5:2b")
+    model = get_model("qwen")
     agent = create_agent(model=model, tools=[get_weather],
                          system_prompt="你是一个有用的助手。",
                          middleware=[trim], checkpointer=InMemorySaver())

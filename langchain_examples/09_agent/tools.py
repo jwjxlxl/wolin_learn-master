@@ -10,6 +10,7 @@
 
 import sys
 import io
+from utils.model_utils import get_model
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
 
 
@@ -39,12 +40,15 @@ def basic_tool():
 
     print(f"\n-- 示例 1: @tool 装饰器基础")
 
-    @tool(name_or_callable="my_weather_tool")
+    @tool(name_or_callable="query_weather")
     def get_weather(city: str) -> str:
-        """查询指定城市的天气信息。
+        """
+        查询指定城市的天气信息。
 
         Args:
-            city: 城市名称，如"北京"、"上海"
+            city: 城市名称，如"北京"、"上海"， 字符串类型
+
+        return: 城市的天气的数据信息
         """
         weather_db = {"北京": "晴，25°C", "上海": "多云，28°C", "广州": "小雨，30°C"}
         return weather_db.get(city, f"暂无 {city} 的天气数据")
@@ -103,7 +107,7 @@ def tool_runtime_demo():
     """
     from langchain_core.tools import tool
     from langchain_core.messages import HumanMessage
-    from langgraph.prebuilt import ToolRuntime, create_react_agent
+    from langgraph.prebuilt import ToolRuntime
     from langchain_ollama import ChatOllama
     from langchain.agents import create_agent
 
@@ -128,7 +132,8 @@ def tool_runtime_demo():
     print()
 
     # 将工具放入 Agent 运行——此时 runtime 才会被自动注入
-    model = ChatOllama(model="qwen3.5:2b", format="json")
+    # model = ChatOllama(model="qwen3.5:2b", format="json")
+    model = get_model("qwen")
     agent = create_agent(model=model, tools=[conversation_stats])
 
     result = agent.invoke({"messages": [HumanMessage(content="请统计一下当前对话的消息数")]})
@@ -143,7 +148,7 @@ if __name__ == '__main__':
     print("\n>>> 09_agent/tools — Agent 工具定义\n")
 
     # basic_tool()
-    pydantic_schema_tool()
-    # tool_runtime_demo()
+    # pydantic_schema_tool()
+    tool_runtime_demo()
 
     # 接下来学习: agent.py（create_agent 创建智能体）

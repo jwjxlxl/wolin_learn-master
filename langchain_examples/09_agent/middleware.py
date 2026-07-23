@@ -33,6 +33,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='repla
   测试驱动开发  TDD
   领域驱动开发  DDD
   
+  面向过程编程
   面向对象编程： OOP
   面向切面编程： AOP
   在不改变原有代码的基础上，为原有的业务逻辑增强功能
@@ -71,6 +72,7 @@ def decorator_middleware_demo():
     @after_model
     def check_response(state: AgentState, runtime) -> dict | None:
         """模型响应后: 检查敏感词。"""
+        # 获取最后一条消息，是AImessages
         last = state["messages"][-1]
         if hasattr(last, "content") and last.content:
             for word in ["BLOCKED", "禁止回答"]:
@@ -96,7 +98,7 @@ def decorator_middleware_demo():
     # model = ChatOllama(model="qwen3.5:2b")
     model = get_model("qwen")
     agent = create_agent(model=model, tools=[get_weather],
-                         system_prompt="你是一个有用的助手，请简洁回答。",
+                         system_prompt="你是一个有用的助手，请简洁回答。回答的最后加上：BLOCKED",
                          middleware=[log_before, check_response, timing])
 
     r = agent.invoke({"messages": [HumanMessage("北京天气怎么样？")]})
@@ -138,7 +140,7 @@ def builtin_middleware_demo():
                 # max_tokens_before_summary=4000,  # 超过 4000 token 触发
                 trigger=('tokens', 400),
                 # messages_to_keep=10,         # 保留最近 10 条
-                keep=('messages', 10)
+                keep=('messages', 3)
             ),
             ModelCallLimitMiddleware(
                 run_limit=10,       # 每次运行最多 10 次模型调用

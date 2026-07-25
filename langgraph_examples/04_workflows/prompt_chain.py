@@ -76,11 +76,12 @@ def prompt_chain_demo():
         needs_improvement: bool = Field(description="如果笑话需要改进返回 true")
         reason: str = Field(description="评价原因")
 
-    model = get_model()
+    model = get_model("qwen")
     if model is None:
         print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
         return
 
+    # 相当于  Prompt | modle | PydanticOutputParser
     evaluator = model.with_structured_output(JokeEvaluation)
 
     # 2. 定义状态
@@ -91,12 +92,15 @@ def prompt_chain_demo():
         reason: str
         final_joke: str
 
+
     # 3. 定义节点函数
     def generate_joke(state: JokeState):
         """生成笑话节点"""
         print(f"  [节点: generate_joke] 为主题 '{state['topic']}' 生成笑话")
-        response = model.invoke(f"写一个关于 {state['topic']} 的简短中文笑话")
-        return {"joke": response.content}
+        # response = eval_model.invoke(f"写一个关于 {state['topic']} 的简短中文笑话")
+        return {"joke": "A B C 三个人犯法了，A B 进监狱了，C 没进监狱，为什么？ 答案：因为没关系(谐音C)"}
+
+
 
     def evaluate_joke(state: JokeState):
         """评估节点：使用结构化输出判断笑话质量"""
@@ -150,9 +154,17 @@ def prompt_chain_demo():
         .compile()
     )
 
+    # 保存图为 PNG
+    images_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'images')
+    os.makedirs(images_dir, exist_ok=True)
+    png_path = os.path.join(images_dir, 'chain.png')
+    with open(png_path, 'wb') as f:
+        f.write(workflow.get_graph().draw_mermaid_png())
+    print(f"  图已保存到: {png_path}\n")
+
     # 5. 执行
     result = workflow.invoke({
-        "topic": "程序员", "joke": "",
+        "topic": "冷笑话", "joke": "",
         "needs_improvement": False, "reason": "", "final_joke": ""
     })
     print(f"\n【最终笑话】{result['final_joke']}")

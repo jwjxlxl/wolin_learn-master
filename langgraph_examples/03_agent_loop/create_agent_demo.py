@@ -26,7 +26,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 from langchain_core.tools import tool
 from langchain_core.messages import HumanMessage
 from langgraph.graph import StateGraph, START, END
-from langgraph.prebuilt import create_react_agent
 from langgraph.graph.message import add_messages
 from utils.model_utils import get_model
 
@@ -119,9 +118,9 @@ def agent_with_prebuilt():
     # 3. ★ 一行创建 Agent！底层就是 agent_react.py 中手写的所有逻辑
     agent = create_agent(model, tools)
 
-    # 4. 测试
+    # 4. 测试 RactAgent
     print("  【测试】(3 + 4) × 5 = ?")
-    result = agent.invoke({"messages": [HumanMessage(content="(3 + 4) × 5 + (12.5 - 2.3) / 3 等于多少？")]})
+    result = agent.invoke({"messages": [HumanMessage(content="(3 + 4) × 5 等于多少？")]})
 
     # 提取最终回答
     for msg in result["messages"]:
@@ -168,6 +167,7 @@ def agent_manual():
         """计算两个数的和"""
         return a + b
 
+
     @tool
     def multiply(a: int, b: int) -> int:
         """计算两个数的乘积"""
@@ -182,7 +182,7 @@ def agent_manual():
     # 模型绑定工具列表
     model_with_tools = model.bind_tools(tools)
 
-    # 手动构建 — 这就是 create_react_agent() 内部做的事
+    # 手动构建 — 这就是 create_agent() 内部做的事
     from typing import Annotated
     from typing_extensions import TypedDict
     from langchain_core.messages import ToolMessage
@@ -198,10 +198,18 @@ def agent_manual():
 
     # 工具执行节点 tools_by_name = {"add":add, "multiply":multiply}
     tools_by_name = {t.name: t for t in tools}
+    '''
+    tools_by_name:
+    {
+        "add":add,
+        "multiply":multiply
+    }
+    '''
     def tool_executor(state: AgentState):
         last_msg = state["messages"][-1]
         results = []
         for tc in last_msg.tool_calls:
+            # 从大模型的toolmessage中提前函数名和参数
             func = tools_by_name[tc["name"]]
             print(f"Tool call: {tc["name"]}")
             results.append(ToolMessage(
@@ -209,6 +217,7 @@ def agent_manual():
                 tool_call_id=tc["id"]
             ))
         return {"messages": results}
+
 
 
     # 条件路由, 作用是
@@ -229,13 +238,13 @@ def agent_manual():
     )
 
     print("  【测试】同样的输入 → 同样的结果")
-    result = graph.invoke({"messages": [HumanMessage(content="(3 + 4) × 5 + (12.5 - 2.3) / 3 等于多少？")]})
+    result = graph.invoke({"messages": [HumanMessage(content="(3 + 4) × 5等于多少？")]})
 
     final_msg = result["messages"][-1]
     print(f"  【回答】{final_msg.content if hasattr(final_msg, 'content') and final_msg.content else '（查看工具调用结果）'}")
 
     print(f"\n  【对比总结】")
-    print(f"    create_react_agent(): 1 行代码（隐藏了图结构细节）")
+    print(f"    create_agent(): 1 行代码（隐藏了图结构细节）")
     print(f"    手动 StateGraph:     ~20 行代码（完全控制每个节点和边）")
     print(f"    效果：完全相同！create_react_agent() 只是帮我们写了那 ~20 行")
     print()
@@ -243,7 +252,7 @@ def agent_manual():
 
 if __name__ == '__main__':
     print("\n" + "=" * 70)
-    print("  create_react_agent() vs 手动构建 — 对比学习")
+    print("  create_agent() vs 手动构建 — 对比学习")
     print("  理解内置函数的底层原理")
     print("=" * 70 + "\n")
 
@@ -264,5 +273,5 @@ if __name__ == '__main__':
     print("  总结：")
     print("    - 入门/快速原型 → create_react_agent()")
     print("    - 自定义复杂流程 → 手动 StateGraph")
-    print("    - create_react_agent() 底层 = agent_react.py 的手动代码")
+    print("    - create_agent() 底层 = agent_react.py 的手动代码")
     print("=" * 70 + "\n")

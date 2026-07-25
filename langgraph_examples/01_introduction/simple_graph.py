@@ -85,7 +85,7 @@ def simple_two_node_graph():
         print("  [节点: respond] 添加回应")
         return {
             "messages": state["messages"] + ["你好！我也很高兴！"],
-            "step_count": state["step_count"] + 1
+            "step_count": state["step_count"] + 2
         }
 
     # 3. 构建图：连接节点

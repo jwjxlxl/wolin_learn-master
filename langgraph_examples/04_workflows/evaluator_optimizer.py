@@ -118,7 +118,6 @@ def code_optimizer():
                 f"请只输出改进后的完整代码。"
             )
 
-        model1 = get_model()
         response = model.invoke(prompt)
         new_code = response.content
         return {
@@ -176,12 +175,12 @@ def code_optimizer():
     )
 
     # 保存图为 PNG
-    # images_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'images')
-    # os.makedirs(images_dir, exist_ok=True)
-    # png_path = os.path.join(images_dir, 'evaluate.png')
-    # with open(png_path, 'wb') as f:
-    #     f.write(graph.get_graph().draw_mermaid_png())
-    # print(f"  图已保存到: {png_path}\n")
+    images_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'images')
+    os.makedirs(images_dir, exist_ok=True)
+    png_path = os.path.join(images_dir, 'evaluate.png')
+    with open(png_path, 'wb') as f:
+        f.write(graph.get_graph().draw_mermaid_png())
+    print(f"  图已保存到: {png_path}\n")
 
 
     # 5. 测试

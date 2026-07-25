@@ -139,6 +139,14 @@ def routing_demo():
         .compile()
     )
 
+    # 保存图为 PNG
+    images_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'images')
+    os.makedirs(images_dir, exist_ok=True)
+    png_path = os.path.join(images_dir, 'router.png')
+    with open(png_path, 'wb') as f:
+        f.write(workflow.get_graph().draw_mermaid_png())
+    print(f"  图已保存到: {png_path}\n")
+
     # 5. 测试不同类型的问题
     questions = [
         "Python 中的 GIL 是什么？",                # → technical

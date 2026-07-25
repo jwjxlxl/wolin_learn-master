@@ -28,44 +28,13 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
 from langgraph.types import Command
 
-
 # =============================================================================
-# 核心概念：Supervisor（监督者）是什么？
-# =============================================================================
-"""
-Supervisor 模式（主管监督）
-
-  场景：软件开发团队
-  产品经理提需求后：
-    项目经理（Supervisor）拆解任务 → 分配研究员调研 → 审查结果 →
-    分配程序员编码 → 审查代码 → 分配评审员验收 → 最终交付 → 结束
-
-  关键特征：
-    1. Supervisor 是唯一做决策的 Agent（分配任务、审查结果、决定何时结束）
-    2. 所有 Worker 完成工作后必须回到 Supervisor（不能自行结束）
-    3. Supervisor 可以多次循环（研究不满意 → 再研究 / 换人研究）
-    4. 用 iteration 字段防止无限循环
-
-  与 Handoff 的区别：
-    Handoff       = 接力赛，交棒后前一个人退出
-    Supervisor    = 包工头派活，工人干完回来汇报，包工头再派下一个活
-
-  与 Agent-as-Tool 的区别：
-    Agent-as-Tool  = 主 Agent 同步调用子 Agent（工具式：我问你答）
-    Supervisor     = 主管有完整的工作流管理（分配→审查→再分配→再审查→验收）
-
-  生活化比喻：
-    Supervisor = 装修队长，负责找工人、看进度、验收、决定下一步
-"""
-
-
-# =============================================================================
-# 示例 1: 无 LLM 版 — 规则驱动的软件开发团队（理解控制流）
+# 示例 : LLM 版 — 真正的 Supervisor（LLM 做决策和审查）
 # =============================================================================
 
-def dev_team_demo():
+def supervisor_with_llm():
     """
-    软件开发团队：不用 LLM，用规则展示 Supervisor 的分配→审查循环。
+    用 LLM 做任务分配和审查的 Supervisor 模式。
 
     START → 项目经理（分配任务）
                 ├── researcher → 回到项目经理
@@ -77,127 +46,6 @@ def dev_team_demo():
       - 每个工人干完必回项目经理（Command(goto="supervisor")）
       - 迭代计数器防止无限循环
     """
-    print(f"\n-- 示例 1: 无 LLM 版 — 规则驱动的软件开发团队")
-
-    class SupervisorState(TypedDict):
-        messages: Annotated[list, add_messages]
-        task: str
-        next: str             # "researcher" | "coder" | "reviewer" | "FINISH"
-        work_product: str     # 当前工人的产出
-        all_products: list    # 所有产出汇总
-        iteration: int        # 迭代计数
-
-    def supervisor(state: SupervisorState):
-        """
-        项目经理：决定下一个任务分配给谁。
-        顺序：researcher → coder → reviewer → FINISH
-        """
-        iteration = state["iteration"]
-        task = state["task"]
-
-        # 超过 5 次迭代强制结束（安全保护）
-        if iteration >= 5:
-            print(f"  [项目经理] 迭代次数达上限，强制完成")
-            return Command(goto=END, update={
-                "next": "FINISH",
-                "all_products": state["all_products"] + ["（迭代上限，强制完成）"],
-            })
-
-        # 按顺序分配：研究 → 编码 → 评审
-        task_order = ["researcher", "coder", "reviewer"]
-        next_worker = task_order[iteration % 3]
-
-        print(f"  [项目经理] 第 {iteration + 1} 轮 → 分配给: {next_worker}")
-        print(f"    任务: {task}")
-
-        return Command(goto=next_worker, update={
-            "next": next_worker,
-            "messages": [AIMessage(content=f"请 {next_worker} 处理: {task}")],
-        })
-
-    def researcher(state: SupervisorState):
-        """研究员：调研技术方案。"""
-        task = state["task"]
-        print(f"  [研究员] 调研: {task}")
-        product = f"调研报告：{task} 可采用 Python + LangGraph 实现，需 Milvus 做向量存储。"
-        print(f"    产出: {product[:60]}...")
-        return Command(goto="supervisor", update={
-            "work_product": product,
-            "all_products": state["all_products"] + [product],
-            "iteration": state["iteration"] + 1,
-            "next": "",  # 清空，让 supervisor 重新决定
-        })
-
-    def coder(state: SupervisorState):
-        """程序员：编写代码。"""
-        task = state["task"]
-        prev = state.get("work_product", "")
-        print(f"  [程序员] 编码（基于: {prev[:40]}...）")
-        product = f"代码实现：完成 {task} 的核心模块，包含 StateGraph 和工具节点。"
-        print(f"    产出: {product[:60]}...")
-        return Command(goto="supervisor", update={
-            "work_product": product,
-            "all_products": state["all_products"] + [product],
-            "iteration": state["iteration"] + 1,
-            "next": "",
-        })
-
-    def reviewer(state: SupervisorState):
-        """评审员：审查代码质量。"""
-        task = state["task"]
-        print(f"  [评审员] 审查 {task} 的产出")
-        product = f"评审报告：{task} 的代码结构清晰，测试覆盖完整，可以交付。"
-        print(f"    产出: {product[:60]}...")
-        return Command(goto="supervisor", update={
-            "work_product": product,
-            "all_products": state["all_products"] + [product],
-            "iteration": state["iteration"] + 1,
-            "next": "",
-        })
-
-    # ===== 构建图 =====
-    graph = (
-        StateGraph(SupervisorState)
-        .add_node("supervisor", supervisor)
-        .add_node("researcher", researcher)
-        .add_node("coder", coder)
-        .add_node("reviewer", reviewer)
-        .add_edge(START, "supervisor")
-        .compile()
-    )
-
-    # ===== 测试 =====
-    tasks = [
-        "搭建一个智能问答 Agent",
-        "实现文档检索功能",
-    ]
-
-    for task in tasks:
-        print(f"\n【项目需求】{task}")
-        result = graph.invoke({
-            "messages": [HumanMessage(content=task)],
-            "task": task,
-            "next": "",
-            "work_product": "",
-            "all_products": [],
-            "iteration": 0,
-        })
-        print(f"  【最终产出】（共 {len(result['all_products'])} 步）")
-        for i, p in enumerate(result["all_products"], 1):
-            print(f"    {i}. {p[:70]}...")
-        print()
-
-
-# =============================================================================
-# 示例 2: LLM 版 — 真正的 Supervisor（LLM 做决策和审查）
-# =============================================================================
-
-def supervisor_with_llm():
-    """
-    用 LLM 做任务分配和审查的 Supervisor 模式。
-
-    项目经理用结构化输出决定分配给谁，各工人用 LLM 执行专业工作。
-    """
     print(f"\n-- 示例 2: LLM 版 — 真正的 Supervisor")
 
     from utils.model_utils import get_model
@@ -206,7 +54,6 @@ def supervisor_with_llm():
 
     model = get_model("qwen")
     if model is None:
-        print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
         return
 
     # ===== Supervisor 结构化输出 =====
@@ -363,13 +210,6 @@ if __name__ == '__main__':
     print("  软件开发团队：项目经理 → 研究员 → 程序员 → 评审员 → 交付")
     print("=" * 70 + "\n")
 
-    print("【运行前检查】")
-    print("  1. 已安装依赖：pip install langgraph langchain-core langchain-ollama pydantic")
-    print("  2. 已安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
-    print("  3. 示例 1 无需 LLM 即可运行（规则模拟）")
-    print()
-
-    # dev_team_demo()
     supervisor_with_llm()
 
     print("=" * 70)
@@ -379,12 +219,3 @@ if __name__ == '__main__':
     print("    Handoff        — 控制权接力传递，交出就不管了")
     print("    Supervisor     — 主管分配+审查，工人完成后回到主管")
     print("=" * 70)
-    print("  🎉 多智能体模块学习完成！")
-    print("  回顾整个 LangGraph 课程：")
-    print("    01_introduction    → LangGraph 是什么")
-    print("    02_state/branching → 状态管理 + 条件分支")
-    print("    03_agent_loop      → ReAct Agent 循环（核心）")
-    print("    04_workflows       → 工作流模式（链/路由/并行/改进）")
-    print("    05_practical       → 综合实战（智能问答 Agent）")
-    print("    06_multi_agent     → 多智能体（Agent-as-Tool/Handoff/Supervisor）")
-    print("=" * 70 + "\n")

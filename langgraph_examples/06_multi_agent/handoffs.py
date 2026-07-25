@@ -57,150 +57,8 @@ Handoff（控制权交接）
     Handoff       = 接力赛交棒，接棒的人跑你就不跑了
 """
 
-
 # =============================================================================
-# 示例 1: 无 LLM 版 — 关键词路由的医院分诊（理解控制流）
-# =============================================================================
-
-def hospital_triage_demo():
-    """
-    医院分诊：不用 LLM，用关键词匹配展示 Command(goto=...) 的接力效果。
-
-    START → 分诊护士 →（症状判断）
-                ├── 心脏相关 → 心内科 →（需拍片？）→ 放射科 → END
-                ├── 神经相关 → 神经内科 → END
-                └── 其他 → 分诊护士直接处理 → END
-
-    关键点：
-      - 每个节点返回 Command(goto="下一节点", update={...})
-      - 不需要 add_conditional_edges — Command 自己决定去哪
-      - 控制权一旦交出去就不会回来（除非显式 goto 回来）
-    """
-    print(f"\n-- 示例 1: 无 LLM 版 — 关键词路由的医院分诊")
-
-    class HandoffState(TypedDict):
-        messages: Annotated[list, add_messages]
-        symptom: str
-        diagnosis: str
-        path: list  # 记录经过的科室
-
-    def triage_nurse(state: HandoffState):
-        """
-        分诊护士：根据症状关键词决定转哪个科室。
-        返回 Command(goto=...) 完全交出控制权。
-        """
-        symptom = state["symptom"]
-        print(f"  [分诊护士] 患者症状: {symptom}")
-
-        if any(k in symptom for k in ["胸闷", "心悸", "心脏", "胸痛"]):
-            print(f"    判断: 心脏相关 → 转心内科")
-            return Command(goto="cardiology", update={
-                "path": ["分诊"],
-                "diagnosis": "疑似心脏问题，请心内科接诊",
-            })
-        elif any(k in symptom for k in ["头痛", "眩晕", "麻木"]):
-            print(f"    判断: 神经相关 → 转神经内科")
-            return Command(goto="neurology", update={
-                "path": ["分诊"],
-                "diagnosis": "疑似神经问题，请神经内科接诊",
-            })
-        elif any(k in symptom for k in ["感冒", "发烧", "咳嗽"]):
-            print(f"    判断: 常见症状 → 分诊护士直接处理")
-            return Command(goto=END, update={
-                "path": ["分诊"],
-                "diagnosis": f"建议：{symptom}属于常见症状，多休息、多喝水，必要时服药。",
-            })
-        else:
-            print(f"    判断: 未知症状 → 转全科医生")
-            return Command(goto="general", update={
-                "path": ["分诊"],
-                "diagnosis": "未知症状，请全科医生评估",
-            })
-
-    def cardiology(state: HandoffState):
-        """
-        心内科：检查后决定是否需要拍片。
-        需要拍片 → 转放射科；不需要 → 直接结束。
-        """
-        symptom = state["symptom"]
-        print(f"  [心内科] 接诊患者，症状: {symptom}")
-
-        if any(k in symptom for k in ["胸痛", "胸闷"]):
-            print(f"    判断: 需要拍片确认 → 转放射科")
-            return Command(goto="radiology", update={
-                "path": state["path"] + ["心内科"],
-                "diagnosis": "心内科初步检查：心律不齐，需拍片确认。",
-            })
-        else:
-            print(f"    判断: 无需拍片，直接诊断")
-            return Command(goto=END, update={
-                "path": state["path"] + ["心内科"],
-                "diagnosis": "心内科诊断：心悸，建议休息，避免咖啡因。",
-            })
-
-    def neurology(state: HandoffState):
-        """神经内科：独立处理，直接结束。"""
-        symptom = state["symptom"]
-        print(f"  [神经内科] 接诊患者，症状: {symptom}")
-        return Command(goto=END, update={
-            "path": state["path"] + ["神经内科"],
-            "diagnosis": f"神经内科诊断：{symptom}，建议做脑部 CT 进一步检查。",
-        })
-
-    def radiology(state: HandoffState):
-        """放射科：拍片出报告，结束。"""
-        symptom = state["symptom"]
-        print(f"  [放射科] 为患者拍片")
-        return Command(goto=END, update={
-            "path": state["path"] + ["放射科"],
-            "diagnosis": "放射科报告：心脏彩超显示轻度二尖瓣反流，建议心内科复诊。",
-        })
-
-    def general(state: HandoffState):
-        """全科医生：综合评估。"""
-        symptom = state["symptom"]
-        print(f"  [全科医生] 综合评估: {symptom}")
-        return Command(goto=END, update={
-            "path": state["path"] + ["全科"],
-            "diagnosis": f"全科评估：{symptom}，建议专科进一步检查。",
-        })
-
-    # ===== 构建图：不需要条件边，Command(goto=...) 自己决定去哪 =====
-    graph = (
-        StateGraph(HandoffState)
-        .add_node("triage", triage_nurse)
-        .add_node("cardiology", cardiology)
-        .add_node("neurology", neurology)
-        .add_node("radiology", radiology)
-        .add_node("general", general)
-        .add_edge(START, "triage")
-        .compile()
-    )
-
-    # ===== 测试不同症状 =====
-    cases = [
-        ("胸闷、心悸一周", "预期: 分诊 → 心内科 → 放射科 → END"),
-        ("头痛、眩晕", "预期: 分诊 → 神经内科 → END"),
-        ("胸痛加剧", "预期: 分诊 → 心内科 → 放射科 → END"),
-        ("发烧 38 度", "预期: 分诊 → END（直接处理）"),
-    ]
-
-    for symptom, expected in cases:
-        print(f"\n【患者症状】{symptom}")
-        print(f"  {expected}")
-        result = graph.invoke({
-            "messages": [HumanMessage(content=symptom)],
-            "symptom": symptom,
-            "diagnosis": "",
-            "path": [],
-        })
-        print(f"  【诊断结果】{result['diagnosis']}")
-        print(f"  【就诊路径】{' → '.join(result['path'])} → END")
-        print()
-
-
-# =============================================================================
-# 示例 2: LLM 版 — 真正的 Handoff（LLM 决定转交方向）
+# 示例: LLM 版 — 真正的 Handoff（LLM 决定转交方向）
 # =============================================================================
 
 def handoff_with_llm():
@@ -208,7 +66,7 @@ def handoff_with_llm():
     用 LLM 做分诊决策的 Handoff 模式。
 
     分诊护士用结构化输出判断去向，各科室用 LLM 做专业诊断。
-    架构与示例 1 相同，关键词匹配换成了 LLM 判断。
+
     """
     print(f"\n-- 示例 2: LLM 版 — 真正的 Handoff")
 
@@ -369,8 +227,6 @@ if __name__ == '__main__':
     print("  医院分诊系统：分诊护士 → 专科医生 → 放射科 → END")
     print("=" * 70 + "\n")
 
-
-    # hospital_triage_demo()
     handoff_with_llm()
 
     print("=" * 70)

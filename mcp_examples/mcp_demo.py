@@ -343,109 +343,6 @@ def multi_server_mcp_demo():
 
 
 # =============================================================================
-#
-# 【扩展阅读】第三方 MCP 服务 — GitHub 仓库操作
-#
-# =============================================================================
-
-def github_mcp_demo():
-    """
-    连接 GitHub 官方 MCP 服务器，实现对 GitHub 仓库的操作。
-
-    GitHub MCP Server 是 GitHub 官方提供的 MCP 服务，支持：
-    - 搜索代码和仓库
-    - 创建 Issue、Pull Request
-    - 查看仓库信息
-    - 提交代码等
-
-    运行前准备：
-    1. 已安装 Node.js（npx 命令）
-    2. 已创建 GitHub Personal Access Token
-       - 访问 https://github.com/settings/tokens
-       - 创建 token，勾选 repo 权限
-    3. 将 token 设置到 .env 文件的 GITHUB_TOKEN 变量中
-
-    连接方式：通过 npx 启动 @modelcontextprotocol/server-github
-    """
-    if not MCP_AVAILABLE:
-        print("【跳过】缺少依赖包，请先安装：pip install mcp langchain-mcp-adapters")
-        return
-
-    import asyncio
-
-    model = get_model("qwen")
-    if model is None:
-        print("【跳过】未配置阿里云 API Key，无法运行此示例")
-        return
-
-    # 检查 GITHUB_TOKEN
-    from dotenv import load_dotenv
-    load_dotenv()
-    github_token = os.getenv("GITHUB_TOKEN")
-    if not github_token:
-        print("【跳过】未配置 GITHUB_TOKEN")
-        print("  请在 .env 文件中添加你的 GitHub Personal Access Token：")
-        print("  GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
-        print()
-        print("  获取 Token：https://github.com/settings/tokens")
-        print("  需要权限：repo (Repository)")
-        return
-
-    print("【GitHub MCP 连接演示】")
-    print()
-
-    async def run_with_github_mcp():
-        try:
-            # 通过 npx 启动 GitHub 官方 MCP 服务器
-            # env 字段传入 GITHUB_TOKEN 认证
-            client = MultiServerMCPClient(
-                {
-                    "github": {
-                        "command": "npx",
-                        "args": ["-y", "@modelcontextprotocol/server-github"],
-                        "transport": "stdio",
-                        "env": {
-                            "GITHUB_TOKEN": github_token,
-                        },
-                    },
-                }
-            )
-
-            # 获取 GitHub MCP 工具
-            tools = await client.get_tools()
-            print(f"  从 GitHub MCP 服务器加载了 {len(tools)} 个工具")
-            for t in tools[:5]:  # 只展示前 5 个
-                print(f"    - {t.name}")
-            if len(tools) > 5:
-                print(f"    ... 还有 {len(tools) - 5} 个工具")
-            print()
-
-            # 创建 Agent 并使用 GitHub MCP 工具
-            agent = create_agent(
-                model,
-                tools=tools,
-                system_prompt="你是一个 GitHub 助手，可以使用 GitHub 工具来回答问题。",
-            )
-
-            # 示例问题 - 查询自己的仓库
-            question = "搜索一个 langchain 相关的公开仓库"
-            print(f"【用户提问】{question}")
-
-            result = await agent.ainvoke(
-                {"messages": [{"role": "user", "content": question}]}
-            )
-            last_msg = result["messages"][-1]
-            print(f"【Agent 回答】{last_msg.content}")
-
-        except Exception as e:
-            print(f"  注意：GitHub MCP 服务连接失败: {e}")
-            print("  提示：确保已安装 Node.js，且 GITHUB_TOKEN 配置正确")
-
-    asyncio.run(run_with_github_mcp())
-    print()
-
-
-# =============================================================================
 # MCP 使用指南
 # =============================================================================
 """
@@ -513,17 +410,11 @@ if __name__ == '__main__':
     #   第一阶段（入门）：local_mcp_demo()       — 本地 stdio MCP 服务
     #   第二阶段（进阶）：remote_mcp_demo()      — 远程 SSE MCP 服务
     #   第三阶段（实战）：multi_server_mcp_demo() — 多服务混合编排
-    #   扩展阅读        ：github_mcp_demo()      — 第三方 MCP 生态
     # =========================================================================
 
     print("\n" + "=" * 70)
     print("  MCP 学习阶段总览")
     print("=" * 70)
-    print()
-    print("  第一阶段（入门）：local_mcp_demo()")
-    print("  第二阶段（进阶）：remote_mcp_demo()")
-    print("  第三阶段（实战）：multi_server_mcp_demo()")
-    print("  扩展阅读：github_mcp_demo()")
     print()
     print("  建议按顺序运行：local → remote → multi")
     print("  当前默认运行：扩展阅读 — GitHub MCP 演示")
@@ -533,4 +424,3 @@ if __name__ == '__main__':
     # local_mcp_demo("上海的天气怎么样，空气质量好不好？")
     remote_mcp_demo()
     # multi_server_mcp_demo()
-    # github_mcp_demo()

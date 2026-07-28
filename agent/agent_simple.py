@@ -3,18 +3,23 @@ import sys
 import io
 import json
 
+'''
+    不使用任何Agent框架，如何创建一个Agent
+'''
+
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 from openai import OpenAI
 from dotenv import load_dotenv
 load_dotenv()
 
+# 实例化LLM的客户端
 client = OpenAI(
     api_key=os.getenv("ALIYUN_API_KEY"),
     base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
 )
 
-# ── 工具实现 ──────────────────────────────────────────────
+# ── 工具实现 没有使用tool装饰器，就是一个普通的函数──────────────
 def search_weather(city: str) -> str:
     """查询指定城市的天气"""
     return f"{city}明天晴，15-25°C"
@@ -79,6 +84,8 @@ def agent_loop(user_input: str):
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_input},
     ]
+
+    # 之前不是Agent的写法：client.调用大模型回答：大模型的回答只有一次，也不会调用工具
 
     while True:
         response = client.chat.completions.create(

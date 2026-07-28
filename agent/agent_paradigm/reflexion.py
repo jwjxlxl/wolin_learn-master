@@ -231,9 +231,9 @@ if __name__ == "__main__":
         print(f"\n反思记录:\n{result['reflections']}")
 
     # 示例 2: 逻辑推理
-    print("\n" + "=" * 60)
-    q2 = "一个农场有鸡和兔子共35个头，94只脚。鸡和兔子各有多少只？请列出计算过程。"
-    print(f"\n问题: {q2}")
-    result2 = reflexion_agent(q2, max_attempts=3)
-    print(f"\n最终答案: {result2['final_answer']}")
-    print(f"是否成功: {'是' if result2['succeeded'] else '否'}")
+    # print("\n" + "=" * 60)
+    # q2 = "一个农场有鸡和兔子共35个头，94只脚。鸡和兔子各有多少只？请列出计算过程。"
+    # print(f"\n问题: {q2}")
+    # result2 = reflexion_agent(q2, max_attempts=3)
+    # print(f"\n最终答案: {result2['final_answer']}")
+    # print(f"是否成功: {'是' if result2['succeeded'] else '否'}")

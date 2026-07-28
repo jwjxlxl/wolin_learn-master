@@ -463,7 +463,7 @@ RETURN c.name AS `公司`,
 // shortestPath() - 函数，查找两个节点之间的最短路径
 // [*] - 任意长度、任意类型的关系
 MATCH path = shortestPath(
-    (p1:Person {name: 'Alice'})-[*]-(p2:Person {name: 'Charlie'})
+    (p1:Person {name: 'Alice'})-[*]-(p3:Person {name: 'Charlie'})
 )
 RETURN path;
 

@@ -7,7 +7,7 @@ CrewAI 实战：写技术博客
 2. 确保已安装依赖：pip install python-dotenv
 """
 
-# ── 导入 CrewAI 核心组件 ─────────────────────────────────────
+# ── 导入 CrewAI 核心组件 ───────────────────────────────────
 from crewai import Agent, Task, Crew, Process
 
 # ── 配置 LLM：使用 Qwen（阿里云 DashScope） ──────────────────

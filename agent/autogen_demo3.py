@@ -129,7 +129,7 @@ async def main():
     # task 参数：讨论的主题
     await Console(
         team.run_stream(
-            task="请大家开始吵架，互相攻击另外两个参与者1234567811191220"
+            task="请大家开始吵架，互相攻击另外两个参与者"
         )
     )
 

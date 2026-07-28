@@ -992,8 +992,9 @@ def example_transaction_usage():
 if __name__ == "__main__":
     # 默认运行完整可见示例，适合第一次学习时直接执行：
     # python neo4j_python_guide.py
-    example_usage()
-
+    # example_usage()
+    client = Neo4jClient()
+    client.clear_database()
     # 进阶示例依赖 Neo4j 5.x 的全文索引和向量索引，如需学习可取消注释：
     # example_advanced_usage()
 

@@ -19,7 +19,7 @@ import re
 
 from dotenv import load_dotenv
 
-from agent_examples.qwen import call_llm
+from agent.agent_paradigm.qwen import call_llm
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)

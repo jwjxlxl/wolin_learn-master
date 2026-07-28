@@ -114,19 +114,19 @@ if __name__ == "__main__":
     print("1. Zero-Shot CoT 演示")
     print("=" * 60)
     q1 = "一个水池有两个水管，进水管每小时进水6吨，出水管每小时排水4吨。空池容量20吨，几小时能装满？"
-    thinking, answer = zeroshot_cot(q1)
-    print(f"问题: {q1}")
-    print(f"推理: {thinking}")
-    print(f"答案: {answer}")
+    # thinking, answer = zeroshot_cot(q1)
+    # print(f"问题: {q1}")
+    # print(f"推理: {thinking}")
+    # print(f"答案: {answer}")
 
     print("\n" + "=" * 60)
     print("2. Few-Shot CoT 演示")
     print("=" * 60)
     q2 = "火车从A到B时速60km，从B到A时速40km，AB距离120km，往返平均时速是多少？"
-    thinking, answer = fewshot_cot(q2)
-    print(f"问题: {q2}")
-    print(f"推理: {thinking}")
-    print(f"答案: {answer}")
+    # thinking, answer = fewshot_cot(q2)
+    # print(f"问题: {q2}")
+    # print(f"推理: {thinking}")
+    # print(f"答案: {answer}")
 
     print("\n" + "=" * 60)
     print("3. ReAct Agent 演示 (CoT + 工具)")

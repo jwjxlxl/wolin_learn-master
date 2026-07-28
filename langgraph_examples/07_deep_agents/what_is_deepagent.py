@@ -72,7 +72,7 @@ DeepAgents = "batteries-included" Agent 框架
 | 方式 | 代码量 | 内置能力 | 自定义度 | 适合场景 |
 |------|--------|---------|---------|---------|
 | 手动 StateGraph | ~50 行 | 无 | ★★★★★ | 需要完全控制每个节点和边 |
-| create_react_agent() | 1 行 | 工具调用 | ★★★ | 标准 ReAct Agent，不需要文件操作 |
+| create_agent() | 1 行 | 工具调用 | ★★★ | 标准 ReAct Agent，不需要文件操作 |
 | create_deep_agent() | 1 行 | 全部内置 | ★★★ | 需要文件系统/子代理/Skills 的完整 Agent |
 
 生活化比喻：

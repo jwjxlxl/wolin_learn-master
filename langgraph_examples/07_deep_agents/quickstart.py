@@ -119,12 +119,12 @@ def agent_with_filesystem():
         return
 
     # 1. 创建临时工作目录（安全沙箱）
-    workspace = tempfile.mkdtemp(prefix="deepagent_workspace_")
+    workspace = tempfile.mkdtemp(prefix="deepagent_workspace_", dir="c:\\workspace")
     print(f"  【工作目录】{workspace}")
 
     # 2. 配置文件系统后端
     # virtual_mode=False: 允许在 root_dir 内使用绝对路径
-    backend = FilesystemBackend(root_dir=workspace, virtual_mode=False)
+    backend = FilesystemBackend(root_dir='.', virtual_mode=True)
 
     model = get_model("qwen")
     if model is None:
@@ -137,7 +137,7 @@ def agent_with_filesystem():
         backend=backend,
         system_prompt=(
             "你是一个写作助手。你可以使用文件系统来读写文件。"
-            "当用户要求创建文件时，请在工作目录{{workspace}}中操作。"
+            "当用户要求创建文件时，请在当前工作目录操作。"
         ),
     )
 
@@ -145,11 +145,11 @@ def agent_with_filesystem():
     # print("  【用户】请创建一个名为 hello.txt 的文件，里面写一句问候语。")
     result = agent.invoke({
         "messages": [HumanMessage(
-            content="请创建一个名为 hello.txt 的文件，里面写一句问候语。"
+            content="请创建一个名为 hello.txt 的文件，里面写一句问候语。并返回当前的工作目录路径"
         )]
     })
 
-    # 5. 验证文件是否真的被创建
+    #5. 验证文件是否真的被创建
     created_file = os.path.join(workspace, "hello.txt")
     if os.path.exists(created_file):
         with open(created_file, "r", encoding="utf-8") as f:

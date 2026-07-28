@@ -65,6 +65,8 @@ def supervisor_with_llm():
 
     supervisor_model = model.with_structured_output(SupervisorDecision)
 
+    # ===== Supervisor 状态 =====
+    # 在Agent之间进行数据传输和存储的管理
     class SupervisorState(TypedDict):
         messages: Annotated[list, add_messages]
         task: str
@@ -184,8 +186,7 @@ def supervisor_with_llm():
 
     # ===== 测试 =====
     tasks = [
-        "搭建一个能搜索公司知识库的智能问答 Agent",
-        "实现文档自动切片和向量化入库功能",
+        "搭建一个能搜索公司知识库的智能问答 Agent"
     ]
 
     for task in tasks:

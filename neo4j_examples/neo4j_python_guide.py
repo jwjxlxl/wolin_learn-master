@@ -26,7 +26,13 @@ NEO4J_DATABASE = os.getenv("NEO4J_DATABASE", "neo4j")
 
 
 class Neo4jClient:
-    """Neo4j 数据库客户端封装类"""
+    """
+    Neo4j 数据库客户端封装类
+    在python代码中实现一个对Neo4j数据库操作的类
+    构建一个到neo4j数据库的连接
+    可以实现对neo4j数据库的增删改查操作
+    就是一种封装：把对neo4j数据库的操作封装到了一个类中
+    """
 
     def __init__(self, uri: str = NEO4J_URI, user: str = NEO4J_USER, password: Optional[str] = NEO4J_PASSWORD, database: str = NEO4J_DATABASE):
         """
@@ -814,15 +820,15 @@ def example_usage():
 
         # --- CREATE 示例 ---
         print("\n=== 创建数据 ===")
-        client.create_person("Alice", 30)
-        client.create_person("Bob", 25)
-        client.create_person("Charlie", 35)
+        client.create_person("杨辉", 30)
+        client.create_person("聂柏", 25)
+        client.create_person("叶绍康", 35)
         client.create_movie("The Matrix", 1999, 8.7)
         client.create_movie("Inception", 2010, 8.8)
 
         # 创建关系
-        client.create_relationship_acted_in("Alice", "The Matrix", ["Neo"])
-        client.create_relationship_acted_in("Bob", "Inception", ["Cobb"])
+        client.create_relationship_acted_in("杨辉", "The Matrix", ["Neo"])
+        client.create_relationship_acted_in("聂柏", "Inception", ["Cobb"])
 
         # --- READ 示例 ---
         print("\n=== 查询所有人员 ===")
@@ -847,14 +853,14 @@ def example_usage():
         # --- 复杂查询 ---
         print("\n=== 导演统计 ===")
         # 先创建导演数据
-        client.create_director("Lana Wachowski", 1965)
-        client.create_director("Christopher Nolan", 1970)
-        client.create_movie("Interstellar", 2014, 8.6)
+        client.create_director("张昊", 1998)
+        client.create_director("赵嘉", 1999)
+        client.create_movie("", 2014, 8.6)
         client.create_movie("The Dark Knight", 2008, 9.0)
-        client.create_relationship_directed("Lana Wachowski", "The Matrix", 1999)
-        client.create_relationship_directed("Christopher Nolan", "Inception", 2010)
-        client.create_relationship_directed("Christopher Nolan", "Interstellar", 2014)
-        client.create_relationship_directed("Christopher Nolan", "The Dark Knight", 2008)
+        client.create_relationship_directed("张昊", "The Matrix", 1999)
+        client.create_relationship_directed("赵嘉", "Inception", 2010)
+        client.create_relationship_directed("赵嘉", "Interstellar", 2014)
+        client.create_relationship_directed("赵嘉", "The Dark Knight", 2008)
 
         stats = client.get_director_statistics()
         for s in stats:
@@ -993,10 +999,9 @@ if __name__ == "__main__":
     # 默认运行完整可见示例，适合第一次学习时直接执行：
     # python neo4j_python_guide.py
     # example_usage()
-    client = Neo4jClient()
-    client.clear_database()
     # 进阶示例依赖 Neo4j 5.x 的全文索引和向量索引，如需学习可取消注释：
-    # example_advanced_usage()
+    example_advanced_usage()
 
     # 演示事务用法，如需学习可取消注释：
     # example_transaction_usage()
+

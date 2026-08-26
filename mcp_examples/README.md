@@ -7,15 +7,11 @@ Model Context Protocol（模型上下文协议）—— 让 AI 模型连接任�
 ## 学习路线图
 
 ```
-概念理解 ──→ Tool 实战 ──→ Resources & Prompts ──→ 企业实战 ──→ Skill 编排 ──→ 多 Agent ──→ A2A 通信
-   │              │                  │                  │              │             │            │
-what_is_mcp   mcp_demo         mcp_resources_     enterprise_     skill_demo    multiple_     a2a_demo
-.py           .py              prompts_demo.py      api_mcp_       .py           agent.py      .py
-                                                    demo.py
-                                                            │
-                                                  客户端配置指南
-                                                  mcp_client_config
-                                                  _guide.py
+概念理解 ──→ Tool 实战 ──→ 企业实战 ──→ 手动封装 ──→ Skill ──→ 多 Agent ──→ A2A
+   │              │              │            │          │         │         │
+what_is_mcp   mcp_demo      student_       gaode_     skill_    multiple_  a2a_demo
+.py           .py           management_    api_tool_  demo.py   agent.py   .py
+                            mcp_demo.py    demo.py
 ```
 
 **建议学习顺序**（标注 `*` 为核心文件）：
@@ -24,14 +20,12 @@ what_is_mcp   mcp_demo         mcp_resources_     enterprise_     skill_demo    
 |:----:|------|------|:--------:|:-------:|
 | 1 | `what_is_mcp.py` | MCP 核心概念、三层架构、协议原理 | 否 | 15 min |
 | 2* | `mcp_demo.py` | 本地 stdio / 远程 SSE / 多服务混合 / GitHub | 是 | 20 min |
-| 3 | `mcp_resources_prompts_demo.py` | Tool vs Resource vs Prompt 对比 | 是 | 15 min |
-| 4 | `mcp_client_config_guide.py` | Claude Desktop / Cursor / Codex 配置指南 | 否 | 15 min |
-| 5 | `skill_demo.py` | Skill 是什么、两种实现方式、对比演示 | 是 | 15 min |
-| 5.5 | `skill_agent_demo.py` | 自建 Agent 加载并执行 SKILL.md | 是 | 20 min |
-| 6* | `enterprise_api_mcp_demo.py` | 企业 REST API → FastMCP 封装 → Agent 接入 | 是 | 20 min |
-| 7 | `gaode_api_tool_demo.py` | 手动封装高德 REST API 为 Agent Tool | 是 | 20 min |
-| 8 | `multiple_agent.py` | Supervisor 多 Agent 调度模式 | 是 | 15 min |
-| 9* | `a2a_demo.py` | A2A 协议：Agent 之间通过 HTTP/JSON-RPC 通信 | 否 | 20 min |
+| 3 | `local_weather_server.py` | 最简 MCP Server（50 行，2 个 Tool） | 否 | 10 min |
+| 4* | `student_management_mcp_demo.py` | 企业 REST API → FastMCP → Agent 接入 | 是 | 20 min |
+| 5 | `gaode_api_tool_demo.py` | 手动用 requests 封装高德 REST API 为 Agent Tool | 是 | 20 min |
+| 6 | `skill_demo.py` | Skill 是什么、与 Tool 的区别、多 Tool 编排 | 是 | 15 min |
+| 7 | `multiple_agent.py` | Supervisor 多 Agent 调度模式 | 是 | 15 min |
+| 8* | `a2a_demo.py` | A2A 协议：Agent 之间通过 HTTP/JSON-RPC 通信 | 否 | 20 min |
 
 ---
 
@@ -60,7 +54,7 @@ what_is_mcp   mcp_demo         mcp_resources_     enterprise_     skill_demo    
 | 能力 | 类比 | 用途 | 典型场景 |
 |------|------|------|----------|
 | **Tool**（工具） | 模型的手 | 让模型"做"某事 | 搜索、计算、API 调用 |
-| **Resource**（资源） | 模型的眼睛 | 让模型"读"某数据 | 读取规章、FAQ、知识库 |
+| **Resource**（资源） | 模型的眼睛 | 让模型"读"数据 | 读取规章、FAQ、知识库 |
 | **Prompt**（提示） | 模型的剧本 | 让模型"遵循"模板 | 代码审查、摘要生成 |
 
 ### 两种传输方式
@@ -72,118 +66,128 @@ what_is_mcp   mcp_demo         mcp_resources_     enterprise_     skill_demo    
 
 ---
 
+## 面试必问：为什么要封装成 MCP？直接调 API 不行吗？
+
+> 这是面试官常问的问题。核心答案：**能直接调，但要看"谁"在调。**
+
+### 关键区分
+
+| 调用方 | 直接调 API | 通过 MCP |
+|--------|-----------|----------|
+| **人类写的代码** | ✅ 最合适 | ❌ 没必要，多一层反而增加复杂度 |
+| **AI Agent / LLM** | ❌ 问题很多 | ✅ MCP 就是为此设计的 |
+
+### 直接调 API 给 LLM 用的 5 个坑
+
+**1. 参数理解成本高**
+
+REST API 的 JSON schema 对 LLM 来说缺乏语义约束。10+ 个字段里哪些必填？数据类型是什么？LLM 容易拼错字段名（`classId` vs `class_id`）。
+
+MCP 的 Tool 定义自带类型签名 + 文档字符串，LLM 一看就懂：
+```python
+def add_student(name: str, class_id: int, gender: str = "") -> str
+```
+
+**2. 响应格式不统一**
+
+不同 API 返回格式各异，LLM 每次都要自己解析。MCP 的 Tool 返回统一的自然语言文本，LLM 拿到就能用。
+
+**3. 没有"能力描述"**
+
+REST API 是一堆端点，LLM 不知道哪个该用。MCP 的每个 Tool 有清晰的 `description`，Agent 的规划器能据此自动选择合适工具。
+
+**4. 安全管控难**
+
+直接暴露 API = 给 LLM 全量访问能力。MCP 按最小权限原则，只暴露需要的 Tool，写操作可在 Tool 内加二次确认和数据校验。
+
+**5. 模型适配成本高**
+
+换模型 = 换 Agent 框架 = 重新适配 API。MCP 是标准协议，一次封装，所有兼容模型都能用。
+
+### 一句话总结
+
+> **MCP 是给 AI Agent 用的 API 适配层，不是给人类代码用的。**
+> 
+> 就像预制菜：原材料（REST API）直接给厨师（人类代码）没问题，但做成预制菜（MCP）才能让不会做饭的人（LLM）轻松吃上饭。
+
+### MCP 的缺陷与局限
+
+面试官追问：**MCP 有什么缺点？** 能主动说出缺陷，说明你不是盲目追热点。
+
+| 缺陷 | 说明 | 应对方式 |
+|------|------|---------|
+| **额外延迟** | 每次 Tool 调用都要经过 MCP 协议转换（序列化 → 传输 → 反序列化），比直接 HTTP 调用多一层开销 | 对延迟敏感的调用，Agent 代码内直接 HTTP 请求 |
+| **调试成本高** | 错误可能在 3 层传递中丢失或变形：Agent → MCP Client → MCP Server → 原始 API，排查链路长 | 开启 `MCP_DEBUG=1` 查看原始 JSON-RPC 报文 |
+| **生态碎片化** | MCP 2024 年才提出，标准仍在演进，不同实现（FastMCP / MCP SDK）之间存在兼容性问题 | 锁定版本，不要追最新版 |
+| **异步复杂度** | MCP 基于 async 通信，在同步代码中需要 `asyncio.run()` 包装，容易出事件循环冲突 | 统一项目内的 async/sync 风格 |
+| **安全边界模糊** | stdio 方式下 MCP Server 以子进程运行，拥有当前用户的完整文件系统权限 | 生产环境用 SSE + 认证，限制 Server 运行权限 |
+| **不适合复杂工作流** | MCP 是"单次调用 → 返回结果"模型，不适合需要状态保持、多轮交互的复杂流程 | 复杂流程用 LangGraph 或 A2A 协议 |
+| **版本协商缺失** | MCP Server 升级后 Tool 签名可能变化，Client 端难以感知，导致 Agent 调用失败 | Server 端做向后兼容，或在 Tool description 中标注版本 |
+
+### 什么时候不应该用 MCP
+
+- **前后端通信**：前端调后端 API，直接 HTTP 就行
+- **微服务间调用**：gRPC / REST 更高效，MCP 反而增加延迟
+- **批处理 / 定时任务**：脚本直接调 API，不需要经过 LLM
+- **高并发场景**：MCP 协议有额外开销，不适合 QPS 要求高的场景
+
+---
+
 ## 文件说明
 
 ### 📖 概念层
 
-#### `what_is_mcp.py` — MCP 核心概念
-纯概念文件，通过 USB-C 类比理解 MCP 解决的问题。涵盖：
-- MCP 架构组成（Client ↔ Server）
+**`what_is_mcp.py`** — MCP 核心概念（纯概念，无需 API）
+- USB-C 类比理解 MCP 解决的问题
 - 三种核心能力详解（Tool / Resource / Prompt）
 - 与 Function Calling、Skill 的关系
-- 常见 MCP 服务器列表（文件系统、GitHub、高德、浏览器、数据库、搜索）
-- MCP 协议内部原理（JSON-RPC 2.0、生命周期、消息类型、传输层差异）
+- MCP 协议内部原理（JSON-RPC 2.0、生命周期、传输层差异）
 - `langchain-mcp-adapters` 桥接原理
-
-#### `mcp_client_config_guide.py` — 客户端配置指南
-在三种流行客户端中配置 MCP Server 的完整指南：
-- **Claude Desktop**：全局 `claude_desktop_config.json` 配置
-- **Cursor**：项目级 `.cursor/mcp.json` 配置
-- **Codex**：插件系统 + `settings.json` 配置
-- 三种客户端对比表
-- 5 个常见问题排查方案
 
 ### 🔧 实战层
 
-#### `local_weather_server.py` — 最简 MCP Server
-仅 50 行的教学用 MCP Server，提供两个 Tool：
+**`local_weather_server.py`** — 最简 MCP Server（50 行）
 - `get_weather(city)` — 天气查询
 - `get_air_quality(city)` — 空气质量查询
 
-#### `mcp_demo.py` — MCP Tool 实战 ⭐
+**`mcp_demo.py`** — MCP Tool 实战 ⭐
 四个阶段递进学习：
 1. **入门**：本地 stdio 连接天气 Server
 2. **进阶**：远程 SSE 连接高德地图官方 Server
 3. **实战**：本地 + 远程多服务混合编排
 4. **扩展**：GitHub 官方 MCP Server 连接
 
-#### `mcp_resources_prompts_demo.py` — Resource 与 Prompt 演示
-- 用 LangChain Tool 模拟 Resource 和 Prompt 效果（无需完整 MCP Server）
-- 构建提供 Resources 的 MCP Server（`@mcp.resource` 装饰器）
-- 构建提供 Prompts 的 MCP Server（`@mcp.prompt` 装饰器）
-- Tool / Resource / Prompt 完整对比表
+**`student_management_mcp_demo.py`** — 企业 API → MCP Server 实战 ⭐
 
-#### `enterprise_api_mcp_demo.py` — 企业 API → MCP Server 实战 ⭐
 完整演示如何把企业内部 REST API 封装为 MCP Server：
-- **第一步**：`OrderAPI` 类模拟企业内部订单系统（订单查询/取消、库存检查、客户信息）
-- **第二步**：用 `FastMCP` 定义 6 个 Tool（最小权限 + Pydantic 输入校验）
+- **第一步**：`StudentManagementAPI` 类封装 HTTP 客户端（登录鉴权 + 查询 + 新增）
+- **第二步**：用 `FastMCP` 定义 2 个 Tool（最小权限 + 自然语言返回）
 - **第三步**：两种方式接入 LangChain Agent（直接调用 vs AI 自动决策）
 - **第四步**：企业部署建议（认证鉴权、权限控制、日志审计、速率限制、stdio/SSE 部署）
 
+**`gaode_api_tool_demo.py`** — 手动封装高德 REST API 为 Agent Tool
+
+⚠️ 不是连接高德官方 MCP Server，而是手动用 `requests` 调用高德 Web Service API，将每个接口封装为 LangChain `@tool`。覆盖 6 大场景 + 1 个组合 Skill（智能旅游规划）。
+
+**教学价值**：理解如何手动将任意 REST API 封装为 Agent Tool，不依赖 mcp 包。
+
 ### 🎯 进阶层
 
-#### `skill_demo.py` — Skill 技能演示
-理解 Skill 是什么、与 Tool 的区别：
-- **对比演示**：Tool（螺丝刀）vs Skill（维修技能）
-- **方式 A（推荐）**：通过 `system_prompt` 编排多个 Tool 形成 Skill
-- **方式 B**：封装函数作为 Skill，内部调用多个子 Tool
-- **价值对比**：没有 Skill 编排的 Agent vs 有 Skill 编排的 Agent
+**`skill_demo.py`** — Skill 技能演示
+- Tool（螺丝刀）vs Skill（维修技能）对比
+- 通过 `system_prompt` 编排多个 Tool 形成 Skill
 
-#### `skill_agent_demo.py` — 自建 Agent 执行 SKILL.md ⭐
+**`multiple_agent.py`** — 多 Agent Supervisor 模式
+- 主 Agent（Supervisor）负责规划分发
+- 三个子 Agent 各负责细分领域（计算/翻译/写作）
+- 使用 `langgraph-supervisor` 实现
 
-⚠️ 本文件不是给 Codex/OpenClaw 配置 SKILL.md，而是**自己构建一个 Python Agent**，让它能读取、解析、匹配并执行 SKILL.md。
+**`a2a_demo.py`** — A2A 协议实战 ⭐（无需 API Key）
 
-核心流程：
-- **Skill 发现**：扫描 `skills/` 目录下所有 SKILL.md 文件
-- **Skill 解析**：解析 YAML 前端（name + description）和 Markdown 正文
-- **LLM 匹配**：把所有 Skill 的 description 发给 LLM，让它判断哪个最匹配用户问题
-- **动态注入**：命中 Skill 后，将其 Markdown 正文注入 Agent 的 system_prompt
-- **Agent 执行**：带着对应的 Skill 说明去回答用户问题
-
-示例 Skill（`skills/` 目录）：
-- `weather-reporter/` — 天气报告助手（触发词：天气、温度、天气预报）
-- `code-reviewer/` — 代码审查助手（触发词：review、审查代码、代码质量）
-- `translator/` — 翻译助手（触发词：翻译、translate、中英互译）
-
-#### `gaode_api_tool_demo.py` — 高德 API 手动封装实战
-
-⚠️ 本文件**不是**连接高德官方 Skill 或 MCP Server，而是手动用 `requests` 调用高德 Web Service REST API，将每个接口封装为 LangChain `@tool`。
-
-覆盖高德 6 大场景 + 1 个组合 Tool：
-
-| 场景 | Tool | 说明 |
-|------|------|------|
-| 地理编码 | `amap_geo` | 地址 → 经纬度 |
-| 逆地理编码 | `amap_regeo` | 经纬度 → 地址 |
-| POI 关键词搜索 | `amap_poi_search` | 搜索地点/商家/景点 |
-| POI 周边搜索 | `amap_around_search` | 指定坐标周边搜索 |
-| 天气查询 | `amap_weather` | 城市实时天气 |
-| 路径规划 | `amap_route` | 步行/驾车/骑行/公交 |
-| 地图链接 | `amap_search_url` | 生成高德地图搜索链接 |
-| 智能旅游规划 | `amap_travel_planner` | 组合多个 API 的旅游规划 Skill |
-
-#### `multiple_agent.py` — 多 Agent Supervisor 模式
-一个主 Agent（Supervisor）负责规划分发，三个子 Agent 各负责细分领域：
-- 计算专家（Calculator Agent）
-- 翻译专家（Translator Agent）
-- 写作专家（Writer Agent）
-
-使用 `langgraph-supervisor` 的 `create_supervisor` 实现。
-
-#### `a2a_demo.py` — A2A 协议实战 ⭐
 Google 提出的 Agent 间通信协议（HTTP/JSON-RPC），通过"旅游规划三剑客"场景演示：
-- **天气 Agent**（模拟 HTTP 8001 端口）：提供天气查询
-- **酒店 Agent**（模拟 HTTP 8002 端口）：提供酒店搜索
-- **旅行协调员**：通过 A2A 协议发现并调用上述两个 Agent，合成旅行计划
-
-核心教学内容：
-- **Agent Card 发现机制**：每个 Agent 通过名片描述自己的能力
-- **Task 生命周期**：SUBMITTED → WORKING → COMPLETED
-- **JSON-RPC 2.0 消息格式**：真实 A2A 协议的通信格式
-- **MCP vs A2A 对比**：MCP 是模型连工具（USB-C），A2A 是 Agent 连 Agent（打电话）
-- **7 个递进示例**：概念讲解 → Agent Card 发现 → 单 Agent 调用 → 多 Agent 协作 → LLM 增强 → 交互模式
-
-**无需 API Key 即可运行核心示例（1-5）**，适合课堂演示。
+- **天气 Agent**（模拟 HTTP 8001） + **酒店 Agent**（模拟 HTTP 8002）
+- **旅行协调员**：通过 A2A 协议发现并调用上述两个 Agent
+- Agent Card 发现机制 / Task 生命周期 / JSON-RPC 消息格式 / MCP vs A2A 对比
 
 ---
 
@@ -192,21 +196,19 @@ Google 提出的 Agent 间通信协议（HTTP/JSON-RPC），通过"旅游规划�
 ### 安装依赖
 
 ```bash
-pip install mcp langchain-mcp-adapters langchain langchain-core langchain-openai python-dotenv pydantic
+pip install mcp langchain-mcp-adapters langchain langchain-core langchain-openai python-dotenv pydantic httpx
 ```
 
 ### 配置环境变量
 
-创建 `.env` 文件：
-
 ```env
-# 阿里云 Qwen 模型（大部分示例需要）
+# 阿里云 Qwen 模型
 ALIYUN_API_KEY=your_dashscope_api_key
 
-# 高德地图 API Key（高德相关示例需要）
+# 高德地图 API Key
 AMAP_KEY=your_amap_web_service_key
 
-# GitHub Token（GitHub MCP 示例需要）
+# GitHub Token（可选）
 GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
@@ -219,22 +221,13 @@ python what_is_mcp.py
 # 2. MCP Tool 实战
 python mcp_demo.py
 
-# 3. 企业 API 封装
-python enterprise_api_mcp_demo.py
+# 3. 企业 API 封装（需启动学生管理系统，见文件内路径）
+python student_management_mcp_demo.py
 
-# 4. Skill 编排
-python skill_demo.py
-
-# 4.5 自建 Agent 执行 SKILL.md
-python skill_agent_demo.py
-
-# 5. 高德 API 手动封装演示
+# 4. 高德 API 手动封装
 python gaode_api_tool_demo.py
 
-# 6. 多 Agent 调度
-python multiple_agent.py
-
-# 7. A2A 协议实战（无需 API Key）
+# 5. A2A 协议实战（无需 API Key）
 python a2a_demo.py
 ```
 
@@ -245,17 +238,15 @@ python a2a_demo.py
 ```
                     ┌─────────────────────────────────────┐
                     │          应用层：Skill                │
-                    │   skill_demo.py, skill_agent_demo.py │
+                    │   skill_demo.py                      │
                     │   gaode_api_tool_demo.py             │
                     └─────────────────┬───────────────────┘
                                       │
                     ┌─────────────────┴───────────────────┐
                     │          连接层：MCP                  │
                     │   mcp_demo.py                        │
-                    │   mcp_resources_prompts_demo.py      │
-                    │   enterprise_api_mcp_demo.py         │
+                    │   student_management_mcp_demo.py     │
                     │   local_weather_server.py            │
-                    │   mcp_client_config_guide.py         │
                     └─────────────────┬───────────────────┘
                                       │
                     ┌─────────────────┴───────────────────┐
@@ -264,11 +255,11 @@ python a2a_demo.py
                     └─────────────────────────────────────┘
 
     横向能力：
-    ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐  ┌──────────────────┐
-    │  单 Agent     │  │  多 Agent    │  │  客户端集成       │  │  A2A 协议        │
-    │  mcp_demo.py  │→ │  multiple_   │→ │  mcp_client_    │→ │  a2a_demo.py    │
-    │              │  │  agent.py    │  │  config_guide.py │  │                 │
-    └──────────────┘  └──────────────┘  └──────────────────┘  └──────────────────┘
+    ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐
+    │  单 Agent     │  │  多 Agent    │  │  A2A 协议        │
+    │  mcp_demo.py  │→ │  multiple_   │→ │  a2a_demo.py    │
+    │              │  │  agent.py    │  │                 │
+    └──────────────┘  └──────────────┘  └──────────────────┘
 ```
 
 ---
@@ -289,10 +280,6 @@ python a2a_demo.py
 
 ## 与 LangGraph 的关系
 
-本目录与 `langgraph_examples/` 的关系：
-
 - **MCP** 解决的是"AI 模型如何连接外部工具"的问题（标准化接口层）
 - **LangGraph** 解决的是"AI 工具之间如何编排流程"的问题（图结构执行层）
 - 两者互补：MCP 提供工具，LangGraph 编排工具的执行流程
-
-在 `langgraph_examples/07_deep_agents/` 中创建的 DeepAgent 也可以通过 MCP 工具来增强能力。

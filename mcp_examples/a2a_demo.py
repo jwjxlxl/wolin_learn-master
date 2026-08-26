@@ -852,12 +852,12 @@ if __name__ == '__main__':
     # example1_what_is_a2a()
 
     # 示例 2: Agent Card 发现（无需 API Key）
-    # example2_agent_card_discovery()
+    example2_agent_card_discovery()
 
     # 示例 3: 直接调用天气 Agent（无需 API Key）
     # example3_direct_weather_call()
 
     # 示例 4: 旅行协调员多 Agent 协作（无需 API Key，核心示例）
-    example5_travel_coordinator()
+    # example5_travel_coordinator()
 
 

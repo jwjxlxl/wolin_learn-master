@@ -48,6 +48,9 @@
    - 超出后：按调用次数计费
    - 详情请查阅官网
 """
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 
 # =============================================================================
@@ -73,8 +76,11 @@ def basic_embedding_with_sdk():
 
         # 调用 Embedding API
         print("正在调用 text-embedding-v3 模型...")
+        api_key = os.getenv("ALIYUN_API_KEY")
+        print("apikey", api_key)
         result = TextEmbedding.call(
             model='text-embedding-v3',
+            api_key=api_key,
             input=text
         )
 
@@ -470,22 +476,6 @@ vector = embed_with_retry("人工智能简介")
 # =============================================================================
 
 if __name__ == '__main__':
-    print("\n" + "=" * 70)
-    print("  Embedding 示例 - 阿里云百炼 Embedding API")
-    print("  说明：学习如何调用阿里云百炼的文本向量化 API")
-    print("=" * 70 + "\n")
-
-    print("【说明】")
-    print("  阿里云百炼提供 text-embedding-v3 模型")
-    print("  支持中英文，维度 1024/1536 可选")
-    print()
-
-    print("【前置条件】")
-    print("  1. 注册阿里云账号")
-    print("  2. 开通百炼服务：https://bailian.console.aliyun.com/")
-    print("  3. 获取 API Key")
-    print("  4. 安装 SDK: pip install dashscope")
-    print()
 
     # 运行示例
     print("-" * 60)

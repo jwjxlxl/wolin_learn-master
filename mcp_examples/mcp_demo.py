@@ -421,6 +421,6 @@ if __name__ == '__main__':
     print()
     print("=" * 70 + "\n")
 
-    # local_mcp_demo("上海的天气怎么样，空气质量好不好？")
-    remote_mcp_demo()
-    # multi_server_mcp_demo()
+    # local_mcp_demo("东京的天气怎么样，空气质量好不好？")
+    # remote_mcp_demo()
+    multi_server_mcp_demo()

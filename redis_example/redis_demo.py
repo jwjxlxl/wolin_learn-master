@@ -9,7 +9,7 @@ from utils.model_utils import get_model
 '''
 
 # 连接到 Redis（Docker 容器中的 Redis 通过 localhost:6379 访问）
-r = redis.Redis(host='192.168.142.128', port=6379, decode_responses=True, password='123456')
+r = redis.Redis(host='192.168.142.128', port=6379, decode_responses=True, password='redis123456')
 
 '''
     bytes
@@ -48,17 +48,19 @@ def get_llm_response(prompt: str) -> str:
 # print(r.ping())  # True → 连接成功
 
 if __name__ == '__main__':
-    # r.set('name', '张昊', 5)
-    # print(r.get('name'))
+    # r.set('class_name', 'AI0522', 50)
+    print(r.get('class_name'))
+    r.delete('class_name')
+    print(r.get('class_name'))
 
     # start = time.time()
     # res = get_llm_response('深度学习是什么')
     # print(res)
     # end = time.time()
     # print(f"耗时: {end - start:.2f}秒")
-    r.delete("llm_cache:深度学习是什么")
-    '''
-        Redis 缓存的作用之外，还可以作为Agent短期记忆的存储
-        过期时间
-        长期记忆：MySQL
-    '''
+    # r.delete("llm_cache:深度学习是什么")
+    # '''
+    #     Redis 缓存的作用之外，还可以作为Agent短期记忆的存储
+    #     过期时间
+    #     长期记忆：MySQL
+    # '''

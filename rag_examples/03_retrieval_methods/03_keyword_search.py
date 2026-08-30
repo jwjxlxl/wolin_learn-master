@@ -3,6 +3,12 @@
 # =============================================================================
 """
 本文件教学演示基于关键词的传统检索方法。
+如果不是在Milvus中使用全文检索，可以考虑使用 Elasticsearch 或其他全文检索工具。
+需要对原始文本进行分词处理，生成稀疏向量。
+需要对检索的问题也要进行分词，得到相同维度的稀疏向量，才能进行相似度计算。
+如果使用Milvus进行全文检索，自动把文本转换为稀疏向量，检索的时候也不需要分词处理
+
+
 
 核心概念：
   - 全文检索：直接输入原始文本，系统自动按 BM25 算法排序
@@ -47,7 +53,7 @@ def create_fulltext_collection(collection_name="keyword_demo"):
     """
     from pymilvus import DataType, Function, FunctionType
 
-
+    client.use_database("ai0626")
     # 定义 schema
     schema = client.create_schema()
     schema.add_field(
@@ -62,6 +68,7 @@ def create_fulltext_collection(collection_name="keyword_demo"):
         max_length=2000,
         enable_analyzer=True,  # 开启分词器（中文分词必需）
     )
+    # 添加一个稀疏向量字段
     schema.add_field(
         field_name="sparse",
         datatype=DataType.SPARSE_FLOAT_VECTOR,
@@ -81,6 +88,7 @@ def create_fulltext_collection(collection_name="keyword_demo"):
     index_params.add_index(
         field_name="sparse",
         index_type="SPARSE_INVERTED_INDEX",
+        # 稀疏向量字段的度量类型必须是BM25
         metric_type="BM25",
         params={
             "inverted_index_algo": "DAAT_MAXSCORE",
@@ -241,44 +249,6 @@ def demo_bm25_algorithm():
     for num, score, doc in scores:
         print(f"  [{num}] {score:.4f}  {doc}")
 
-
-# =============================================================================
-# 示例 4: 关键字检索 vs 向量检索对比
-# =============================================================================
-
-def keyword_vs_vector_search():
-    """对比关键字检索（字面匹配）和向量检索（语义匹配）的差异"""
-    print(f"\n-- 示例 4: 关键字检索 vs 向量检索")
-
-    documents = [
-        "机器学习是人工智能的核心技术。",
-        "深度学习使用神经网络学习数据表示。",
-        "自然语言处理让计算机理解人类语言。",
-        "计算机视觉是让计算机看懂图像和视频的技术。",
-    ]
-
-    print(f"  文档库：{len(documents)} 篇文档")
-    for i, doc in enumerate(documents):
-        print(f"  [{i+1}] {doc}")
-
-    # 场景 1: BM25 的优势 — 专有名词精确匹配
-    query1 = "机器学习"
-    print(f"\n  场景 1：查询 '{query1}'（技术专有名词）")
-    print("  关键字检索：✓ 精确匹配'机器学习'关键词")
-    print("  向量检索：✓ 也能匹配，且能理解同义词（如'AI 学习'）")
-
-    # 场景 2: 向量检索的优势 — 语义理解
-    query2 = "计算机如何看懂图片"
-    print(f"\n  场景 2：查询 '{query2}'（语义描述，不包含'计算机视觉'这个词）")
-    print("  关键字检索：✗ 找不到（文档中没有'看懂''图片'这些词）")
-    print("  向量检索：✓ 理解语义，匹配'计算机视觉'相关文档")
-
-    print("\n  结论：")
-    print("  - 关键字检索：精确匹配专有名词，可解释性强")
-    print("  - 向量检索：理解语义，找到字面不同但相关的内容")
-    print("  - 混合检索（推荐）：结合两者优势")
-
-
 # =============================================================================
 # 示例 5: 最佳实践
 # =============================================================================
@@ -344,10 +314,10 @@ def keyword_search_best_practices():
 
 if __name__ == "__main__":
     # milvus_fulltext_search()   # 需要 Milvus 服务运行中
-    # results = search_fulltext("whats the focus of information retrieval?", limit=5)
-    # for hit in results:
-    #     print(hit["distance"], hit["entity"]["text"])
+    results = search_fulltext("whats the study", limit=3)
+    for hit in results:
+        print(hit["distance"], hit["entity"]["text"])
 
     # demo_bm25_algorithm()
-    keyword_vs_vector_search()
+    # keyword_vs_vector_search()
     # keyword_search_best_practices()

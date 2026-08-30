@@ -359,19 +359,16 @@ if __name__ == "__main__":
     print("  建表前先删表，确保代码可重复运行")
     print()
 
-    create_simple_collection()
-    print()
+    # create_simple_collection()
 
-    create_custom_collection()
-    print()
+    # create_custom_collection()
 
-    create_multi_vector_collection()
-    print()
+    # create_multi_vector_collection()
 
-    metric_types_explained()
-    print()
+    # metric_types_explained()
 
-    collection_operations()
+    create_dynamic_field_collection()
+    # collection_operations()
 
     print()
     print("=" * 70)

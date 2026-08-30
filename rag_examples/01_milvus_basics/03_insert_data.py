@@ -51,7 +51,9 @@ def explain_embedding():
 │       - text-embedding-v4 (阿里云百炼，{DEFAULT_DIMENSION} 维)              │
 │       - text-embedding-v3 (阿里云百炼)                  │
 │       - BGE-M3 (开源)                                   │
-│       - m3e-base (开源，中文优化)                        │
+│       - m3e-base (开源，中文优化)   
+                     
+        BMG-M3│
 │                                                         │
 │    2. 图像 Embedding 模型                                │
 │       - ResNet50                                        │
@@ -314,6 +316,7 @@ def insert_with_custom_fields():
     from pymilvus.milvus_client import IndexParams
 
     client = MilvusClient(uri=MILVUS_URI)
+    client.use_database("ai0626")
     collection_name = "custom_docs"
 
     if client.has_collection(collection_name):
@@ -338,6 +341,8 @@ def insert_with_custom_fields():
     documents = prepare_test_data()
     texts = [d["content"] for d in documents]
     vectors = generate_mock_embeddings(texts)
+    # 如果需要使用真实的向量，调用 generate_embeddings 函数
+    # vectors = generate_embedding_with_llm(texts)
 
     print(f"准备插入带完整字段的数据...\n")
 
@@ -501,7 +506,7 @@ if __name__ == "__main__":
     # explain_embedding()
     # print()
 
-    generate_embedding_with_llm("我是一支笔")
+    # generate_embedding_with_llm("我是一支笔")
 
     # insert_single_data()
     # print()
@@ -509,7 +514,7 @@ if __name__ == "__main__":
     # insert_batch_data()
     # print()
     #
-    # insert_with_custom_fields()
+    insert_with_custom_fields()
     # print()
     #
     # insert_with_custom_id()

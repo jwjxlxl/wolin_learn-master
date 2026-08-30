@@ -87,9 +87,6 @@ def bge_reranker_demo():
             "机器学习需要数学基础，包括线性代数和概率统计。",
         ]
 
-        print(f"查询：{query}")
-        print(f"候选文档：{len(candidates)} 条\n")
-
         print("加载 BGE-Reranker 模型...")
         reranker = FlagReranker('BAAI/bge-reranker-large', use_fp16=False)
         print("模型加载完成\n")
@@ -324,7 +321,7 @@ if __name__ == '__main__':
     print("=" * 70 + "\n")
 
     # mock_rerank_pipeline()
-    # bge_reranker_demo()
+    bge_reranker_demo()
     # cross_encoder_rerank()
     rerank_performance_comparison()
     # complete_rag_rerank_pipeline()

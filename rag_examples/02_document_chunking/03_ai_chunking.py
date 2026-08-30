@@ -21,46 +21,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-# =============================================================================
-# 核心切片函数
-# =============================================================================
-
-def mock_ai_chunking(text, max_chunk_size=200):
-    """
-    模拟 AI 切片（不使用真实 API）
-
-    用启发式规则模拟"语义边界"识别
-    实际使用时请替换为真实的 LLM 调用
-
-    参数:
-        text: 输入文本
-        max_chunk_size: 最大切片大小
-    返回:
-        切片列表
-    """
-    paragraphs = re.split(r'\n\s*\n', text)
-
-    chunks = []
-    current_chunk = ""
-
-    for para in paragraphs:
-        para = para.strip()
-        if not para:
-            continue
-
-        if len(current_chunk) + len(para) > max_chunk_size:
-            if current_chunk:
-                chunks.append(current_chunk)
-            current_chunk = para
-        else:
-            current_chunk += "\n\n" + para if current_chunk else para
-
-    if current_chunk:
-        chunks.append(current_chunk)
-
-    return chunks
-
-
 def ai_chunking_with_llm(text, max_chunks=5, api_key=None):
     """
     使用阿里云百炼 DashScope API 进行语义切片
@@ -119,6 +79,7 @@ def ai_chunking_with_llm(text, max_chunks=5, api_key=None):
         print(f"API 响应原始内容:\n{response_text[:300]}...")
 
         # 清理可能的 markdown 标记
+        # 对于大模型的返回内容，可能包含 markdown 格式，需要清理
         if "```json" in response_text:
             response_text = response_text.split("```json")[1].split("```")[0].strip()
         elif "```" in response_text:
@@ -187,53 +148,6 @@ def sentence_clustering_chunking(text, sentences_per_chunk=3):
     return chunks
 
 
-def fixed_char_chunking(text, chunk_size=150):
-    """固定字符切片（用于对比）"""
-    return [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]
-
-
-def sliding_window_chunking(text, window_size=150, step_size=75):
-    """滑动窗口切片（用于对比）"""
-    chunks = []
-    start = 0
-    while start < len(text):
-        chunks.append(text[start:start+window_size])
-        start += step_size
-        if start >= len(text):
-            break
-    return chunks
-
-
-# =============================================================================
-# 演示函数
-# =============================================================================
-
-def demo_mock_ai_chunking():
-    """演示模拟 AI 切片"""
-    print(f"\n-- 示例 1: 模拟 AI 切片（无 API 时的演示）")
-
-    text = """人工智能（AI）是模拟人类智能的计算机科学领域。它包括机器学习、深度学习、自然语言处理等多个分支。
-
-机器学习是 AI 的核心技术之一。它通过训练数据让计算机自动学习规律，无需显式编程。常见的机器学习算法包括决策树、神经网络、支持向量机等。
-
-深度学习是机器学习的子集，使用多层神经网络模拟人脑。它在图像识别、语音识别等领域取得了突破性进展。卷积神经网络（CNN）和循环神经网络（RNN）是两种经典架构。
-
-自然语言处理（NLP）让计算机理解和生成人类语言。应用包括机器翻译、情感分析、智能客服等。近年来，大语言模型（LLM）在 NLP 领域引发了革命。
-
-计算机视觉（CV）让计算机能够"看懂"图像和视频。应用包括人脸识别、物体检测、医学图像分析等。深度学习大幅提升了 CV 的性能。"""
-
-    print(f"原始文本：{len(text)} 字符")
-    print(f"最大切片大小：200 字符\n")
-
-    chunks = mock_ai_chunking(text, max_chunk_size=200)
-
-    print(f"切片数量：{len(chunks)}\n")
-    for i, chunk in enumerate(chunks):
-        print(f"【语义切片 {i+1}】({len(chunk)} 字符)")
-        print(f"  主题：{chunk[:30]}...")
-        print(f"  内容预览：{chunk[:80]}...")
-        print()
-
 
 def demo_real_ai_chunking():
     """演示真实 AI 切片（使用阿里云百炼 API）"""
@@ -258,27 +172,6 @@ def demo_real_ai_chunking():
     for i, chunk in enumerate(chunks):
         print(f"\n【切片 {i+1}】({len(chunk)} 字符)")
         print(f"  内容：{chunk[:80]}...")
-
-
-def demo_sentence_clustering():
-    """演示基于句子聚类的切片"""
-    print(f"\n-- 示例 3: 基于句子聚类的切片")
-
-    text = """人工智能是计算机科学的一个分支。它试图理解智能的本质。机器学习是 AI 的核心技术。
-深度学习使用多层神经网络。它在图像识别领域取得突破。自然语言处理让计算机理解语言。
-计算机视觉让机器看懂图像。推荐系统根据偏好推荐内容。知识图谱用图结构表示知识。
-大语言模型基于海量文本训练。它能生成高质量的文本。AI 正在改变我们的生活。"""
-
-    print(f"每切片句子数：3\n")
-
-    chunks = sentence_clustering_chunking(text, sentences_per_chunk=3)
-
-    print(f"切片数量：{len(chunks)}\n")
-    for i, chunk in enumerate(chunks):
-        sentence_count = len([s for s in chunk.split('。') if s.strip()])
-        print(f"【聚类切片 {i+1}】({sentence_count} 句子)")
-        print(f"  {chunk}")
-        print()
 
 
 def demo_langchain_splitter():
@@ -332,32 +225,6 @@ def demo_langchain_splitter():
     except ImportError as e:
         print(f"需要安装：pip install langchain-text-splitters")
         print(f"错误：{e}")
-
-
-def compare_chunking_methods(text):
-    """
-    对比 AI 切片和固定切片的效果
-
-    参数:
-        text: 输入文本
-    """
-    print(f"\n-- 示例 5: AI 切片 vs 固定切片对比")
-
-    fixed_chunks = fixed_char_chunking(text, chunk_size=150)
-    sliding_chunks = sliding_window_chunking(text, window_size=150, step_size=75)
-    ai_chunks = mock_ai_chunking(text, max_chunk_size=150)
-
-    print(f"文本长度：{len(text)} 字符\n")
-
-    avg_fixed = sum(len(c) for c in fixed_chunks) / len(fixed_chunks)
-    avg_sliding = sum(len(c) for c in sliding_chunks) / len(sliding_chunks)
-    avg_ai = sum(len(c) for c in ai_chunks) / len(ai_chunks)
-
-    print(f"  固定字符切片  | 切片数: {len(fixed_chunks):2d} | 平均长度: {avg_fixed:5.1f} | 语义完整度: 一般")
-    print(f"  滑动窗口切片  | 切片数: {len(sliding_chunks):2d} | 平均长度: {avg_sliding:5.1f} | 语义完整度: 良好")
-    print(f"  AI 辅助切片   | 切片数: {len(ai_chunks):2d} | 平均长度: {avg_ai:5.1f} | 语义完整度: 优秀")
-
-    print("\n说明：语义完整度是主观评估，AI 切片通常能保持更好的语义连贯性")
 
 
 def ai_chunking_best_practices():
@@ -423,20 +290,6 @@ if __name__ == "__main__":
     # demo_mock_ai_chunking()
 
     # 示例 2 需要 API Key，如果不需要可以注释掉
-    demo_real_ai_chunking()
+    # demo_real_ai_chunking()
 
-    # demo_sentence_clustering()
     # demo_langchain_splitter()
-
-    test_text = """人工智能（AI）是模拟人类智能的计算机科学领域。它包括机器学习、深度学习、自然语言处理等多个分支。AI 从 1956 年诞生至今，已经经历了多次发展浪潮。
-
-机器学习是 AI 的核心技术之一。它通过训练数据让计算机自动学习规律，无需显式编程。监督学习、无监督学习、强化学习是三种主要的学习范式。
-
-深度学习是机器学习的子集，使用多层神经网络模拟人脑。它在图像识别、语音识别等领域取得了突破性进展。卷积神经网络（CNN）和循环神经网络（RNN）是两种经典架构。
-
-自然语言处理（NLP）让计算机理解和生成人类语言。应用包括机器翻译、情感分析、智能客服等。近年来，大语言模型（LLM）在 NLP 领域引发了革命。
-
-计算机视觉（CV）让计算机能够"看懂"图像和视频。应用包括人脸识别、物体检测、医学图像分析等。深度学习大幅提升了 CV 的性能。"""
-
-    compare_chunking_methods(test_text)
-    # ai_chunking_best_practices()

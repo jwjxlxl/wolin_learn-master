@@ -81,6 +81,7 @@ def create_flat_index():
     print("=" * 60)
 
     client = MilvusClient(uri=MILVUS_URI)
+    client.use_database("ai0626")
     collection_name = "flat_index_demo"
 
     if client.has_collection(collection_name):
@@ -97,6 +98,7 @@ def create_flat_index():
 
     print("\n创建 FLAT 索引...")
 
+    # 检查表上目前已经有的索引，如果有，先删除
     index_list = client.list_indexes(collection_name=collection_name)
     client.release_collection(collection_name)
     if index_list:
@@ -106,8 +108,11 @@ def create_flat_index():
 
     index_params = client.prepare_index_params()
     index_params.add_index(
+        # 在哪个字段上添加索引
         field_name="vector",
+        # 指定索引的类型
         index_type="FLAT",
+        # 指定度量的类型
         metric_type="COSINE",
     )
 
@@ -121,13 +126,15 @@ def create_flat_index():
     print("\n测试检索（FLAT 索引）：")
     test_vector = generate_mock_embeddings(["Milvus"])
 
+    # 检索前先加载数据
     client.load_collection(collection_name)
 
     res = client.search(
         collection_name=collection_name,
         data=[test_vector],
         limit=3,
-        output_fields=["content"],
+        # 指定返回的字段
+        output_fields=["id", "content"],
     )
 
     for i, hit in enumerate(res[0]):
@@ -396,19 +403,19 @@ if __name__ == "__main__":
     create_flat_index()
     print()
 
-    create_ivf_flat_index()
-    print()
-
-    create_hnsw_index()
-    print()
-
-    index_types_explained()
-    print()
-
-    index_management()
-    print()
-
-    index_performance_comparison()
+    # create_ivf_flat_index()
+    # print()
+    #
+    # create_hnsw_index()
+    # print()
+    #
+    # index_types_explained()
+    # print()
+    #
+    # index_management()
+    # print()
+    #
+    # index_performance_comparison()
 
     print("\n" + "=" * 70)
     print("  索引学习完成！接下来：02_document_chunking（文档切片）")

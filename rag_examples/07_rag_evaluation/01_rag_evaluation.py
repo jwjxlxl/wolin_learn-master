@@ -442,6 +442,7 @@ class RAGEvaluator:
      Answer Relevancy（相关性）： {s['answer_relevancy']:.2%}
 
   📊 综合得分：{s['overall']:.2%}
+  Recall@90
 """)
 
         # 评级

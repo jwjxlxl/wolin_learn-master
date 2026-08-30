@@ -549,7 +549,7 @@ def demo_load_from_file():
 
 if __name__ == "__main__":
     # 示例 1: 基础问答
-    demo_basic_qna("学习Python开发有什么好书？")
+    demo_basic_qna("Python是什么")
 
     # demo_advanced_retrieval()
 

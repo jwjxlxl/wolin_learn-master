@@ -33,6 +33,7 @@ def prepare_test_collection():
     random.seed(42)
 
     client = MilvusClient(uri=MILVUS_URI)
+    client.use_database("ai0626")
     collection_name = "scalar_query_demo"
 
     if client.has_collection(collection_name):
@@ -43,7 +44,6 @@ def prepare_test_collection():
         FieldSchema(name="content", dtype=DataType.VARCHAR, max_length=1000),
         FieldSchema(name="title", dtype=DataType.VARCHAR, max_length=256),
         FieldSchema(name="category", dtype=DataType.VARCHAR, max_length=64),
-        FieldSchema(name="zhangliang", dtype=DataType.VARCHAR, max_length=64),
         FieldSchema(name="views", dtype=DataType.INT64),
         FieldSchema(name="price", dtype=DataType.FLOAT),
         FieldSchema(name="is_published", dtype=DataType.BOOL),
@@ -69,16 +69,16 @@ def prepare_test_collection():
     )
 
     documents = [
-        {"content": "人工智能简介", "title": "AI 入门", "category": "AI", "zhangliang": "深度学习", "views": 1000, "price": 0.0, "is_published": True},
-        {"content": "机器学习基础", "title": "ML 教程", "category": "AI", "zhangliang": "强化学习", "views": 800, "price": 99.0, "is_published": True},
-        {"content": "深度学习入门", "title": "DL 指南", "category": "AI", "zhangliang": "卷积神经网络", "views": 1200, "price": 129.0, "is_published": True},
-        {"content": "自然语言处理", "title": "NLP 详解", "category": "AI", "zhangliang": "Transformer", "views": 600, "price": 89.0, "is_published": False},
-        {"content": "计算机视觉", "title": "CV 应用", "category": "AI", "zhangliang": "目标检测", "views": 500, "price": 79.0, "is_published": True},
-        {"content": "产品设计方法", "title": "产品指南", "category": "Product", "zhangliang": "用户调研", "views": 300, "price": 0.0, "is_published": True},
-        {"content": "用户体验优化", "title": "UX 技巧", "category": "Product", "zhangliang": "交互设计", "views": 450, "price": 59.0, "is_published": True},
-        {"content": "市场营销策略", "title": "营销实战", "category": "Marketing", "zhangliang": "数字营销", "views": 200, "price": 149.0, "is_published": False},
-        {"content": "数据分析方法", "title": "分析教程", "category": "Data", "zhangliang": "统计分析", "views": 700, "price": 0.0, "is_published": True},
-        {"content": "Python 编程", "title": "编程入门", "category": "Programming", "zhangliang": "面向对象", "views": 1500, "price": 79.0, "is_published": True},
+        {"content": "人工智能简介", "title": "AI 入门", "category": "AI", "views": 1000, "price": 0.0, "is_published": True},
+        {"content": "机器学习基础", "title": "ML 教程", "category": "AI", "views": 800, "price": 99.0, "is_published": True},
+        {"content": "深度学习入门", "title": "DL 指南", "category": "AI",  "views": 1200, "price": 129.0, "is_published": True},
+        {"content": "自然语言处理", "title": "NLP 详解", "category": "AI",  "views": 600, "price": 89.0, "is_published": False},
+        {"content": "计算机视觉", "title": "CV 应用", "category": "AI", "views": 500, "price": 79.0, "is_published": True},
+        {"content": "产品设计方法", "title": "产品指南", "category": "Product",  "views": 300, "price": 0.0, "is_published": True},
+        {"content": "用户体验优化", "title": "UX 技巧", "category": "Product",  "views": 450, "price": 59.0, "is_published": True},
+        {"content": "市场营销策略", "title": "营销实战", "category": "Marketing", "views": 200, "price": 149.0, "is_published": False},
+        {"content": "数据分析方法", "title": "分析教程", "category": "Data", "views": 700, "price": 0.0, "is_published": True},
+        {"content": "Python 编程", "title": "编程入门", "category": "Programming", "views": 1500, "price": 79.0, "is_published": True},
     ]
 
     def mock_embedding():
@@ -90,7 +90,6 @@ def prepare_test_collection():
             "content": doc["content"],
             "title": doc["title"],
             "category": doc["category"],
-            "zhangliang": doc["zhangliang"],
             "views": doc["views"],
             "price": doc["price"],
             "is_published": doc["is_published"],
@@ -124,7 +123,7 @@ def basic_scalar_query(client, collection_name):
         collection_name=collection_name,
         filter="category == 'AI'",
         output_fields=["title", "category", "views"],
-        limit=5
+        limit=3
     )
     for res in results:
         print(f"  - {res['title']} | 类别：{res['category']} | 浏览：{res['views']}")
@@ -226,7 +225,7 @@ def range_query(client, collection_name):
 
 
 # =============================================================================
-# 示例 5: 标量 + 向量混合查询
+# 示例 5: 标量 + 向量 查询
 # =============================================================================
 
 def scalar_plus_vector_search(client, collection_name):
@@ -246,7 +245,7 @@ def scalar_plus_vector_search(client, collection_name):
     for hit in results[0]:
         print(f"  [相似度：{hit['distance']:.4f}] {hit['entity']['title']} | 类别：{hit['entity']['category']}")
 
-    print(f"\n-- 示例 5.2: 向量检索 + 标量过滤（仅 AI 类别）")
+    print(f"\n-- 示例 5.2: 向量检索 + 标量过滤（仅 product 类别）")
     results = client.search(
         collection_name=collection_name,
         data=[query_vector],
@@ -254,7 +253,7 @@ def scalar_plus_vector_search(client, collection_name):
         output_fields=["title", "category", "views"],
         filter="category == 'Product'"
     )
-    print(f"  检索结果（仅 AI 类别）：")
+    print(f"  检索结果（仅 Product 类别）：")
     for hit in results[0]:
         print(f"  [相似度：{hit['distance']:.4f}] {hit['entity']['title']} | 类别：{hit['entity']['category']}")
 
@@ -325,6 +324,7 @@ if __name__ == "__main__":
 
     # client, collection_name = prepare_test_collection()
     client = MilvusClient(uri=MILVUS_URI)
+    client.use_database("ai0626")
     collection_name = "scalar_query_demo"
     # basic_scalar_query(client, collection_name)
     # compound_scalar_query(client, collection_name)

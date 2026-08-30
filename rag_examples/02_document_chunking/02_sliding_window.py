@@ -299,6 +299,6 @@ if __name__ == "__main__":
     # demo_basic_sliding_window()
     # demo_visualize_window()
     # demo_word_sliding_window()
-    # demo_sentence_boundary_window()
+    demo_sentence_boundary_window()
     demo_parameter_comparison()
     # sliding_window_summary()

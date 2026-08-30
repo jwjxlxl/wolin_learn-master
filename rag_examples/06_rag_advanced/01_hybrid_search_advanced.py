@@ -346,7 +346,7 @@ def demo_hybrid_search(client, collection_name):
         name="rrf",
         input_field_names=[],  # RRF 不需要输入字段
         function_type=FunctionType.RERANK,
-        params={"reranker": "rrf", "k": 100},
+        params={"reranker": "rrf", "k": 60},
     )
 
     # 5. 执行混合检索
@@ -432,13 +432,13 @@ if __name__ == "__main__":
     # explain_bm25_function()
 
     # 2. 创建 Collection
-    # client, collection_name = create_hybrid_search_collection()
+    client, collection_name = create_hybrid_search_collection()
 
     # 3. 插入测试数据
-    # insert_demo_data(client, collection_name)
+    insert_demo_data(client, collection_name)
 
     # 4. 加载集合（必须先加载才能检索）
-    # client.load_collection(collection_name)
+    client.load_collection(collection_name)
 
     # 5. 三种检索方式对比
     print("\n" + "=" * 60)
@@ -447,27 +447,27 @@ if __name__ == "__main__":
 
     # demo_pure_dense_search(client, collection_name)
     # demo_pure_sparse_search(client, collection_name)
-    # demo_hybrid_search(client, collection_name)
+    demo_hybrid_search(client, collection_name)
 
     # 6. RRF vs 加权排序
     # explain_ranking_strategies()
 
-    client = MilvusClient(uri=MILVUS_URI)
-    collection_name = "hybrid_search_demo"
-
-    res = client.search(
-        collection_name=collection_name,
-        # highlight-start
-        data=['机器学习'],
-        anns_field='sparse_vector',
-        output_fields=['text'],  # Fields to return in search results; sparse field cannot be output
-        # highlight-end
-        limit=3,
-    )
-
-    print(res)
-
-    print("\n" + "=" * 70)
+    # client = MilvusClient(uri=MILVUS_URI)
+    # collection_name = "hybrid_search_demo"
+    #
+    # res = client.search(
+    #     collection_name=collection_name,
+    #     # highlight-start
+    #     data=['机器学习'],
+    #     anns_field='sparse_vector',
+    #     output_fields=['text'],  # Fields to return in search results; sparse field cannot be output
+    #     # highlight-end
+    #     limit=3,
+    # )
+    #
+    # print(res)
+    #
+    # print("\n" + "=" * 70)
     print("  学习完成！接下来查看：")
     print("  02_dual_collection_design.py — 双集合设计模式")
     print("  03_from_mock_to_real.py — 从模拟到真实的过渡")

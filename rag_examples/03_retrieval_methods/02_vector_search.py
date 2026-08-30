@@ -28,26 +28,6 @@ load_dotenv()
 USE_REAL_EMBEDDING = os.getenv("USE_REAL_EMBEDDING", "false").lower() == "true"
 
 
-# =============================================================================
-# 示例 1: 准备测试数据
-# =============================================================================
-
-def _mock_embedding(text):
-    """
-    生成模拟向量（教学用，无需 API Key）。
-
-    使用 hash(text) 作为 seed，确保相同文本得到相同向量。
-    与原始 semantic_embedding 的机制一致，只是 seed 策略不同。
-    """
-    random.seed(hash(text) % 10000)
-    base = [0.5 if i % 3 == 0 else -0.3 for i in range(DEFAULT_DIMENSION)]
-    # 根据文本内容的前几个字符决定"语义段"位置
-    seed_val = hash(text) % 700
-    base[seed_val:seed_val + 100] = [0.8] * 100
-    vector = [b + random.uniform(-0.1, 0.1) for b in base]
-    return vector
-
-
 def _real_embedding(text):
     """
     使用阿里云 text-embedding-v4 生成真实向量（生产用，1024 维）。
@@ -57,8 +37,7 @@ def _real_embedding(text):
     api_key = os.getenv("ALIYUN_API_KEY")
     if not api_key:
         raise ValueError("使用真实 Embedding 需要设置环境变量 ALIYUN_API_KEY。\n"
-                         "请在 .env 文件中添加：ALIYUN_API_KEY=your_key\n"
-                         "或设置 USE_REAL_EMBEDDING=false 使用模拟向量。")
+                         "请在 .env 文件中添加：ALIYUN_API_KEY=your_key\n")
 
     try:
         from openai import OpenAI
@@ -90,7 +69,6 @@ def get_embedding(text):
     """
     if USE_REAL_EMBEDDING:
         return _real_embedding(text)
-    return _mock_embedding(text)
 
 
 def prepare_test_collection():
@@ -98,6 +76,7 @@ def prepare_test_collection():
     mode_name = "真实 Embedding" if USE_REAL_EMBEDDING else "模拟向量"
 
     client = MilvusClient(uri=MILVUS_URI)
+    client.use_database("ai0626")
     collection_name = "vector_search_demo"
 
     if client.has_collection(collection_name):
@@ -150,33 +129,13 @@ def prepare_test_collection():
 # 示例 2: 基础向量检索
 # =============================================================================
 
-def basic_vector_search(client, collection_name):
+def basic_vector_search(client, collection_name, query: str):
     """演示两个不同语义方向的向量检索"""
 
     # 场景 1: 查询"机器学习是什么"
     print(f"\n-- 示例 2.1: 查询'机器学习是什么'（AI 相关）")
-    query_text = "机器学习是什么"
     # 把用户的问题向量化
-    query_vector = get_embedding(query_text)
-
-    results = client.search(
-        collection_name=collection_name,
-        data=[query_vector],
-        limit=3,
-        output_fields=["content", "category"]
-    )
-
-    print("  检索结果（Top-3）：")
-    for i, hit in enumerate(results[0]):
-        print(f"  [{i+1}] 相似度：{hit['distance']:.4f}")
-        print(f"      类别：{hit['entity']['category']}")
-        print(f"      内容：{hit['entity']['content'][:50]}...")
-        print()
-
-    # 场景 2: 查询"如何设计产品"
-    print(f"\n-- 示例 2.2: 查询'如何设计产品'（Product 相关）")
-    query_text = "如何设计一款好用的产品"
-    query_vector = get_embedding(query_text)
+    query_vector = get_embedding(query)
 
     results = client.search(
         collection_name=collection_name,
@@ -186,7 +145,7 @@ def basic_vector_search(client, collection_name):
         search_params={
             "params": {
                 "radius": 0.5,
-                "range_filter": 0.9
+                "range_filter": 0.7
             }
         }
     )
@@ -195,8 +154,21 @@ def basic_vector_search(client, collection_name):
     for i, hit in enumerate(results[0]):
         print(f"  [{i+1}] 相似度：{hit['distance']:.4f}")
         print(f"      类别：{hit['entity']['category']}")
-        print(f"      内容：{hit['entity']['content'][:50]}...")
+        print(f"      内容：{hit['entity']['content']}...")
         print()
+
+    # results = client.search(
+    #     collection_name=collection_name,
+    #     data=[query_vector],
+    #     limit=3,
+    #     output_fields=["content", "category"],
+    #     search_params={
+    #         "params": {
+    #             "radius": 0.5,
+    #             "range_filter": 0.9
+    #         }
+    #     }
+    # )
 
 
 # =============================================================================
@@ -327,55 +299,6 @@ def search_params_explained(client, collection_name):
 
 
 # =============================================================================
-# 示例 6: 使用真实 Embedding 模型
-# =============================================================================
-
-def embedding_quality_comparison():
-    """对比 mock 和 real embedding 的检索效果差异"""
-    print(f"\n-- 示例 6: Mock vs Real Embedding 效果对比")
-    print("""
-  ┌─────────────────────────────────────────────────────────┐
-  │ Mock 向量 vs 真实 Embedding 检索效果对比                 │
-  ├─────────────────────────────────────────────────────────┤
-  │                                                         │
-  │ Mock 向量（教学用）：                                    │
-  │   - 使用 hash(text) 生成确定性伪随机向量                 │
-  │   - 特点：无需 API Key，同文本同向量                     │
-  │   - 局限：向量没有真实语义信息                           │
-  │                                                         │
-  │ 真实 Embedding（生产用）：                                │
-  │   - 使用 text-embedding-v4 模型（1024 维）               │
-  │   - 特点：语义相似的文本向量距离近                       │
-  │   - 需要：ALIYUN_API_KEY 环境变量                       │
-  │                                                         │
-  └─────────────────────────────────────────────────────────┘
-
-  当前模式：""" + ("真实 Embedding" if USE_REAL_EMBEDDING else "模拟向量（USE_REAL_EMBEDDING=true 切换）") + """
-
-  如何切换到真实 Embedding？
-  ────────────────────────────────────────
-  1. 在 .env 文件中添加：ALIYUN_API_KEY=your_key
-  2. 添加：USE_REAL_EMBEDDING=true
-  3. 重新运行本文件
-
-  代码对比：
-  ────────────────────────────────────────
-  # Mock 模式（当前）
-  def _mock_embedding(text):
-      random.seed(hash(text) % 10000)
-      return [random.uniform(-1, 1) for _ in range(1024)]
-
-  # Real 模式（需要 API Key）
-  from openai import OpenAI
-  def _real_embedding(text):
-      client = OpenAI(api_key=os.getenv("ALIYUN_API_KEY"),
-          base_url="https://dashscope.aliyuncs.com/...")
-      return client.embeddings.create(
-          model="text-embedding-v4", input=text).data[0].embedding
-""")
-
-
-# =============================================================================
 # 示例 7: 向量检索最佳实践
 # =============================================================================
 
@@ -440,10 +363,12 @@ if __name__ == "__main__":
     print("  向量检索（Vector Search）")
     print("=" * 70 + "\n")
 
-    # client, collection_name = prepare_test_collection()
+    client, collection_name = prepare_test_collection()
     client = MilvusClient(uri=MILVUS_URI)
+    client.use_database("ai0626")
     collection_name = "vector_search_demo"
-    basic_vector_search(client, collection_name)
+    query = "好的产品设计有什么特点"
+    basic_vector_search(client, collection_name, query)
     # metric_type_comparison()
     # batch_vector_search(client, collection_name)
     # search_params_explained(client, collection_name)

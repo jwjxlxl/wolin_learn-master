@@ -21,7 +21,13 @@ client = OpenAI(
 
 # ── 工具实现 没有使用tool装饰器，就是一个普通的函数──────────────
 def search_weather(city: str) -> str:
-    """查询指定城市的天气"""
+    """
+    查询指定城市未来的天气情况
+    parameter:
+    city:  str - 城市名称
+
+    return: str 返回指定城市的天气情况
+    """
     return f"{city}明天晴，15-25°C"
 
 
@@ -30,6 +36,12 @@ def book_flight(origin: str, destination: str, date: str) -> str:
     return f"已订票：{origin}→{destination}，{date}"
 
 
+'''
+    上面定义的两个函数，是Python中的普通函数，用于实现某一个具体的功能
+    如果是要让大模型调用工具，必须告诉大模型有哪些工具可以使用： 定义一个工具列表
+    知道每个工具能够干什么？：每个函数都有描述信息，文档字符串
+    调用工具的时候：知道工具有哪些参数，每个参数是什么类型，返回值是什么
+'''
 # ── 工具定义（告诉 LLM 有哪些工具可用） ─────────────────────
 TOOLS = [
     {
@@ -102,10 +114,12 @@ def agent_loop(user_input: str):
             for tool_call in message.tool_calls:
                 func_name = tool_call.function.name
                 func_args = json.loads(tool_call.function.arguments)
+                # 拿到的是工具列表中的工具名称，转换成实际工作的函数的名字
                 func = AVAILABLE_FUNCTIONS[func_name]
 
                 print(f"[调用工具] {func_name}({json.dumps(func_args, ensure_ascii=False)})")
-                result = func(**func_args)
+                # search_weather(city="北京")
+                result = func(**func_args)  # result = search_weather(city="北京")
                 print(f"[工具返回] {result}")
 
                 # 将工具调用和结果追加到上下文

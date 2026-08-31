@@ -32,7 +32,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from autogen_agentchat.agents import AssistantAgent
-from autogen_agentchat.conditions import MaxMessageTermination, TextMessageTermination
+from autogen_agentchat.conditions import (
+    MaxMessageTermination,
+    TextMessageTermination,
+    TextMentionTermination,
+)
 from autogen_agentchat.teams import RoundRobinGroupChat
 from autogen_agentchat.ui import Console
 from autogen_ext.models.openai import OpenAIChatCompletionClient
@@ -110,7 +114,8 @@ human = UserProxyAgent(
 #   - 两个条件满足任意一个就终止（用 | 组合）
 team = RoundRobinGroupChat(
     [efficiency_expert, programmer, human],
-    termination_condition=MaxMessageTermination(15) | TextMessageTermination(["HumanUser"]),
+    termination_condition=MaxMessageTermination(15) | TextMentionTermination("结束", sources=["HumanUser"]),
+    # termination_condition=TextMessageTermination(["HumanUser"]),
 )
 
 

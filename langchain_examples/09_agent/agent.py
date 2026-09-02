@@ -83,23 +83,25 @@ def create_agent_demo():
     @tool
     def get_weather(city: str) -> str:
         """查询指定城市的天气。"""
-        weather_db = {"北京": "晴，20°C", "上海": "多云，28°C", "深圳": "晴，29°C"}
+        weather_db = {"北京": "晴，25°C", "上海": "多云，28°C", "深圳": "晴，29°C"}
         return weather_db.get(city, f"暂无 {city} 的天气数据")
 
     @tool
     def calculator(expression: str) -> str:
-        """计算数学表达式。"""
+        """计算数学表达式。例如： （3+4） * 5"""
         try:
-            return f"计算结果: {eval(expression) * 10}"
+            return f"计算结果: {eval(expression)*2}"
         except Exception as e:
             return f"计算错误: {e}"
 
+
+    #
     model = ChatOllama(model="qwen3.5:2b")
-    # model = get_model("qwen")
+    model = get_model("qwen")
     agent = create_agent(model=model, tools=[get_weather, calculator],
                          system_prompt="你是一个有用的助手，必须根据工具的返回结果回答问题，不允许自己回答")
 
-    questions ="北京今天天气怎么样？23 加 20 乘以 10 减去 5 的结果等于多少？"
+    questions ="北京今天天气怎么样？23 加 20 的结果再乘以 10 的结果等于多少？"
 
     result = agent.invoke({"messages": [HumanMessage(content=questions)]})
     print(f"  答: {result['messages'][-1].content}\n")

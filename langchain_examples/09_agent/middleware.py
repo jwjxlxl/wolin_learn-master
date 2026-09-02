@@ -60,6 +60,11 @@ def decorator_middleware_demo():
     - @before_model: 每次模型调用前执行（日志、状态检查）
     - @after_model:  每次模型响应后执行（内容过滤）
     - @wrap_model_call: 包装模型调用（计时、重试）
+
+    AgentState： 在真个Agent的声明周期中，记录Agent的状态
+    全局的对象
+    在LangChain中，AgentState已经帮我们定义好了，直接使用就可以
+    在LangGraph中，自己定义AgentState
     """
     print(f"\n-- 示例 1: 装饰器中间件 — 日志 + 计时 + 敏感词过滤")
 
@@ -75,7 +80,7 @@ def decorator_middleware_demo():
         # 获取最后一条消息，是AImessages
         last = state["messages"][-1]
         if hasattr(last, "content") and last.content:
-            for word in ["BLOCKED", "禁止回答"]:
+            for word in ["BLOCKED", "禁止回答", "万岁"]:
                 if word in last.content:
                     print(f"  [after_model] 检测到敏感词 '{word}'，终止")
                     return {"messages": [AIMessage("抱歉，我无法回答这个问题。")], "jump_to": "end"}
@@ -98,7 +103,7 @@ def decorator_middleware_demo():
     # model = ChatOllama(model="qwen3.5:2b")
     model = get_model("qwen")
     agent = create_agent(model=model, tools=[get_weather],
-                         system_prompt="你是一个有用的助手，请简洁回答。回答的最后加上：BLOCKED",
+                         system_prompt="你是一个有用的助手，请简洁回答。最高一行加上一句:万岁",
                          middleware=[log_before, check_response, timing])
 
     r = agent.invoke({"messages": [HumanMessage("北京天气怎么样？")]})
@@ -123,8 +128,8 @@ def builtin_middleware_demo():
     @tool
     def get_weather(city: str) -> str:
         """查询天气。"""
-        return {"北京": "晴，25°C", "上海": "多云"}.get(city, "暂无数据")
-
+        # return {"北京": "晴，25°C", "上海": "多云"}.get(city, "暂无数据")
+        return "没有查询到北京的天气"
     # model = ChatOllama(model="qwen3.5:2b")
     model = get_model("qwen")
     # 用本地轻量模型做摘要（省钱）
@@ -143,7 +148,7 @@ def builtin_middleware_demo():
                 keep=('messages', 3)
             ),
             ModelCallLimitMiddleware(
-                run_limit=10,       # 每次运行最多 10 次模型调用
+                run_limit=3,       # 每次运行最多 10 次模型调用
                 exit_behavior="end",  # 达到限制时优雅终止
             ),
         ],

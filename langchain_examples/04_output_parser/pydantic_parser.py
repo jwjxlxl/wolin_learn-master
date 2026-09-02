@@ -60,7 +60,7 @@ def pydantic_output_parser_basic():
     prompt = PromptTemplate.from_template("""
 从文本中提取人员信息。
 
-文本: 小明今年25岁，是一名软件工程师。
+文本: 小明今年二十五岁，是一名软件工程师。
 
 {format_instructions}
 

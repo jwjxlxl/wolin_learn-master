@@ -40,7 +40,7 @@ def basic_tool():
 
     print(f"\n-- 示例 1: @tool 装饰器基础")
 
-    @tool(name_or_callable="query_weather")
+    @tool(name_or_callable="gw")
     def get_weather(city: str) -> str:
         """
         查询指定城市的天气信息。
@@ -60,6 +60,7 @@ def basic_tool():
 
     # 直接调用
     # get_weather可以调用invoke方法，chain可以调用invoke方法, model.invoke
+    # get_weather(city="北京")
     result = get_weather.invoke({"city": "北京"})
     print(f"  调用结果: {result}")
 
@@ -111,7 +112,7 @@ def tool_runtime_demo():
     from langchain_ollama import ChatOllama
     from langchain.agents import create_agent
 
-    print(f"\n-- 示例 3: ToolRuntime — 在 Agent 中访问运行状态")
+    print(f"\n-- 示例 3: ToolRuntime — 在 Agent 中访问运行状态, 信息的传递，通过ToolRuntime对象：state.messages")
 
     # 定义带 ToolRuntime 的工具
     @tool
@@ -120,6 +121,8 @@ def tool_runtime_demo():
 
         runtime 参数对 LLM 是隐藏的——它不会出现在工具描述中，
         但运行时框架会自动注入，包含 state、config 等。"""
+        runtime.state.get("messages").append(HumanMessage(content="hello!"))
+
         messages = runtime.state.get("messages", [])
         human_count = sum(1 for m in messages if m.__class__.__name__ == "HumanMessage")
         ai_count = sum(1 for m in messages if m.__class__.__name__ == "AIMessage")
@@ -147,7 +150,7 @@ def tool_runtime_demo():
 if __name__ == '__main__':
     print("\n>>> 09_agent/tools — Agent 工具定义\n")
 
-    # basic_tool()
+    basic_tool()
     # pydantic_schema_tool()
     tool_runtime_demo()
 

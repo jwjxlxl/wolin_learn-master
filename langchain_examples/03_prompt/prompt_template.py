@@ -10,6 +10,8 @@
 import sys
 import io
 
+from utils import get_model
+
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
 
 from langchain_core.prompts import PromptTemplate
@@ -48,6 +50,7 @@ def simplest_template():
     print(f"\n-- 示例 1: 最简单的模板")
 
     # 创建模板 — {language} 和 {concept} 是占位符
+    # 普通的字符串，字符串中有占位符
     prompt = PromptTemplate.from_template("请用{language}解释{concept}。")
 
     # 填入实际值
@@ -82,9 +85,9 @@ def translation_template():
 原文: {text}
 译文:""")
 
-    model = ChatOllama(model="qwen3.5:2b")
+    # model = ChatOllama(model="qwen3.5:2b")
 
-    # model = get_model("qwen")
+    model = get_model("qwen")
 
     # 英译中
     r = model.invoke(prompt.format(source_lang="英语", target_lang="中文",
@@ -104,7 +107,7 @@ def translation_template():
 if __name__ == '__main__':
     print("\n>>> 03_prompt/prompt_template — Prompt 模板基础\n")
 
-    simplest_template()
+    # simplest_template()
     translation_template()
 
     # 接下来学习: few_shot_prompt.py（Few-Shot 示例）

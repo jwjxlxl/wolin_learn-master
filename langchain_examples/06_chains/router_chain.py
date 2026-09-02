@@ -97,6 +97,7 @@ def intelligent_router():
     summarize_c = (PromptTemplate.from_template("用一句话总结: {text}") | model | StrOutputParser())
 
     def smart_router(user_input: str) -> str:
+        # 先调用分类器，对用户的意图进行分类
         task = classifier.invoke({"input": user_input}).strip().lower()
         print(f"  AI 判断类型: {task}")
 
@@ -108,8 +109,6 @@ def intelligent_router():
 
     inputs = [
         "把'你好'翻译成英语",
-        "总结一下: 人工智能是计算机科学的一个分支",
-        "今天天气不错",
     ]
     for text in inputs:
         print(f"\n输入: \"{text}\"")

@@ -52,6 +52,7 @@ def get_model(provider: str = None):
         from dotenv import load_dotenv
         from langchain_openai import ChatOpenAI
         load_dotenv()
+
         return ChatOpenAI(
             model="qwen-plus",
             api_key=os.getenv("ALIYUN_API_KEY"),

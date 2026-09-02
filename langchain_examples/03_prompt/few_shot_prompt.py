@@ -29,6 +29,8 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='repla
   生活化比喻: Few-Shot = 教小孩做题
     "看，这道题是这样做的..."（给例子）
     "现在你来做这道..."（让小孩模仿）
+    
+    在做意图识别的时候，使用的比较多
 """
 
 from langchain_core.prompts import PromptTemplate
@@ -133,7 +135,8 @@ def using_langchain_fewshot():
         input_variables=["question"],
     )
 
-    model = ChatOllama(model="qwen3.5:2b")
+    # model = ChatOllama(model="qwen3.5:2b")
+    model = get_model("qwen")
     response = model.invoke(few_shot.format(question="日本首都是哪里？"))
     print(f"回复: {response.content}")
 

@@ -57,12 +57,15 @@ def compare_with_without_parser():
 
     # 用 Parser
     print(f"\n[用 StrOutputParser]")
+    # langchain  把所有用到的组件组成一个chain
     # 构建Chain，使用管道符 |
-    chain = model | StrOutputParser()
+    output_parser = StrOutputParser()
+    chain = model | output_parser
     result = chain.invoke(question)
     print(f"  返回类型: {type(result).__name__}")
     print(f"  直接就是: {result}")
 
+# StrOutputParser() 就相当于提取到大模型返回结果中的content字段
 
 # =============================================================================
 # 示例 2: 完整的 Pipeline + 批量处理
@@ -91,6 +94,12 @@ def pipeline_with_batch():
         {"topic": "C++",    "num": 10},
     ]
 
+    '''
+        client.invoke()  向大模型发起一次请求
+        client.stream()  向大模型发起一次请求，并实时返回中间结果
+        client.batch()   批量向大模型发起请求
+        client.ainvoke()  向大模型发起异步请求
+    '''
     for inp, result in zip(inputs, chain.batch(inputs)):
         print(f"  {inp['topic']}: {result}")
 
@@ -102,16 +111,7 @@ def pipeline_with_batch():
 if __name__ == '__main__':
     print("\n>>> 04_output_parser/string_parser — StrOutputParser\n")
 
-    compare_with_without_parser()
-    # pipeline_with_batch()
-    '''
-    model
-    chain
-    
-    model.invoke()
-    model.stream()
-    model.batch()
-    
-    '''
+    # compare_with_without_parser()
+    pipeline_with_batch()
 
     # 接下来学习: json_parser.py（JSON 结构化输出）

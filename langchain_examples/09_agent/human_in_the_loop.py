@@ -102,7 +102,7 @@ def run():
         return
 
     agent = create_agent(model=model, tools=[send_email],
-                         system_prompt="你是一个邮件助手，帮用户发送邮件。",
+                         system_prompt="你是一个邮件助手，帮用户发送邮件。也可以回答一些用户问题",
                          middleware=[hitl], checkpointer=InMemorySaver())
 
     config = {"configurable": {"thread_id": "email_approval"}}

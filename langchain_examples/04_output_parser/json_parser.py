@@ -63,7 +63,9 @@ def using_json_parser():
 JSON:""")
 
     # 注入格式指令
-    prompt = prompt.partial(format_instructions=parser.get_format_instructions())
+    format_instructions = parser.get_format_instructions()
+    print("jsonoutput:", format_instructions)
+    prompt = prompt.partial(format_instructions=format_instructions)
 
     # model = ChatOllama(model="qwen3.5:2b")
     model = get_model("qwen")
@@ -71,6 +73,8 @@ JSON:""")
 
     result = chain.invoke({})
     print(f"  解析结果: {result}, {type(result)}")
+    # 命名实体识别：从文本中提取出对应的实体：Entity    ->  milvus 中 Entity代表一行记录
+    # 一行记录表示一个对象：name,age,job,id,company...
     print(f"  name: {result.get('name')}, age: {result.get('age')}, job: {result.get('job')}")
 
 
@@ -129,7 +133,7 @@ JSON:""")
 if __name__ == '__main__':
     print("\n>>> 04_output_parser/json_parser — JsonOutputParser\n")
 
-    using_json_parser()
-    # product_review_analysis()
+    # using_json_parser()
+    product_review_analysis()
 
     # 接下来学习: pydantic_parser.py（强类型解析）

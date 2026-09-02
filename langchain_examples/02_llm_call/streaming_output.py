@@ -121,8 +121,8 @@ def collect_while_streaming():
 
 if __name__ == '__main__':
 
-    # simplest_streaming()
-    # streaming_vs_invoke()
-    collect_while_streaming()
+    simplest_streaming()
+    streaming_vs_invoke()
+    # collect_while_streaming()
 
     # 接下来学习: 03_prompt/prompt_template.py（Prompt 模板）

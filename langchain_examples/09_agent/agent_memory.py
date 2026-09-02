@@ -80,7 +80,7 @@ def simple_memory_demo():
 
     # 换个线程 —— Agent 不记得小明
     other_config: RunnableConfig = {"configurable": {"thread_id": "2"}}
-    r = agent.invoke({"messages": [HumanMessage("还记得我的名字吗？")]},  config)
+    r = agent.invoke({"messages": [HumanMessage("还记得我的名字吗？")]},  other_config)
     print(f"[线程2] {r['messages'][-1].content}")
     print("  ↑ 不同线程，记忆隔离")
 
@@ -114,8 +114,8 @@ def trim_messages_demo():
         if len(messages) <= KEEP + 1:
             return None
         # 获取第一条和最后 KEEP 条消息
-        first = messages[0]  # 系统提示
-        recent = messages[-KEEP:]
+        first = messages[0]  # 拿出第一条消息，因为第一条messages是系统提示
+        recent = messages[-KEEP:]   # 对消息列表进行切片操作，拿出最近的K条消息
         removed = len(messages) - len([first] + recent)
         print(f"  [trim] 消息 {len(messages)} → {len([first] + recent)}（修剪 {removed} 条）")
         return {"messages": [RemoveMessage(id=REMOVE_ALL_MESSAGES), first] + recent}

@@ -89,6 +89,8 @@ def code_optimizer():
 
     evaluator = model.with_structured_output(CodeEvaluation)
 
+    local_model = get_model("ollama")
+
     # 2. 定义状态
     class OptimizerState(TypedDict):
         task: str              # 编程任务描述
@@ -118,7 +120,7 @@ def code_optimizer():
                 f"请只输出改进后的完整代码。"
             )
 
-        response = model.invoke(prompt)
+        response = local_model.invoke(prompt)
         new_code = response.content
         return {
             "code": new_code,

@@ -97,8 +97,9 @@ def prompt_chain_demo():
     def generate_joke(state: JokeState):
         """生成笑话节点"""
         print(f"  [节点: generate_joke] 为主题 '{state['topic']}' 生成笑话")
-        # response = eval_model.invoke(f"写一个关于 {state['topic']} 的简短中文笑话")
-        return {"joke": "A B C 三个人犯法了，A B 进监狱了，C 没进监狱，为什么？ 答案：因为没关系(谐音C)"}
+        response = model.invoke(f"写一个关于 {state['topic']} 的简短中文笑话")
+        return {"joke": response.content}
+        # return {"joke": "A B C 三个人犯法了，A B 进监狱了，C 没进监狱，为什么？ 答案：因为没关系(谐音C)"}
 
 
 
@@ -164,7 +165,7 @@ def prompt_chain_demo():
 
     # 5. 执行
     result = workflow.invoke({
-        "topic": "冷笑话", "joke": "",
+        "topic": "程序员", "joke": "",
         "needs_improvement": False, "reason": "", "final_joke": ""
     })
     print(f"\n【最终笑话】{result['final_joke']}")

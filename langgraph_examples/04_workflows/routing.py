@@ -74,6 +74,7 @@ def routing_demo():
         return
 
     # 1. 结构化路由：让 LLM 判断问题类型
+    # 意图识别：确保意图识别是准确的（限制大模型的输出，不能只靠大模型进行判断，进行关键词判断+大模型的判断）
     class RouteDecision(BaseModel):
         """路由决策：判断问题属于哪种类型"""
         question_type: Literal["technical", "philosophical", "creative"] = Field(

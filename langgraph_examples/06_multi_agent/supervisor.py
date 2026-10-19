@@ -80,7 +80,7 @@ def supervisor_with_llm():
         iteration = state["iteration"]
         task = state["task"]
 
-        if iteration >= 5:
+        if iteration >= 10:
             print(f"  [项目经理] 迭代次数达上限，强制完成")
             return Command(goto=END, update={
                 "next": "FINISH",
@@ -186,7 +186,7 @@ def supervisor_with_llm():
 
     # ===== 测试 =====
     tasks = [
-        "搭建一个能搜索公司知识库的智能问答 Agent"
+        "写一个函数，实现对列表进行冒泡排序功能，返回新的 列表"
     ]
 
     for task in tasks:

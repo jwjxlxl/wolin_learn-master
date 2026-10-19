@@ -65,6 +65,9 @@ def conditional_branch_graph():
 
     # 定义State
     class SentimentState(TypedDict):
+        '''
+        你想在各个节点之间共享什么数据，怎么设计属性
+        '''
         text: str
         category: str
         reply: str
@@ -93,7 +96,7 @@ def conditional_branch_graph():
     def negative_reply(state: SentimentState):
         """负面回复节点"""
         print("  [节点: negative_reply] 生成安慰回复")
-        return {"reply": "别担心，一切都会好起来的！有什么我可以帮你的吗？"}
+        return {"reply": "你有什么不开心，讲出来让我大家开心一下"}
 
     def neutral_reply(state: SentimentState):
         """中性回复节点"""
@@ -139,18 +142,11 @@ def conditional_branch_graph():
         f.write(graph.get_graph().draw_mermaid_png())
     print(f"  图已保存到: {png_path}\n")
 
-    # 测试不同输入
-    print("【测试 1: 正面输入】")
-    r1 = graph.invoke({"text": "今天天气真好，心情不错！", "category": "", "reply": ""})
-    print(f"  回复: {r1['reply']}\n")
 
     print("【测试 2: 负面输入】")
     r2 = graph.invoke({"text": "今天的体验太差了，很失望。", "category": "", "reply": ""})
     print(f"  回复: {r2['reply']}\n")
 
-    print("【测试 3: 中性输入】")
-    r3 = graph.invoke({"text": "我明天要去开会。", "category": "", "reply": ""})
-    print(f"  回复: {r3['reply']}\n")
 
 
 if __name__ == '__main__':

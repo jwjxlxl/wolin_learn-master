@@ -97,6 +97,7 @@ def local_mcp_demo(question:str):
     """
     import asyncio
 
+    # 实例化一个大模型上
     model = get_model("qwen")
     if model is None:
         print("【跳过】未配置阿里云 API Key，无法运行此示例")
@@ -319,7 +320,7 @@ def multi_server_mcp_demo():
                 system_prompt="你是一个智能助手，可以使用可用工具来回答问题。",
             )
 
-            question = "今天北京的天气怎么样？"
+            question = "今天东京的天气怎么样？"
             print(f"【用户提问】{question}")
 
             result = await agent.ainvoke(

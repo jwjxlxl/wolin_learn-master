@@ -124,7 +124,7 @@ def agent_with_filesystem():
 
     # 2. 配置文件系统后端
     # virtual_mode=False: 允许在 root_dir 内使用绝对路径
-    backend = FilesystemBackend(root_dir='.', virtual_mode=True)
+    backend = FilesystemBackend(root_dir=workspace, virtual_mode=True)
 
     model = get_model("qwen")
     if model is None:
@@ -145,20 +145,10 @@ def agent_with_filesystem():
     # print("  【用户】请创建一个名为 hello.txt 的文件，里面写一句问候语。")
     result = agent.invoke({
         "messages": [HumanMessage(
-            content="请创建一个名为 hello.txt 的文件，里面写一句问候语。并返回当前的工作目录路径"
+            content="在工作目录下创建一个cal.py文件，实现一个冒泡排序的函数"
         )]
     })
 
-    #5. 验证文件是否真的被创建
-    created_file = os.path.join(workspace, "hello.txt")
-    if os.path.exists(created_file):
-        with open(created_file, "r", encoding="utf-8") as f:
-            content = f.read()
-        print(f"  【文件内容】{content.strip()}")
-        print("  ✅ Agent 成功创建了 hello.txt！")
-    else:
-        print("  ⚠️ 文件未创建")
-        print(f"  【目录内容】{os.listdir(workspace)}")
 
     # 6. 展示消息流（含调试信息）
     print(f"  【消息流】共 {len(result['messages'])} 条")
@@ -167,7 +157,7 @@ def agent_with_filesystem():
         if hasattr(msg, 'tool_calls') and msg.tool_calls:
             preview = f"调用工具: {[tc['name'] for tc in msg.tool_calls]}"
         elif hasattr(msg, 'content') and msg.content:
-            preview = msg.content[:80]
+            preview = msg.content
         else:
             preview = f"(空内容 — 可能模型未响应, 请确认 ollama serve 已启动)"
         print(f"    [{i}] {msg_type}: {preview}")

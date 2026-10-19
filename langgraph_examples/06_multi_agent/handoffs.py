@@ -74,6 +74,7 @@ def handoff_with_llm():
     from pydantic import BaseModel, Field
     from typing import Literal
 
+    # 实例化一个LLM
     model = get_model("qwen")
     if model is None:
         print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
@@ -106,6 +107,7 @@ def handoff_with_llm():
             f"general（其他/不确定）、end（轻微症状可直接处理）。"
         )
 
+        # decision.department 是只有四种枚举类型
         print(f"    判断: {decision.department} — {decision.reason}")
         return Command(goto=decision.department, update={
             "path": ["分诊"],
@@ -203,9 +205,7 @@ def handoff_with_llm():
 
     # ===== 测试 =====
     cases = [
-        "胸闷、心悸一周，偶有胸痛",
-        "头痛、眩晕三天",
-        "发烧 38 度，伴随咳嗽",
+        "胸闷、心悸一周，偶有胸痛"
     ]
 
     for symptom in cases:

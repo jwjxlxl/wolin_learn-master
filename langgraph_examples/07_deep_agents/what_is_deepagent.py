@@ -77,7 +77,7 @@ DeepAgents = "batteries-included" Agent 框架
 
 生活化比喻：
   手动 StateGraph     = 自己买零件组装电脑
-  create_react_agent() = 买品牌整机（标准配置）
+  create_agent() = 买品牌整机（标准配置）
   create_deep_agent()  = 买品牌整机 + 预装所有常用软件
 
 何时用 DeepAgents？

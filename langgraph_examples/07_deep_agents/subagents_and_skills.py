@@ -63,6 +63,7 @@ def subagent_basics():
     data_analyst = SubAgent(
         name="data_analyst",
         description="分析数据并生成统计报告",
+
         model=model,
         system_prompt=(
             "你是一个数据分析师。当收到数据时， 请分析其统计特征（平均值、最大值、最小值）并返回清晰的报告。回答的最后加上一句：报告已生成，请查看。"
@@ -72,6 +73,7 @@ def subagent_basics():
     # 2. 创建主 Agent，注册子代理
     agent = create_deep_agent(
         model=model,
+        # deep agent中可以配置多个子Agent
         subagents=[data_analyst],
         system_prompt="你是项目经理。遇到数据分析任务请委派给数据分析师。",
     )
@@ -115,6 +117,8 @@ def subagent_basics():
 def skills_loading():
     """
     Skills = 通过 SKILL.md 文件定义的可复用行为。
+
+    skills就是一组可复用的行为的指导说明书
 
     类似"插件系统"：
       1. 在目录中创建 SKILL.md 文件（定义技能说明 + 触发条件）

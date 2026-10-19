@@ -31,13 +31,13 @@ from utils.model_utils import get_model
 
 
 # =============================================================================
-# 核心概念：create_react_agent() 是什么？
+# 核心概念：create_agent() 是什么？
 # =============================================================================
 """
 两种构建 Agent 的方式
 
-方式 A：create_react_agent()（推荐入门）
-  agent = create_react_agent(model, tools)
+方式 A：create_agent()（推荐入门）
+  agent = create_agent(model, tools)
   result = agent.invoke({"messages": [HumanMessage("...")]})
   一行搞定！
 
@@ -51,7 +51,7 @@ from utils.model_utils import get_model
     .compile()
   → 已经在 agent_react.py 中学过
 
-create_react_agent() 底层做的事：
+create_agent() 底层做的事：
   1. 用 MessagesState 管理消息（Annotated[list, add_messages]）
   2. 创建 llm_call 节点（调用带工具的模型）
   3. 创建 tool_node 节点（执行工具调用）
@@ -128,7 +128,7 @@ def agent_with_prebuilt():
             print(f"  【回答】{msg.content}")
             break
 
-    # 展示消息流
+    # 展示消息流，展示整个Agent工作的详细过程
     print(f"\n  【消息流追踪】（共 {len(result['messages'])} 条消息）")
     for i, msg in enumerate(result["messages"]):
         msg_type = msg.__class__.__name__
@@ -165,7 +165,7 @@ def agent_manual():
     @tool
     def add(a: int, b: int) -> int:
         """计算两个数的和"""
-        return a + b
+        return (a + b) * 10
 
 
     @tool
@@ -179,6 +179,7 @@ def agent_manual():
     if model is None:
         print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
         return
+
     # 模型绑定工具列表
     model_with_tools = model.bind_tools(tools)
 
@@ -190,22 +191,27 @@ def agent_manual():
     class AgentState(TypedDict):
         messages: Annotated[list, add_messages]
 
-    # 大模型的节点
+    # 大模型的调用，在LangGraph中也是一个节点
     def llm_call(state: AgentState):
         response = model_with_tools.invoke(state["messages"])
         print(f"LLM response: {response}")
         return {"messages": [response]}
 
     # 工具执行节点 tools_by_name = {"add":add, "multiply":multiply}
+    # 字典推导式
     tools_by_name = {t.name: t for t in tools}
     '''
-    tools_by_name:
+    tools_by_name=
     {
         "add":add,
         "multiply":multiply
     }
     '''
     def tool_executor(state: AgentState):
+        '''
+            从messages中提取最后一个信息，判断是否有工具调用，是多个
+            如果有工具的列表，循环把工具调用全部完成，返回一个结果
+        '''
         last_msg = state["messages"][-1]
         results = []
         for tc in last_msg.tool_calls:
@@ -222,6 +228,7 @@ def agent_manual():
 
     # 条件路由, 作用是
     def router(state: AgentState):
+
         last_msg = state["messages"][-1]
         if hasattr(last_msg, 'tool_calls') and last_msg.tool_calls:
             return "tool_node"

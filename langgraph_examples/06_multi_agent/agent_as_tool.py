@@ -116,7 +116,7 @@ def agent_as_tool_with_llm():
 
     hr_tools = [check_leave_balance, lookup_policy]
     hr_model = model.bind_tools(hr_tools)
-    # 构建HR的子Agent
+    # 构建HR的子Agent, 也有自己的LLM和工具集
     hr_sub_agent = build_react_agent(hr_model, hr_tools,
                                       system_prompt="你是 HR 专员，擅长解答假期、政策等人事问题。")
 

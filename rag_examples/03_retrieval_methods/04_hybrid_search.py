@@ -167,225 +167,6 @@ def rrf_fusion():
     print("   - k 值调节：k 大→各方法权重接近；k 小→排名靠前优势大")
 
 
-# =============================================================================
-# HybridSearcher 类
-# =============================================================================
-
-class HybridSearcher:
-    """混合检索器封装 — 支持向量检索 + BM25 关键字检索 + 结果融合"""
-
-    def __init__(self, documents):
-        self.documents = documents
-
-        random.seed(42)
-        self.vectors = []
-        for doc in documents:
-            vec = self._mock_embedding(doc)
-            self.vectors.append(vec)
-
-        self._build_bm25_index()
-
-    def _mock_embedding(self, text):
-        """模拟 Embedding（实际应该用真实模型）"""
-        random.seed(hash(text) % 10000)
-        vec = [random.uniform(-0.5, 0.5) for _ in range(128)]
-
-        if "机器学习" in text:
-            vec[0:20] = [0.8] * 20
-        elif "深度学习" in text:
-            vec[20:40] = [0.8] * 20
-        elif "自然语言" in text:
-            vec[40:60] = [0.8] * 20
-
-        return vec
-
-    def _build_bm25_index(self):
-        """构建 BM25 索引（简化版）"""
-        self.keyword_index = {}
-        for i, doc in enumerate(self.documents):
-            for char in set(doc.lower()):
-                if char not in self.keyword_index:
-                    self.keyword_index[char] = []
-                self.keyword_index[char].append(i)
-
-    def _vector_search(self, query_vector, top_k):
-        """向量检索"""
-        scores = []
-        for i, vec in enumerate(self.vectors):
-            dot = sum(a * b for a, b in zip(query_vector, vec))
-            norm_q = sum(a * a for a in query_vector) ** 0.5
-            norm_d = sum(a * a for a in vec) ** 0.5
-            score = dot / (norm_q * norm_d) if norm_q > 0 and norm_d > 0 else 0
-            scores.append((i, score))
-        scores.sort(key=lambda x: x[1], reverse=True)
-        return scores[:top_k]
-
-    def _keyword_search(self, query, top_k):
-        """关键字检索（简化版）"""
-        scores = [0] * len(self.documents)
-        for char in query.lower():
-            if char in self.keyword_index:
-                for doc_idx in self.keyword_index[char]:
-                    scores[doc_idx] += 1
-
-        max_score = max(scores) if scores else 1
-        scores = [s / max_score for s in scores]
-        scored = list(enumerate(scores))
-        scored.sort(key=lambda x: x[1], reverse=True)
-        return scored[:top_k]
-
-    def search(self, query, query_vector=None, top_k=5, method="rrf", alpha=0.5):
-        """混合检索
-
-        参数:
-            query: 查询文本
-            query_vector: 查询向量（可选）
-            top_k: 返回结果数
-            method: 融合方法 ("rrf" 或 "weighted")
-            alpha: 向量检索权重（0-1）
-        """
-        if query_vector is None:
-            random.seed(hash(query) % 10000)
-            query_vector = [random.uniform(-0.5, 0.5) for _ in range(128)]
-            if "机器学习" in query:
-                query_vector[0:20] = [0.8] * 20
-
-        # 调用向量检索，得到得到十条检索的结果
-        vector_results = self._vector_search(query_vector, top_k * 2)
-        # 调用关键字检索，得到得到十条检索的结果
-        keyword_results = self._keyword_search(query, top_k * 2)
-
-        if method == "rrf":
-            return self._rrf_fusion(vector_results, keyword_results, top_k)
-        else:
-            return self._weighted_fusion(vector_results, keyword_results, top_k, alpha)
-
-    def _rrf_fusion(self, vector_results, keyword_results, top_k):
-        """RRF 融合"""
-        k = 60
-        vector_rank = {doc_idx: rank + 1 for rank, (doc_idx, _) in enumerate(vector_results)}
-        keyword_rank = {doc_idx: rank + 1 for rank, (doc_idx, _) in enumerate(keyword_results)}
-
-        all_docs = set(vector_rank.keys()) | set(keyword_rank.keys())
-        rrf_scores = {}
-        for doc_idx in all_docs:
-            v_rank = vector_rank.get(doc_idx, len(vector_results) + 1)
-            k_rank = keyword_rank.get(doc_idx, len(keyword_results) + 1)
-            score = 1 / (k + v_rank) + 1 / (k + k_rank)
-            rrf_scores[doc_idx] = score
-
-        ranked = sorted(rrf_scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
-        return [(idx, score, self.documents[idx]) for idx, score in ranked]
-
-    def _weighted_fusion(self, vector_results, keyword_results, top_k, alpha):
-        """加权融合"""
-        vector_scores = {doc_idx: score for doc_idx, score in vector_results}
-        keyword_scores = {doc_idx: score for doc_idx, score in keyword_results}
-
-        max_v = max(vector_scores.values()) if vector_scores else 1
-        max_k = max(keyword_scores.values()) if keyword_scores else 1
-
-        all_docs = set(vector_scores.keys()) | set(keyword_scores.keys())
-        fused_scores = {}
-        for doc_idx in all_docs:
-            v_score = vector_scores.get(doc_idx, 0) / max_v
-            k_score = keyword_scores.get(doc_idx, 0) / max_k
-            fused = alpha * v_score + (1 - alpha) * k_score
-            fused_scores[doc_idx] = fused
-
-        ranked = sorted(fused_scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
-        return [(idx, score, self.documents[idx]) for idx, score in ranked]
-
-
-# =============================================================================
-# 混合检索器演示
-# =============================================================================
-# 作用：演示如何使用 HybridSearcher 封装类进行真实混合检索
-#       1. 创建 HybridSearcher 实例（内置模拟 Embedding + 关键字索引）
-#       2. 用 RRF 融合方法检索
-#       3. 用加权融合方法检索
-#       4. 对比两种融合方法的差异
-# 教学目的：让学生看到一个封装好的混合检索器的使用方式
-#           对比 RRF vs 加权两种融合策略的效果
-# =============================================================================
-
-def demo_hybrid_searcher():
-    """演示混合检索器 — 使用 HybridSearcher 类封装的真实混合检索
-
-    工作流程：
-        第 1 步：准备文档库（6 条 AI 主题文档）
-        第 2 步：创建 HybridSearcher 实例
-                → 内部自动为每条文档生成模拟 Embedding 向量
-                → 内部自动构建字符级关键字倒排索引
-        第 3 步：使用 RRF（倒数排名融合）方法检索，返回 Top 4
-        第 4 步：使用加权融合方法检索（向量权重 0.7 + 关键字权重 0.3）
-        第 5 步：对比两种方法的结果差异
-
-    ⚠️ HybridSearcher 使用模拟向量（_mock_embedding），
-       实际项目中应替换为真实的 Embedding 模型和 BM25 库。
-    """
-    print(f"\n-- 示例 3: 混合检索器封装")
-
-    # ── 1. 准备文档库 ──
-    # 6 条文档覆盖 AI 的不同子领域
-    # 文档 0 和 1 包含"机器学习"关键词，是查询"机器学习"的相关文档
-    documents = [
-        "机器学习是人工智能的核心技术，通过数据训练模型预测。",       # idx=0: 含"机器学习"
-        "深度学习使用多层神经网络，是机器学习的重要分支。",             # idx=1: 含"机器学习"
-        "自然语言处理让计算机理解和生成人类语言。",                   # idx=2
-        "计算机视觉用于图像识别、人脸识别、自动驾驶。",                # idx=3
-        "推荐系统根据用户历史行为推荐相关内容。",                      # idx=4
-        "知识图谱用图结构存储和表示领域知识。",                        # idx=5
-    ]
-
-    # 打印文档库概览
-    print("文档库：")
-    for i, doc in enumerate(documents):
-        print(f"  [{i+1}] {doc[:30]}...")
-    print()
-
-    # ── 2. 创建混合检索器 ──
-    # HybridSearcher 构造函数内部做了两件事：
-    #   a) 为每条文档生成 128 维模拟 Embedding 向量（_mock_embedding）
-    #      → "机器学习"相关文档的 vec[0:20] = [0.8] * 20
-    #      → "深度学习"相关文档的 vec[20:40] = [0.8] * 20
-    #      → "自然语言"相关文档的 vec[40:60] = [0.8] * 20
-    #   b) 构建字符级倒排索引（_build_bm25_index）
-    #      → 每个唯一字符映射到包含该字符的文档 ID 列表
-    searcher = HybridSearcher(documents)
-
-    # ── 3. 设置查询词 ──
-    query = "机器学习"
-    print(f"查询：'{query}'")
-    print()
-
-    # ── 4. RRF 融合检索 ──
-    # method="rrf"：使用倒数排名融合（Reciprocal Rank Fusion）
-    #   → 公式：score = 1/(k + vector_rank) + 1/(k + keyword_rank)
-    #   → k=60（默认），只看排名，不受原始分数影响
-    #   → 优势：不同检索方法的分数可能不可比，但排名可比
-    print("1. RRF 融合结果：")
-    print("-" * 50)
-    results = searcher.search(query, top_k=4, method="rrf")
-    for i, (idx, score, doc) in enumerate(results):
-        print(f"  [{i+1}] 分数：{score:.6f}")
-        print(f"      {doc}")
-    print()
-
-    # ── 5. 加权融合检索 ──
-    # method="weighted"：使用加权平均
-    #   → 公式：fused = α × vector_score_normalized + (1-α) × keyword_score_normalized
-    #   → alpha=0.7：向量检索权重 70%，关键字权重 30%
-    #   → 先归一化：各自除以该方法内最大分数，统一到 0~1 范围
-    #   → 优势：可以灵活调节两种方法的相对重要性
-    #   → 注意：权重设置需要根据业务场景调优
-    print("2. 加权融合结果（向量 0.7 + 关键字 0.3）：")
-    print("-" * 50)
-    results = searcher.search(query, top_k=4, method="weighted", alpha=0.7)
-    for i, (idx, score, doc) in enumerate(results):
-        print(f"  [{i+1}] 分数：{score:.6f}")
-        print(f"      {doc}")
-
 
 def hybrid_search_best_practices():
     """混合检索最佳实践"""
@@ -421,23 +202,178 @@ def hybrid_search_best_practices():
 """)
 
 
-def milvus_hybrid_search_info():
-    """Milvus 混合检索说明"""
-    print(f"\n-- 示例 5: Milvus 混合检索")
+def milvus_hybrid_search_demo():
+    """Milvus 原生混合检索 — 稠密向量 + BM25 稀疏向量 + RRF/加权融合
+
+
+    工作流程：
+        第 1 步：用 AliyunEmbedding 生成稠密向量（text-embedding-v4，1024 维）
+        第 2 步：创建同时含稠密 + 稀疏双向量字段的 Collection
+                （BM25 Function 自动把 text 转成稀疏向量）
+        第 3 步：插入数据（稠密向量手动提供，稀疏向量由 Milvus 自动生成）
+        第 4 步：分别跑 纯向量 / 纯 BM25 / RRF 混合 / 加权混合，对比结果
+
+    需要：Milvus 服务运行中 + ALIYUN_API_KEY（用于生成稠密向量）
+    """
+    from pymilvus import (
+        MilvusClient, DataType, Function, FunctionType,
+        AnnSearchRequest, RRFRanker, WeightedRanker,
+    )
+    from rag_examples.embedding_examples.aliyun_embedding import AliyunEmbedding
+    from rag_examples.milvus_config import MILVUS_URI, MILVUS_DB_NAME
+
+    print(f"\n-- 示例 5: Milvus 原生混合检索")
+
+    collection_name = "hybrid_demo"
+    client = MilvusClient(uri=MILVUS_URI, db_name=MILVUS_DB_NAME)
+
+    # ── 1. 准备文档 + 生成稠密向量 ──
+    documents = [
+        "机器学习是人工智能的核心技术，通过数据训练模型预测。",
+        "深度学习使用多层神经网络，是机器学习的重要分支。",
+        "自然语言处理让计算机理解和生成人类语言。",
+        "计算机视觉用于图像识别、人脸识别、自动驾驶。",
+        "推荐系统根据用户历史行为推荐相关内容。",
+        "知识图谱用图结构存储和表示领域知识。",
+    ]
+
+    print(f"\n  第 1 步：生成稠密向量（text-embedding-v4）")
+    emb = AliyunEmbedding()
+    dense_vectors = [emb.embed(doc) for doc in documents]
+    dim = len(dense_vectors[0])
+    print(f"  ✓ 已为 {len(documents)} 篇文档生成 {dim} 维稠密向量")
+
+    # ── 2. 创建 Collection（dense + sparse 双向量字段）──
+    print(f"\n  第 2 步：创建 Collection（dense + sparse 双向量字段）")
+    schema = client.create_schema()
+    schema.add_field(
+        field_name="id",
+        datatype=DataType.INT64,
+        is_primary=True,
+        auto_id=True,
+    )
+    schema.add_field(
+        field_name="text",
+        datatype=DataType.VARCHAR,
+        max_length=2000,
+        enable_analyzer=True,
+        analyzer_params={"type": "chinese"},  # 中文分词（BM25 全文检索必需）
+    )
+    schema.add_field(field_name="dense", datatype=DataType.FLOAT_VECTOR, dim=dim)
+    schema.add_field(field_name="sparse", datatype=DataType.SPARSE_FLOAT_VECTOR)
+
+    # BM25 函数：text → sparse（Milvus 自动分词并生成稀疏向量）
+    bm25_function = Function(
+        name="text_bm25_emb",
+        input_field_names=["text"],
+        output_field_names=["sparse"],
+        function_type=FunctionType.BM25,
+    )
+    schema.add_function(bm25_function)
+
+    index_params = client.prepare_index_params()
+    index_params.add_index(
+        field_name="dense",
+        index_type="AUTOINDEX",
+        metric_type="COSINE",
+    )
+    index_params.add_index(
+        field_name="sparse",
+        index_type="SPARSE_INVERTED_INDEX",
+        metric_type="BM25",
+        params={"inverted_index_algo": "DAAT_MAXSCORE"},
+    )
+
+    # 清理旧 Collection（教学演示用）
+    if client.has_collection(collection_name=collection_name):
+        client.drop_collection(collection_name=collection_name)
+    client.create_collection(
+        collection_name=collection_name,
+        schema=schema,
+        index_params=index_params,
+    )
+    print(f"  ✓ Collection '{collection_name}' 创建成功")
+
+    # ── 3. 插入数据 ──
+    print(f"\n  第 3 步：插入数据（dense 手动提供，sparse 由 BM25 自动生成）")
+    data = [{"text": doc, "dense": vec} for doc, vec in zip(documents, dense_vectors)]
+    client.insert(collection_name=collection_name, data=data)
+    client.flush(collection_name=collection_name)  # 关键：flush 后数据才可检索
+    print(f"  ✓ 插入 {len(data)} 篇文档并 flush 完成")
+
+    # ── 4. 检索对比 ──
+    query = "机器学习"
+    query_vec = emb.embed(query)
+    print(f"\n  查询：'{query}'\n")
+
+    # 4.1 纯向量检索（语义）
+    print("  [1] 纯向量检索（语义，anns_field='dense'）：")
+    dense_res = client.search(
+        collection_name=collection_name,
+        data=[query_vec],
+        anns_field="dense",
+        limit=3,
+        output_fields=["text"],
+    )
+    for i, hit in enumerate(dense_res[0], 1):
+        print(f"      [{i}] {hit['distance']:.3f}  {hit['entity']['text'][:28]}")
+
+    # 4.2 纯 BM25 关键字检索（精确匹配）
+    print("\n  [2] 纯 BM25 关键字检索（精确匹配，anns_field='sparse'）：")
+    sparse_res = client.search(
+        collection_name=collection_name,
+        data=[query],
+        anns_field="sparse",
+        limit=3,
+        output_fields=["text"],
+    )
+    for i, hit in enumerate(sparse_res[0], 1):
+        print(f"      [{i}] {hit['distance']:.3f}  {hit['entity']['text'][:28]}")
+
+    # 4.3 混合检索：两路召回（AnnSearchRequest）
+    req_dense = AnnSearchRequest(
+        data=[query_vec],
+        anns_field="dense",
+        param={"metric_type": "COSINE"},
+        limit=3,
+    )
+    req_sparse = AnnSearchRequest(
+        data=[query],  # 稀疏/全文这一路直接传原始文本，由 BM25 函数处理
+        anns_field="sparse",
+        param={"metric_type": "BM25"},
+        limit=3,
+    )
+
+    # RRF 融合（只看排名，不依赖分数量纲）
+    print("\n  [3] RRF 混合检索（RRFRanker, k=60）：")
+    rrf_res = client.hybrid_search(
+        collection_name=collection_name,
+        reqs=[req_dense, req_sparse],
+        ranker=RRFRanker(k=60),
+        limit=3,
+        output_fields=["text"],
+    )
+    for i, hit in enumerate(rrf_res[0], 1):
+        print(f"      [{i}] {hit['distance']:.3f}  {hit['entity']['text'][:28]}")
+
+    # 加权融合（向量 0.6 + 关键字 0.4，可调权重）
+    print("\n  [4] 加权混合检索（WeightedRanker, 向量 0.6 + 关键字 0.4）：")
+    weighted_res = client.hybrid_search(
+        collection_name=collection_name,
+        reqs=[req_dense, req_sparse],
+        ranker=WeightedRanker(0.6, 0.4),
+        limit=3,
+        output_fields=["text"],
+    )
+    for i, hit in enumerate(weighted_res[0], 1):
+        print(f"      [{i}] {hit['distance']:.3f}  {hit['entity']['text'][:28]}")
 
     print("""
-Milvus 2.3+ 版本开始支持原生混合检索（hybrid_search API）：
-
-  - AnnSearchRequest：向量检索请求
-  - FullTextSearchRequest：全文检索请求
-  - WeightedRanker / RRFRanker：结果融合策略
-
-使用混合检索需要：
-  1. Collection 支持全文索引
-  2. pymilvus 2.3+ 版本
-  3. 如需兼容旧版本，可在应用层手动实现融合
-
-推荐查阅 Milvus 官方文档获取最新 API 用法。
+  对比小结：
+    - 纯向量：按语义相似度排序，可能召回不含查询词的文档
+    - 纯 BM25：精确匹配查询词，语义相近但用词不同的文档召回不到
+    - RRF：只看排名、不依赖分数量纲，能稳定兼顾两路结果
+    - 加权：可调节向量/关键字的相对权重，需按业务场景调参
 """)
 
 
@@ -445,21 +381,17 @@ Milvus 2.3+ 版本开始支持原生混合检索（hybrid_search API）：
 # 主程序入口
 # =============================================================================
 # 运行顺序：
-#   示例1 simple_hybrid_search()     → 理解混合检索的"加权平均"概念
-#   示例2 rrf_fusion()               → 理解 RRF 倒数排名融合的原理
-#   示例3 demo_hybrid_searcher()     → 看封装好的 HybridSearcher 类的使用
-#   示例4 hybrid_search_best_practices()  → 了解生产环境的最佳实践
-#   示例5 milvus_hybrid_search_info()     → 了解 Milvus 原生混合检索 API
+#   示例1 simple_hybrid_search()       → 理解混合检索的"加权平均"概念
+#   示例2 rrf_fusion()                 → 理解 RRF 倒数排名融合的原理
+#   示例3 demo_hybrid_searcher()       → 看封装好的 HybridSearcher 类的使用
+#   示例4 hybrid_search_best_practices() → 了解生产环境的最佳实践
+#   示例5 milvus_hybrid_search_demo()  → Milvus 原生混合检索（真实 API）
 # =============================================================================
 
 if __name__ == '__main__':
-    print("\n" + "=" * 70)
-    print("  混合检索（Hybrid Search）")
-    print("=" * 70 + "\n")
 
     # simple_hybrid_search()
     # rrf_fusion()
-    demo_hybrid_searcher()
     # hybrid_search_best_practices()
-    # milvus_hybrid_search_info()
+    milvus_hybrid_search_demo()
 

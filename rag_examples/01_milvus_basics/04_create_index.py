@@ -316,6 +316,7 @@ def index_types_explained():
 3. 数据量 > 100 万：→ IVF_PQ
 4. 高精度要求：→ HNSW
 5. 内存受限：→ IVF_SQ8
+6. autoIndex: 自动索引
 
 📊 参数调优:
 

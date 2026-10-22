@@ -27,7 +27,7 @@
 | # | 文件 | 内容 | 难度 | 核心收获 |
 |---|------|------|------|---------|
 | 1 | [01_embedding_basics.py](01_embedding_basics.py) | Embedding 基础概念 | ⭐ | 什么是向量、余弦相似度、语义空间 |
-| 2 | [02_aliyun_embedding.py](02_aliyun_embedding.py) | 阿里云百炼 API | ⭐⭐ | 调用真实 API 生成向量、工具类封装 |
+| 2 | [02_aliyun_embedding.py](aliyun_embedding.py) | 阿里云百炼 API | ⭐⭐ | 调用真实 API 生成向量、工具类封装 |
 | 3 | [03_local_embedding.py](03_local_embedding.py) | 本地 Embedding 模型 | ⭐⭐ | sentence-transformers、语义检索演示 |
 | 4 | [04_embedding_comparison.py](04_embedding_comparison.py) | 模型对比与选型 | ⭐⭐ | 效果/速度/成本对比、决策树 |
 
@@ -352,7 +352,7 @@ Q4: 是否需要实时响应（<100ms）？
 python embedding_examples/01_embedding_basics.py
 
 # 需要 API Key
-python embedding_examples/02_aliyun_embedding.py
+python embedding_examples/aliyun_embedding.py
 
 # 需要安装 sentence-transformers（首次运行会下载模型）
 python embedding_examples/03_local_embedding.py

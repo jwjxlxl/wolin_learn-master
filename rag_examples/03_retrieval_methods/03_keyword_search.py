@@ -53,7 +53,6 @@ def create_fulltext_collection(collection_name="keyword_demo"):
     """
     from pymilvus import DataType, Function, FunctionType
 
-    client.use_database("ai0626")
     # 定义 schema
     schema = client.create_schema()
     schema.add_field(
@@ -67,6 +66,7 @@ def create_fulltext_collection(collection_name="keyword_demo"):
         datatype=DataType.VARCHAR,
         max_length=2000,
         enable_analyzer=True,  # 开启分词器（中文分词必需）
+        analyzer_params={"type": "chinese"}
     )
     # 添加一个稀疏向量字段
     schema.add_field(
@@ -120,6 +120,7 @@ def insert_fulltext_texts(client, texts, collection_name="keyword_demo"):
         collection_name: Collection 名称
     """
     client.insert(collection_name=collection_name, data=texts)
+    client.flush(collection_name=collection_name)  # 关键：让 BM25 稀疏索引立刻可检索
 
 
 def search_fulltext(query, collection_name="keyword_demo", limit=3):
@@ -141,6 +142,7 @@ def search_fulltext(query, collection_name="keyword_demo", limit=3):
         anns_field="sparse",
         output_fields=["text"],
         limit=limit,
+        search_params={"params": {"drop_ratio_search": 0.2}}
     )
 
     return res[0]
@@ -167,10 +169,16 @@ def milvus_fulltext_search():
     # ---- 第 2 步：插入文本数据 ----
     print("\n  第 2 步：插入原始文本数据")
 
+    # texts = [
+    #     {'text': 'information retrieval is a field of study.'},
+    #     {'text': 'information retrieval focuses on finding relevant information in large datasets.'},
+    #     {'text': 'data mining and information retrieval overlap in research.'}
+    # ]
+
     texts = [
-        {'text': 'information retrieval is a field of study.'},
-        {'text': 'information retrieval focuses on finding relevant information in large datasets.'},
-        {'text': 'data mining and information retrieval overlap in research.'}
+        {'text': '机器学习是人工智能的核心技术。机器学习为人工智能提供方法论。机器学习在医疗和金融领域有广泛应用。'},
+        {'text': '深度学习使用机器学习的方法训练神经网络模型。'},
+        {'text': '自然语言处理是人工智能的重要应用方向。'}
     ]
 
     insert_fulltext_texts(client, texts)
@@ -313,8 +321,8 @@ def keyword_search_best_practices():
 # =============================================================================
 
 if __name__ == "__main__":
-    # milvus_fulltext_search()   # 需要 Milvus 服务运行中
-    results = search_fulltext("whats the study", limit=3)
+    milvus_fulltext_search()   # 需要 Milvus 服务运行中
+    results = search_fulltext("机器学习", limit=3)
     for hit in results:
         print(hit["distance"], hit["entity"]["text"])
 

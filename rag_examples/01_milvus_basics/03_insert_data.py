@@ -104,6 +104,7 @@ def generate_embedding_with_llm(texts, model="text-embedding-v4", api_key=None):
         base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
     )
 
+    # 向量化的函数既可以对单个文本进行向量化，也可以对多个文本进行向量化
     if isinstance(texts, str):
         texts = [texts]
         single_input = True
@@ -316,7 +317,7 @@ def insert_with_custom_fields():
     from pymilvus.milvus_client import IndexParams
 
     client = MilvusClient(uri=MILVUS_URI)
-    client.use_database("ai0626")
+    client.use_database("ai0824")
     collection_name = "custom_docs"
 
     if client.has_collection(collection_name):
@@ -338,11 +339,13 @@ def insert_with_custom_fields():
         metric_type="COSINE",
     )
 
+    # 准备示例数据
     documents = prepare_test_data()
+    # 从示例数据中提取所有的content内容，组织成一个str列表
     texts = [d["content"] for d in documents]
-    vectors = generate_mock_embeddings(texts)
+    # vectors = generate_mock_embeddings(texts)
     # 如果需要使用真实的向量，调用 generate_embeddings 函数
-    # vectors = generate_embedding_with_llm(texts)
+    vectors = generate_embedding_with_llm(texts)
 
     print(f"准备插入带完整字段的数据...\n")
 
@@ -377,7 +380,7 @@ def insert_with_custom_fields():
     res = client.query(
         collection_name=collection_name,
         filter="",
-        output_fields=["title", "category", "views"],
+        output_fields=["title", "category", "views", "content"],
         limit=3,
     )
 

@@ -446,6 +446,6 @@ if __name__ == '__main__':
     print("=" * 70)
     print("  Embedding 基础学习完成！")
     print("  接下来可以学习：")
-    print("  - 02_aliyun_embedding.py（阿里云百炼 API）")
+    print("  - aliyun_embedding.py（阿里云百炼 API）")
     print("  - 03_local_embedding.py（本地 Embedding 模型）")
     print("=" * 70 + "\n")

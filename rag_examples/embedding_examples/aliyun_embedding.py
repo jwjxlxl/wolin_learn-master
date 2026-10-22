@@ -1,7 +1,7 @@
 # =============================================================================
 # 阿里云百炼 Embedding API 调用示例
 # =============================================================================
-#  
+#
 # 用途：教学演示 - 如何使用阿里云百炼 Embedding API
 #
 # 核心概念：
@@ -19,7 +19,6 @@
 # -----------------------------------------------------------------------------
 
 # 设置 UTF-8 编码（Windows 专用）
-
 
 
 # =============================================================================
@@ -175,7 +174,7 @@ class AliyunEmbedding:
     阿里云 Embedding 工具类封装
     """
 
-    def __init__(self, model='text-embedding-v3', api_key=None):
+    def __init__(self, model='text-embedding-v4', api_key=None):
         """
         初始化 Embedding 工具
 
@@ -191,7 +190,7 @@ class AliyunEmbedding:
         # 如果提供了 API Key
         if api_key:
             import dashscope
-            dashscope.api_key = api_key
+            dashscope.api_key = os.getenv("ALIYUN_API_KEY")
 
         print(f"✓ AliyunEmbedding 初始化完成")
         print(f"  模型：{model}")
@@ -207,6 +206,7 @@ class AliyunEmbedding:
         """
         result = self.text_embedding.call(
             model=self.model,
+            api_key=os.getenv("ALIYUN_API_KEY"),
             input=text
         )
 
@@ -385,92 +385,6 @@ cos(θ) = A·B / (‖A‖ × ‖B‖)
 分母为 1，可直接用点积计算相似度。
 """)
 
-
-# =============================================================================
-# 示例 5: 错误处理与最佳实践
-# =============================================================================
-
-def error_handling_and_best_practices():
-    """
-    错误处理与最佳实践
-    """
-    print()
-    print("=" * 60)
-    print("示例 5: 错误处理与最佳实践")
-    print("=" * 60)
-
-    print("""
-┌─────────────────────────────────────────────────────────┐
-│ API 调用错误处理                                        │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│ 常见错误码：                                            │
-│   400: 请求参数错误（检查输入格式）                    │
-│   401: 认证失败（检查 API Key）                        │
-│   429: 请求频率超限（降低调用频率）                    │
-│   500: 服务器内部错误（稍后重试）                      │
-│                                                         │
-│ 重试策略：                                              │
-│   - 网络错误：指数退避重试（1s, 2s, 4s, 8s）           │
-│   - 429 错误：等待后重试                                │
-│   - 500 错误：重试 3 次后放弃                            │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
-
-💡 最佳实践:
-
-1. API Key 管理
-   - 使用环境变量，不要硬编码
-   - 定期轮换 Key
-   - 设置使用限额告警
-
-2. 成本控制
-   - 本地缓存已生成的向量
-   - 批量调用比单次调用更经济
-   - 监控调用量
-
-3. 性能优化
-   - 批量调用（最多支持 2000 条/批）
-   - 异步并发调用（提高吞吐量）
-   - 长文本预处理（分段后取平均）
-
-4. 向量存储
-   - 及时存储生成的向量
-   - 使用向量数据库（如 Milvus）
-   - 建立向量索引加速检索
-""")
-
-    # 重试示例代码
-    print("\n重试策略代码示例：")
-    print("-" * 50)
-    print("""
-import time
-from dashscope import TextEmbedding
-
-def embed_with_retry(text, max_retries=3):
-    for attempt in range(max_retries):
-        try:
-            result = TextEmbedding.call(
-                model='text-embedding-v3',
-                input=text
-            )
-            if result.status_code == 200:
-                return result.output['embeddings'][0]['embedding']
-            elif result.status_code == 429:
-                wait_time = 2 ** attempt  # 指数退避
-                time.sleep(wait_time)
-            else:
-                raise Exception(f"API 错误：{result.code}")
-        except Exception as e:
-            if attempt == max_retries - 1:
-                raise
-            time.sleep(2 ** attempt)
-
-# 使用
-vector = embed_with_retry("人工智能简介")
-""")
-
-
 # =============================================================================
 # 主程序入口
 # =============================================================================
@@ -484,7 +398,7 @@ if __name__ == '__main__':
     # 以下示例会演示 API 设计，但需要配置后才能实际调用
     print("提示：以下示例需要配置 API Key 才能实际运行\n")
 
-    basic_embedding_with_sdk()
+    # basic_embedding_with_sdk()
     print()
 
     # batch_embedding()
@@ -497,11 +411,14 @@ if __name__ == '__main__':
     # print()
     #
     # error_handling_and_best_practices()
+    # 1. 初始化工具类
+    emb = AliyunEmbedding()
 
-    print()
-    print("=" * 70)
-    print("  阿里云百炼 Embedding API 学习完成！")
-    print("  接下来可以学习：")
-    print("  - 03_local_embedding.py（本地 Embedding 模型）")
-    print("  - 04_embedding_comparison.py（模型对比）")
-    print("=" * 70 + "\n")
+    # 2. 生成单个向量
+    vector = emb.embed("人工智能简介")
+    print(f"向量维度：{len(vector)}, 向量内容：{vector[:10]}")
+
+    # 3. 批量生成
+    # texts = ["文本 1", "文本 2", "文本 3"]
+    # vectors = emb.embed_batch(texts)
+    # print(f"生成了 {len(vectors)} 个向量")

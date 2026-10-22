@@ -22,6 +22,7 @@
 
 文件：01_fixed_chunking.py → 02_sliding_window.py → 03_ai_chunking.py
                               → 04_summary_chunking.py → 05_chunking_comparison.py
+                              → 06_parent_child_chunking.py
 ```
 
 ## 📁 文件说明
@@ -33,6 +34,8 @@
 | 3 | [03_ai_chunking.py](03_ai_chunking.py) | AI 辅助切片 | ⭐⭐⭐ | LLM 按语义边界切分 |
 | 4 | [04_summary_chunking.py](04_summary_chunking.py) | 概要生成切片 | ⭐⭐⭐ | 摘要检索 + 原文回答 |
 | 5 | [05_chunking_comparison.py](05_chunking_comparison.py) | 切片方法对比 | ⭐⭐ | 量化评估 + 场景选择 |
+| 6 | [06_parent_child_chunking.py](06_parent_child_chunking.py) | 父子切块 | ⭐⭐⭐ | 小块检索精准 + 大块生成完整 |
+| 7 | [07_recursive_chunking.py](07_recursive_chunking.py) | 递归切片 | ⭐⭐ | 分隔符优先级递归降级 |
 
 ---
 
@@ -369,6 +372,7 @@ python 02_document_chunking/02_sliding_window.py
 python 02_document_chunking/03_ai_chunking.py
 python 02_document_chunking/04_summary_chunking.py
 python 02_document_chunking/05_chunking_comparison.py
+python 02_document_chunking/06_parent_child_chunking.py
 ```
 
 ## ⚠️ 常见问题

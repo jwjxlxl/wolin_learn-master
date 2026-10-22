@@ -120,7 +120,7 @@ python 01_milvus_basics/01_connect_milvus.py
 | 文件 | 内容 | 难度 | 核心收获 |
 |------|------|------|---------|
 | [01_embedding_basics.py](embedding_examples/01_embedding_basics.py) | Embedding 基础概念 | ⭐ | 什么是向量、余弦相似度、语义空间 |
-| [02_aliyun_embedding.py](embedding_examples/02_aliyun_embedding.py) | 阿里云百炼 Embedding API | ⭐⭐ | 调用真实 API 生成 1024 维向量 |
+| [02_aliyun_embedding.py](embedding_examples/aliyun_embedding.py) | 阿里云百炼 Embedding API | ⭐⭐ | 调用真实 API 生成 1024 维向量 |
 | [03_local_embedding.py](embedding_examples/03_local_embedding.py) | 本地 Embedding 模型 | ⭐⭐ | 离线部署 BGE/M3E 模型 |
 | [04_embedding_comparison.py](embedding_examples/04_embedding_comparison.py) | Embedding 模型对比 | ⭐⭐ | 不同模型的效果和速度差异 |
 

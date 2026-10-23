@@ -274,15 +274,14 @@ API 封装让你把这些能力变成**可在其他项目中调用的模块**。
 
 | 文件 | 内容 | 难度 | 核心收获 |
 |------|------|------|---------|
-| [01_hybrid_search_advanced.py](06_rag_advanced/01_hybrid_search_advanced.py) | BM25 Function + 混合检索 API | ⭐⭐⭐⭐ | AnnSearchRequest、RRF 融合 |
 | [02_dual_collection_design.py](06_rag_advanced/02_dual_collection_design.py) | 双 Collection 设计 | ⭐⭐⭐⭐ | 文档切片 + QA 对双路检索 |
 | [03_from_mock_to_real.py](06_rag_advanced/03_from_mock_to_real.py) | 从 Mock 到真实 Embedding | ⭐⭐⭐ | 理解教学代码到生产代码的跨越 |
 
 **学习路径**：
 ```
-BM25 稀疏向量检索 → 双集合架构设计 → 真实向量替换 Mock
-      ↑                    ↑                    ↑
-  理解高级 API          理解架构设计          理解工程化
+双集合架构设计 → 真实向量替换 Mock
+      ↑                    ↑
+  理解架构设计          理解工程化
 ```
 
 **与 rag_demo 的关系**：

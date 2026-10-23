@@ -23,57 +23,51 @@
 
 ## 二、逐函数讲解
 
-### 1. `mock_rerank_pipeline()` — 模拟 Rerank 流程
+### 1. `rerank_principle()` — 原理讲解（Bi-Encoder vs Cross-Encoder）
 
-**作用**：不依赖任何真实模型，用假数据演示 Rerank 的完整流程。
+**作用**：不依赖任何模型，用大白话讲透 Rerank 的核心原理。
 
-**流程拆解**：
+**核心类比**（面试筛选）：
+- **召回（Bi-Encoder）** ≈ 人事快速扫简历，先筛出 50 份「可能合适」的。
+- **精排（Cross-Encoder）** ≈ 面试官逐份细读，最终定出「最合适」的 5 人。
 
-| 步骤 | 做什么 | 代码对应 |
-|------|--------|----------|
-| ① 用户提问 | `"机器学习需要什么基础？"` | `query` 变量 |
-| ② 初步检索 | 返回 5 条文档，按向量相似度排序 | `retrieved_docs` 列表 |
-| ③ Rerank 重打分 | 给每条文档重新打一个相关性分数 | `rerank_scores` 列表 |
-| ④ 重新排序 | 按 Rerank 分数从高到低排列 | `sort()` 排序 |
-| ⑤ 对比展示 | 打印 Rerank 前后的排名变化 | 带 ↑↓ 箭头的输出 |
+**根本区别**：
+- **Bi-Encoder**：query 和文档**各编各的向量**，再算余弦相似度 → 两边编码时互不见面，只能"隔空比划"，**快但粗**。
+- **Cross-Encoder**：把 query 和文档**拼成一句话**一起送进模型 → 模型逐字交互，判断"文档到底答没答到问题"，**准但慢**。
 
-**关键观察**：
-- 第 5 句 `"机器学习需要数学基础，包括线性代数和概率。"` 在向量检索中排第 5（相似度 0.72），但 Rerank 后发现它**最直接回答了问题**，分数飙升到 0.92，跃升第 1。
-- 第 1 句 `"深度学习是机器学习的子集，使用神经网络。"` 向量检索排第 1（相似度 0.85），但 Rerank 发现它讲的是"子集概念"，**没有直接回答问题**，分数降到 0.45，跌到第 3。
-
-**这就是 Rerank 的价值**：向量相似度只看"语义距离"，而 Rerank 模型能真正理解 query 和 document 之间的**问答相关性**。
+**为什么不能只用一个**：全用 Bi 精度不够，全用 Cross 百万文档逐个过模型算不动 → 折中用两阶段（Bi 捞 Top-50，Cross 精排 Top-5）。
 
 ---
 
-### 2. `bge_reranker_demo()` — 使用 BGE-Reranker 真实模型
+### 2. `bge_reranker_demo()` — 中文 Rerank 真实模型
 
-**作用**：演示如何用真实的 BGE-Reranker 模型进行重排序。
+**作用**：用真实的 Rerank 模型给候选文档重新打分，演示中文场景。
 
 **核心代码**：
 
 ```python
-from FlagEmbedding import FlagReranker
+from sentence_transformers import CrossEncoder
 
-reranker = FlagReranker('BAAI/bge-reranker-large', use_fp16=False)
-scores = reranker.compute_score([query, doc] for doc in candidates)
+reranker = CrossEncoder('BAAI/bge-reranker-base')
+scores = reranker.predict([(query, doc) for doc in candidates])
 ```
 
 **逐行解释**：
 
-1. **导入模型**：`FlagReranker` 来自 `FlagEmbedding` 库，由北京智源研究院（BAAI）开发。
-2. **加载模型**：`bge-reranker-large` 是模型名，`use_fp16=False` 表示用全精度（有 GPU 可改 True 省显存）。
-3. **计算分数**：把 `(query, doc)` 配对传给模型，模型输出一个相关性分数。
-4. **排序**：按分数从高到低排列。
+1. **加载模型**：`bge-reranker-base` 是北京智源研究院（BAAI）的中文 Rerank 模型，约 278M，轻量够用。
+2. **批量打分**：把所有 `(query, doc)` 对组成**列表**传给 `predict`，一次性算出相关性分数。
+   ⚠️ 注意要传 `list[tuple]`，不能传生成器，否则会报错。
+3. **排序**：按分数从高到低排列，输出最终排名。
 
-**如果没安装模型**：代码会捕获 `ImportError`，自动降级为模拟演示（用预设的假分数），确保学生没装依赖也能看到效果。
+**如果没装依赖 / 下载失败**：代码会捕获异常并打印提示（`pip install sentence-transformers`），不会崩溃。
 
-**安装命令**：`pip install FlagEmbedding`
+**安装命令**：`pip install sentence-transformers`
 
 ---
 
-### 3. `cross_encoder_rerank()` — 使用 sentence-transformers 的 CrossEncoder
+### 3. `cross_encoder_rerank()` — 英文 Rerank 真实模型
 
-**作用**：演示另一种 Rerank 模型——CrossEncoder，常用于英文场景。
+**作用**：演示英文场景的 Rerank，用微软在 MS MARCO 数据集上训练的模型。
 
 **核心代码**：
 
@@ -81,77 +75,45 @@ scores = reranker.compute_score([query, doc] for doc in candidates)
 from sentence_transformers import CrossEncoder
 
 model = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-12-v2')
-scores = model.predict([[query, doc] for doc in candidates])
+scores = model.predict([(query, doc) for doc in candidates])
 ```
 
 **逐行解释**：
 
-1. **导入模型**：`CrossEncoder` 来自 `sentence-transformers` 库。
-2. **加载模型**：`ms-marco-MiniLM-L-12-v2` 是微软在 MS MARCO 数据集上训练的模型，适合英文。
-3. **批量预测**：把所有 `(query, doc)` 对组成列表，一次性传给模型（比逐条调用快）。
-4. **排序**：同样按分数从高到低排列。
+1. **加载模型**：`ms-marco-MiniLM-L-12-v2` 适合英文，`predict` 一次性算出所有配对的相关性分数。
+2. **排序**：按分数从高到低排列。
 
-**与 BGE 的区别**：
-| 对比项 | BGE-Reranker | CrossEncoder |
+**与示例 2 的区别**：
+| 对比项 | 示例 2（bge-reranker-base） | 示例 3（ms-marco-MiniLM） |
 |--------|-------------|--------------|
 | 擅长语言 | 中文 | 英文 |
-| 安装 | `FlagEmbedding` | `sentence-transformers` |
-| 模型来源 | 北京智源 | 微软 / HuggingFace |
+| 模型来源 | 北京智源（BAAI） | 微软 |
+| 加载方式 | `CrossEncoder`（同一个库） | `CrossEncoder`（同一个库） |
+
+> ⚠️ 关键点：**英文模型配英文文本，中文模型配中文文本**，别拿英文模型跑中文。
 
 ---
 
-### 4. `rerank_performance_comparison()` — Rerank 效果对比
+### 4. `milvus_rerank_pipeline()` — 两阶段实战（Milvus 召回 + Rerank 精排）
 
-**作用**：用具体数据量化展示 Rerank 带来的效果提升。
+**作用**：把前面的概念串成一条真实链路——复用 `HybridRetriever`（04 混合检索）召回，再用 Rerank 模型精排，最后对比排名变化。
 
 **流程拆解**：
 
-1. **构造场景**：查询 `"RAG 系统如何工作？"`，6 条候选文档，每条有名称、原始相似度分数、内容。
-2. **打印原始排名**：按向量相似度排序的结果。
-3. **打印 Rerank 后排名**：按 Rerank 分数重新排序，显示每条文档的排名变化（↑↓箭头）。
-4. **计算 NDCG 指标**：用 DCG（折损累计增益）量化排序质量。
+| 步骤 | 做什么 | 代码对应 |
+|------|--------|----------|
+| ① 建库 | 复用 `HybridRetriever` 建 Collection + 插入 6 篇文档 | `retriever.create_collection()` / `insert()` |
+| ② 召回 | 混合检索先捞 Top-N 候选（宁多勿漏） | `retriever.retrieve(query, top_k=N)` |
+| ③ 精排 | 用 bge-reranker 对候选重新打分 | `reranker.predict(...)` |
+| ④ 对比 | 打印「召回名次 → 精排名次」的变化 | 带 ↑↓ 箭头的输出 |
 
-**NDCG 是什么？**
-- **DCG**（Discounted Cumulative Gain）：排在前面的相关文档得分高，排在后面的得分打折。
-- **NDCG**（Normalized DCG）：DCG 除以理想排序的 DCG，取值 0~1，越接近 1 越好。
-- 代码中计算 `(reranked_dcg - orig_dcg) / ideal_dcg` 得到 **Rerank 带来的 NDCG 提升百分比**。
+**关键观察**：输出中会出现形如 `4↑2`、`2↓4` 的排名变化。召回想把语义相近的都捞回来，精排再从中挑出真正"答到问题"的——例如"数据结构和算法是编程的基础"从召回第 4 提到精排第 2，这正是 Rerank 的价值所在。
 
----
-
-### 5. `complete_rag_rerank_pipeline()` — 完整 RAG + Rerank 流程
-
-**作用**：用文字梳理完整的 RAG 检索流程，帮助学生建立全局视角。
-
-**6 步流程**：
-
-```
-1. 用户提问
-   → "机器学习和深度学习有什么区别？"
-
-2. 生成查询向量
-   → Embedding 模型把问题编码为向量
-
-3. 向量检索（召回）
-   → 从 Milvus 检索 Top-50 候选文档
-
-4. Rerank 重排序（精排）
-   → 用 CrossEncoder 对 50 个候选重新打分
-   → 选取 Top-5 最终结果
-
-5. 构建上下文
-   → 拼接 Top-5 文档内容
-
-6. 调用 LLM 生成答案
-   → Prompt: 根据以下信息回答问题...
-```
-
-**关键点**：
-- 召回阶段取 **Top-50**（给 Rerank 足够的选择空间）。
-- 精排后只取 **Top-5**（LLM 上下文窗口有限，给太多会稀释注意力）。
+**依赖**：Milvus 服务 + `ALIYUN_API_KEY`（Embedding）+ `sentence-transformers`。
 
 ---
 
-### 6. `rerank_best_practices()` — Rerank 最佳实践
+### 5. `rerank_best_practices()` — Rerank 最佳实践
 
 **作用**：总结 Rerank 的实战经验，告诉学生什么时候用、怎么选模型、怎么调参数。
 
@@ -169,7 +131,7 @@ scores = model.predict([[query, doc] for doc in candidates])
 #### 模型选择
 | 场景 | 推荐模型 |
 |------|----------|
-| 中文 | `BAAI/bge-reranker-large` |
+| 中文 | `BAAI/bge-reranker-base`（轻量，代码默认）；`-large` 精度更高 |
 | 英文 | `cross-encoder/ms-marco-MiniLM-L-12-v2` |
 | 多语言 | `BAAI/bge-reranker-v2-m3` |
 | API 方案 | Cohere Rerank API |

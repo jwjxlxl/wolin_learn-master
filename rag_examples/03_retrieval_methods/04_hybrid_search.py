@@ -215,17 +215,17 @@ def milvus_hybrid_search_demo():
 
     需要：Milvus 服务运行中 + ALIYUN_API_KEY（用于生成稠密向量）
     """
-    from pymilvus import (
-        MilvusClient, DataType, Function, FunctionType,
-        AnnSearchRequest, RRFRanker, WeightedRanker,
-    )
+    from pymilvus import MilvusClient
     from rag_examples.embedding_examples.aliyun_embedding import AliyunEmbedding
     from rag_examples.milvus_config import MILVUS_URI, MILVUS_DB_NAME
+    from rag_examples.utils.hybrid_retriever import HybridRetriever
 
     print(f"\n-- 示例 5: Milvus 原生混合检索")
 
     collection_name = "hybrid_demo"
     client = MilvusClient(uri=MILVUS_URI, db_name=MILVUS_DB_NAME)
+    emb = AliyunEmbedding()
+    retriever = HybridRetriever(client, collection_name, emb)
 
     # ── 1. 准备文档 + 生成稠密向量 ──
     documents = [
@@ -238,68 +238,19 @@ def milvus_hybrid_search_demo():
     ]
 
     print(f"\n  第 1 步：生成稠密向量（text-embedding-v4）")
-    emb = AliyunEmbedding()
     dense_vectors = [emb.embed(doc) for doc in documents]
     dim = len(dense_vectors[0])
     print(f"  ✓ 已为 {len(documents)} 篇文档生成 {dim} 维稠密向量")
 
-    # ── 2. 创建 Collection（dense + sparse 双向量字段）──
+    # ── 2. 创建 Collection（复用 HybridRetriever）──
     print(f"\n  第 2 步：创建 Collection（dense + sparse 双向量字段）")
-    schema = client.create_schema()
-    schema.add_field(
-        field_name="id",
-        datatype=DataType.INT64,
-        is_primary=True,
-        auto_id=True,
-    )
-    schema.add_field(
-        field_name="text",
-        datatype=DataType.VARCHAR,
-        max_length=2000,
-        enable_analyzer=True,
-        analyzer_params={"type": "chinese"},  # 中文分词（BM25 全文检索必需）
-    )
-    schema.add_field(field_name="dense", datatype=DataType.FLOAT_VECTOR, dim=dim)
-    schema.add_field(field_name="sparse", datatype=DataType.SPARSE_FLOAT_VECTOR)
-
-    # BM25 函数：text → sparse（Milvus 自动分词并生成稀疏向量）
-    bm25_function = Function(
-        name="text_bm25_emb",
-        input_field_names=["text"],
-        output_field_names=["sparse"],
-        function_type=FunctionType.BM25,
-    )
-    schema.add_function(bm25_function)
-
-    index_params = client.prepare_index_params()
-    index_params.add_index(
-        field_name="dense",
-        index_type="AUTOINDEX",
-        metric_type="COSINE",
-    )
-    index_params.add_index(
-        field_name="sparse",
-        index_type="SPARSE_INVERTED_INDEX",
-        metric_type="BM25",
-        params={"inverted_index_algo": "DAAT_MAXSCORE"},
-    )
-
-    # 清理旧 Collection（教学演示用）
-    if client.has_collection(collection_name=collection_name):
-        client.drop_collection(collection_name=collection_name)
-    client.create_collection(
-        collection_name=collection_name,
-        schema=schema,
-        index_params=index_params,
-    )
+    retriever.create_collection(dim=dim)
     print(f"  ✓ Collection '{collection_name}' 创建成功")
 
     # ── 3. 插入数据 ──
     print(f"\n  第 3 步：插入数据（dense 手动提供，sparse 由 BM25 自动生成）")
-    data = [{"text": doc, "dense": vec} for doc, vec in zip(documents, dense_vectors)]
-    client.insert(collection_name=collection_name, data=data)
-    client.flush(collection_name=collection_name)  # 关键：flush 后数据才可检索
-    print(f"  ✓ 插入 {len(data)} 篇文档并 flush 完成")
+    n = retriever.insert(documents, dense_vectors)
+    print(f"  ✓ 插入 {n} 篇文档并 flush 完成")
 
     # ── 4. 检索对比 ──
     query = "机器学习"
@@ -308,64 +259,22 @@ def milvus_hybrid_search_demo():
 
     # 4.1 纯向量检索（语义）
     print("  [1] 纯向量检索（语义，anns_field='dense'）：")
-    dense_res = client.search(
-        collection_name=collection_name,
-        data=[query_vec],
-        anns_field="dense",
-        limit=3,
-        output_fields=["text"],
-    )
-    for i, hit in enumerate(dense_res[0], 1):
+    for i, hit in enumerate(retriever.search_dense(query_vec, top_k=3), 1):
         print(f"      [{i}] {hit['distance']:.3f}  {hit['entity']['text'][:28]}")
 
     # 4.2 纯 BM25 关键字检索（精确匹配）
     print("\n  [2] 纯 BM25 关键字检索（精确匹配，anns_field='sparse'）：")
-    sparse_res = client.search(
-        collection_name=collection_name,
-        data=[query],
-        anns_field="sparse",
-        limit=3,
-        output_fields=["text"],
-    )
-    for i, hit in enumerate(sparse_res[0], 1):
+    for i, hit in enumerate(retriever.search_sparse(query, top_k=3), 1):
         print(f"      [{i}] {hit['distance']:.3f}  {hit['entity']['text'][:28]}")
 
-    # 4.3 混合检索：两路召回（AnnSearchRequest）
-    req_dense = AnnSearchRequest(
-        data=[query_vec],
-        anns_field="dense",
-        param={"metric_type": "COSINE"},
-        limit=3,
-    )
-    req_sparse = AnnSearchRequest(
-        data=[query],  # 稀疏/全文这一路直接传原始文本，由 BM25 函数处理
-        anns_field="sparse",
-        param={"metric_type": "BM25"},
-        limit=3,
-    )
-
-    # RRF 融合（只看排名，不依赖分数量纲）
+    # 4.3 RRF 混合检索（只看排名，不依赖分数量纲）
     print("\n  [3] RRF 混合检索（RRFRanker, k=60）：")
-    rrf_res = client.hybrid_search(
-        collection_name=collection_name,
-        reqs=[req_dense, req_sparse],
-        ranker=RRFRanker(k=60),
-        limit=3,
-        output_fields=["text"],
-    )
-    for i, hit in enumerate(rrf_res[0], 1):
+    for i, hit in enumerate(retriever.hybrid_search(query, query_vec, top_k=3, ranker="rrf"), 1):
         print(f"      [{i}] {hit['distance']:.3f}  {hit['entity']['text'][:28]}")
 
-    # 加权融合（向量 0.6 + 关键字 0.4，可调权重）
+    # 4.4 加权融合（向量 0.6 + 关键字 0.4，可调权重）
     print("\n  [4] 加权混合检索（WeightedRanker, 向量 0.6 + 关键字 0.4）：")
-    weighted_res = client.hybrid_search(
-        collection_name=collection_name,
-        reqs=[req_dense, req_sparse],
-        ranker=WeightedRanker(0.6, 0.4),
-        limit=3,
-        output_fields=["text"],
-    )
-    for i, hit in enumerate(weighted_res[0], 1):
+    for i, hit in enumerate(retriever.hybrid_search(query, query_vec, top_k=3, ranker="weighted", vector_weight=0.6), 1):
         print(f"      [{i}] {hit['distance']:.3f}  {hit['entity']['text'][:28]}")
 
     print("""

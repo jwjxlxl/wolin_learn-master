@@ -13,6 +13,7 @@ from rag_examples.utils.helpers import (
     format_score,
     truncate_text,
 )
+from rag_examples.utils.hybrid_retriever import HybridRetriever
 
 
 __all__ = [
@@ -21,4 +22,5 @@ __all__ = [
     "safe_milvus_operation",
     "format_score",
     "truncate_text",
+    "HybridRetriever",
 ]

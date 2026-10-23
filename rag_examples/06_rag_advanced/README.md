@@ -6,8 +6,6 @@
 
 学完本模块后，你将能够：
 
-- ✅ 在 Milvus 中使用 BM25 Function 自动生成稀疏向量
-- ✅ 掌握 `AnnSearchRequest` + `hybrid_search()` 原生混合检索 API
 - ✅ 设计双 Collection 的 RAG 检索架构（文档切片 + 问答对）
 - ✅ 理解从 mock 示例代码到生产代码的跨越步骤
 - ✅ 使用 `UniversalEmbedder` 统一管理 mock/real 模式切换
@@ -15,22 +13,20 @@
 ## 🗺️ 学习路径
 
 ```
-BM25 Function + 原生混合检索 → 双集合架构设计 → Mock → Real 过渡
-        ↑                        ↑                    ↑
-   Milvus 2.4+ 高级 API      生产级架构模式      教学代码工程化
-   (⭐⭐⭐⭐)                  (⭐⭐⭐⭐)            (⭐⭐⭐)
+双集合架构设计 → Mock → Real 过渡
+      ↑                ↑
+ 生产级架构模式     教学代码工程化
+ (⭐⭐⭐⭐)          (⭐⭐⭐)
 
-文件：01_hybrid_search_advanced.py → 02_dual_collection_design.py
-                                     → 03_from_mock_to_real.py
+文件：02_dual_collection_design.py → 03_from_mock_to_real.py
 ```
 
 ## 📁 文件说明
 
 | # | 文件 | 内容 | 难度 | 核心收获 |
 |---|------|------|------|---------|
-| 1 | [01_hybrid_search_advanced.py](01_hybrid_search_advanced.py) | BM25 Function + 混合检索 API | ⭐⭐⭐⭐ | AnnSearchRequest、RRF/加权融合 |
-| 2 | [02_dual_collection_design.py](02_dual_collection_design.py) | 双集合 RAG 架构 | ⭐⭐⭐⭐ | 文档切片 + QA 对并行检索 |
-| 3 | [03_from_mock_to_real.py](03_from_mock_to_real.py) | Mock → Real 过渡 | ⭐⭐⭐ | UniversalEmbedder、迁移检查清单 |
+| 1 | [02_dual_collection_design.py](02_dual_collection_design.py) | 双集合 RAG 架构 | ⭐⭐⭐⭐ | 文档切片 + QA 对并行检索 |
+| 2 | [03_from_mock_to_real.py](03_from_mock_to_real.py) | Mock → Real 过渡 | ⭐⭐⭐ | UniversalEmbedder、迁移检查清单 |
 
 ---
 
@@ -55,167 +51,7 @@ BM25 Function + 原生混合检索 → 双集合架构设计 → Mock → Real �
 
 ---
 
-### 第 1 步：BM25 Function 与原生混合检索（01_hybrid_search_advanced.py）
-
-**本节讲什么：**
-- Milvus 2.4+ 的 BM25 Function——让 Milvus 自动从文本生成稀疏向量
-- `enable_analyzer` + `enable_match` 两个开关的作用
-- `AnnSearchRequest`——多路检索请求对象
-- `hybrid_search()`——原生混合检索 API
-- RRF vs 加权排序两种融合策略的代码对比
-
-**核心概念：**
-
-```
-Milvus 2.4 之前的混合检索：
-  1. 手动用 jieba 分词
-  2. 手动用 rank-bm25 计算稀疏向量
-  3. 手动插入稀疏向量到 Collection
-  4. 手动在应用层融合结果
-
-Milvus 2.4+ 之后的混合检索：
-  1. Schema 中定义 BM25 Function
-  2. 插入数据时只提供 text，sparse_vector 自动生成
-  3. 调用 hybrid_search() API，结果自动融合
-
-本质：把 BM25 计算从"应用层"移到了"数据库层"
-```
-
-**BM25 Function 的两个关键开关：**
-
-```python
-# 在 VARCHAR 字段上开启：
-schema.add_field(
-    field_name="text", datatype=DataType.VARCHAR, max_length=2000,
-    enable_analyzer=True,   # ← 开关1：启用分词器
-    enable_match=True,      # ← 开关2：启用 BM25 匹配
-)
-
-# 然后定义 BM25 Function：
-bm25_function = Function(
-    name="text_bm25",
-    input_field_names=["text"],           # ← 从哪个字段读取文本
-    output_field_names=["sparse_vector"], # ← 输出到哪个稀疏向量字段
-    function_type=FunctionType.BM25,
-)
-schema.add_function(bm25_function)
-
-# 最后为稀疏向量字段创建索引：
-index_params.add_index(
-    field_name="sparse_vector",
-    index_type="SPARSE_INVERTED_INDEX",   # ← 专用于 BM25 的索引
-    metric_type="BM25",
-)
-```
-
-**完整 Collection 结构：**
-
-```
-支持混合检索的 Collection Schema：
-
-┌─────────────────┬───────────────────┬────────────────────┐
-│  字段名          │  数据类型          │  说明               │
-├─────────────────┼───────────────────┼────────────────────┤
-│  id             │  INT64 (主键)      │  自动递增 ID        │
-│  text           │  VARCHAR + analyzer│  原始文本（可分词）  │
-│  title          │  VARCHAR           │  标题               │
-│  dense_vector   │  FLOAT_VECTOR      │  稠密语义向量       │
-│  sparse_vector  │  SPARSE_FLOAT_VEC  │  BM25 稀疏向量      │
-└─────────────────┴───────────────────┴────────────────────┘
-
-BM25 Function：text 字段 → 自动填充 sparse_vector 字段
-
-两个索引：
-  dense_vector  → AUTOINDEX (COSINE)
-  sparse_vector → SPARSE_INVERTED_INDEX (BM25)
-```
-
-**三种检索方式对比（同一查询）：**
-
-```python
-查询："向量数据库有哪些特点？"
-
-纯稠密向量检索（语义）：
-  → "向量数据库"的语义 → 找语义相似的文档
-  → 可能找到"数据库"相关但不含"向量"的文档
-
-纯 BM25 检索（关键字）：
-  → 查找包含"向量"、"数据库"字符的文档
-  → 精确匹配，但不懂"特点"的含义
-
-混合检索（语义 + 关键字 + RRF）：
-  → 两路同时检索，RRF 融合排名
-  → 既找到语义相关的，又保证关键字命中
-```
-
-**hybrid_search() 完整代码：**
-
-```python
-# 1. 创建稠密检索请求
-req_dense = AnnSearchRequest(
-    data=[query_vector],        # 查询向量
-    anns_field="dense_vector",  # 在哪个字段检索
-    param={"nprobe": 10},       # 索引搜索参数
-    limit=5,
-)
-
-# 2. 创建稀疏检索请求（注意：这里直接传原始文本！）
-req_sparse = AnnSearchRequest(
-    data=[query],               # 原始文本，不是向量
-    anns_field="sparse_vector", # BM25 Function 自动处理
-    param={"metric_type": "BM25"},
-    limit=5,
-)
-
-# 3. RRF 融合
-ranker = Function(
-    name="rrf",
-    function_type=FunctionType.RERANK,
-    params={"reranker": "rrf", "k": 100},
-)
-
-# 4. 执行混合检索
-results = client.hybrid_search(
-    collection_name=collection_name,
-    reqs=[req_dense, req_sparse],  # 多路请求
-    ranker=ranker,
-    limit=5,
-    output_fields=["title", "text"],
-)
-```
-
-**RRF vs 加权排序代码对比：**
-
-```python
-# RRF（更简单，更鲁棒，推荐默认）
-ranker = Function(
-    name="rrf", function_type=FunctionType.RERANK,
-    params={"reranker": "rrf", "k": 100}
-)
-
-# 加权排序（更灵活，需要调参）
-ranker = Function(
-    name="weighted", function_type=FunctionType.RERANK,
-    params={
-        "reranker": "weighted",
-        "weights": [0.6, 0.4],    # 稠密 : 稀疏 = 6 : 4
-        "norm_score": True         # 必须归一化到同一量纲
-    }
-)
-```
-
-**何时用哪种融合策略：**
-
-| 场景 | 推荐方法 | 原因 |
-|------|---------|------|
-| 不确定权重 | RRF | 不需要调参，鲁棒性好 |
-| 语义更重要 | 加权 [0.7, 0.3] | 明确偏重语义 |
-| 关键字更重要 | 加权 [0.3, 0.7] | 明确偏重关键字 |
-| 通用场景 | RRF 或 加权 [0.6, 0.4] | 平衡 |
-
----
-
-### 第 2 步：双集合 RAG 架构（02_dual_collection_design.py）
+### 第 1 步：双集合 RAG 架构（02_dual_collection_design.py）
 
 **本节讲什么：**
 - 为什么单一 Collection（只有文档切片）不够用
@@ -324,7 +160,7 @@ qa_schema.add_field("sparse_vector", SPARSE_FLOAT_VECTOR)
 
 ---
 
-### 第 3 步：从 Mock 到 Real 的过渡（03_from_mock_to_real.py）
+### 第 2 步：从 Mock 到 Real 的过渡（03_from_mock_to_real.py）
 
 **本节讲什么：**
 - Mock 向量的局限性和教学价值
@@ -493,8 +329,6 @@ vectors = embedder.embed_batch(documents)
 # 确保 Milvus 2.4+ 已启动
 docker ps | grep milvus
 
-# 从 BM25 Function 开始
-python 06_rag_advanced/01_hybrid_search_advanced.py
 python 06_rag_advanced/02_dual_collection_design.py
 python 06_rag_advanced/03_from_mock_to_real.py
 ```

@@ -321,8 +321,8 @@ def keyword_search_best_practices():
 # =============================================================================
 
 if __name__ == "__main__":
-    milvus_fulltext_search()   # 需要 Milvus 服务运行中
-    results = search_fulltext("机器学习", limit=3)
+    # milvus_fulltext_search()   # 需要 Milvus 服务运行中
+    results = search_fulltext("AI", limit=3)
     for hit in results:
         print(hit["distance"], hit["entity"]["text"])
 

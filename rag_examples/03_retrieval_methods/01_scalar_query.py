@@ -33,7 +33,7 @@ def prepare_test_collection():
     random.seed(42)
 
     client = MilvusClient(uri=MILVUS_URI)
-    client.use_database("ai0626")
+    client.use_database("ai0824")
     collection_name = "scalar_query_demo"
 
     if client.has_collection(collection_name):
@@ -121,8 +121,11 @@ def basic_scalar_query(client, collection_name):
     print(f"\n-- 示例 2.1: 查询类别为'AI'的文档（category == 'AI'）")
     results = client.query(
         collection_name=collection_name,
+        # 相当于sql中的where字句
         filter="category == 'AI'",
+        # 需要返回的字段，相当于sql中的select字句
         output_fields=["title", "category", "views"],
+        # 返回结果数量限制
         limit=3
     )
     for res in results:
@@ -237,6 +240,7 @@ def scalar_plus_vector_search(client, collection_name):
     print(f"\n-- 示例 5.1: 向量检索（无过滤），返回 Top-3")
     results = client.search(
         collection_name=collection_name,
+        # data 表示要检索的问题的向量，维度跟集合中的维度保持一致
         data=[query_vector],
         limit=3,
         output_fields=["title", "category", "views"]
@@ -324,10 +328,10 @@ if __name__ == "__main__":
 
     # client, collection_name = prepare_test_collection()
     client = MilvusClient(uri=MILVUS_URI)
-    client.use_database("ai0626")
+    client.use_database("ai0824")
     collection_name = "scalar_query_demo"
-    # basic_scalar_query(client, collection_name)
+    basic_scalar_query(client, collection_name)
     # compound_scalar_query(client, collection_name)
     # range_query(client, collection_name)
-    scalar_plus_vector_search(client, collection_name)
+    # scalar_plus_vector_search(client, collection_name)
     # scalar_query_best_practices()

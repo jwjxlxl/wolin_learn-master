@@ -76,7 +76,7 @@ def prepare_test_collection():
     mode_name = "真实 Embedding" if USE_REAL_EMBEDDING else "模拟向量"
 
     client = MilvusClient(uri=MILVUS_URI)
-    client.use_database("ai0626")
+    client.use_database("ai0824")
     collection_name = "vector_search_demo"
 
     if client.has_collection(collection_name):
@@ -132,8 +132,6 @@ def prepare_test_collection():
 def basic_vector_search(client, collection_name, query: str):
     """演示两个不同语义方向的向量检索"""
 
-    # 场景 1: 查询"机器学习是什么"
-    print(f"\n-- 示例 2.1: 查询'机器学习是什么'（AI 相关）")
     # 把用户的问题向量化
     query_vector = get_embedding(query)
 
@@ -142,16 +140,18 @@ def basic_vector_search(client, collection_name, query: str):
         data=[query_vector],
         limit=3,
         output_fields=["content", "category"],
+        # 对检索结果的分数进行过滤
         search_params={
             "params": {
-                "radius": 0.5,
-                "range_filter": 0.7
+                "radius": 0.2,
+                "range_filter": 1
             }
         }
     )
 
     print("  检索结果（Top-3）：")
     for i, hit in enumerate(results[0]):
+        # 有的AI写的代码会写成hit["score"]
         print(f"  [{i+1}] 相似度：{hit['distance']:.4f}")
         print(f"      类别：{hit['entity']['category']}")
         print(f"      内容：{hit['entity']['content']}...")
@@ -321,7 +321,7 @@ def vector_search_best_practices():
   │                                                         │
   │ 3. 相似度阈值                                            │
   │    - 建议设置最低相似度阈值过滤噪声                     │
-  │    - COSINE 场景：threshold=0.5-0.7                      │
+  │    - COSINE 场景：threshold=0.5-1.0                      │
   │                                                         │
   │ 4. 结果数量选择                                          │
   │    - Top-K 建议：5-20                                   │
@@ -365,11 +365,11 @@ if __name__ == "__main__":
 
     client, collection_name = prepare_test_collection()
     client = MilvusClient(uri=MILVUS_URI)
-    client.use_database("ai0626")
+    client.use_database("ai0824")
     collection_name = "vector_search_demo"
-    query = "好的产品设计有什么特点"
-    basic_vector_search(client, collection_name, query)
-    # metric_type_comparison()
+    query = "我要请假"
+    # basic_vector_search(client, collection_name, query)
+    metric_type_comparison()
     # batch_vector_search(client, collection_name)
     # search_params_explained(client, collection_name)
     # embedding_quality_comparison()

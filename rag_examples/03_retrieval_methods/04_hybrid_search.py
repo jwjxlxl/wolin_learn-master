@@ -225,11 +225,12 @@ def milvus_hybrid_search_demo():
     collection_name = "hybrid_demo"
     client = MilvusClient(uri=MILVUS_URI, db_name=MILVUS_DB_NAME)
     emb = AliyunEmbedding()
+    # 封装了混合检索的检索器
     retriever = HybridRetriever(client, collection_name, emb)
 
     # ── 1. 准备文档 + 生成稠密向量 ──
     documents = [
-        "机器学习是人工智能的核心技术，通过数据训练模型预测。",
+        "机器学习是人工智能的核心技术，通过数据训练模型预测。机器学习对于各个领域都有广泛的应用。",
         "深度学习使用多层神经网络，是机器学习的重要分支。",
         "自然语言处理让计算机理解和生成人类语言。",
         "计算机视觉用于图像识别、人脸识别、自动驾驶。",

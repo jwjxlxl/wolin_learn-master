@@ -2,12 +2,14 @@
 # hybrid_retriever — Milvus 混合检索器（稠密向量 + BM25 稀疏向量）
 # =============================================================================
 # 用途：把"创建 Collection + 插入数据 + 混合检索"封装成可复用类，
-#       供 03_retrieval_methods 的混合检索演示和 05_rag_pipeline 的 RAG 共用。
+#       供 03_retrieval_methods 的混合检索演示、05_rag_pipeline 的 RAG、
+#       以及 06_rag_advanced 的双集合设计共用。
 #
 # 核心概念：
 #   - 双向量字段：dense（语义）+ sparse（关键词/BM25）
-#   - BM25 Function：Milvus 自动把 text 分词并生成稀疏向量
+#   - BM25 Function：Milvus 自动把文本字段分词并生成稀疏向量
 #   - 结果融合：RRFRanker / WeightedRanker
+#   - 可扩展：text_field 自定义文本字段名，extra_fields 附加标量字段（双集合用）
 # =============================================================================
 
 from pymilvus import (
@@ -28,6 +30,12 @@ class HybridRetriever:
       2. 插入文档（dense 由调用方提供，sparse 由 Milvus 自动生成）
       3. 提供 纯向量 / 纯 BM25 / RRF 混合 / 加权混合 四类检索
 
+    扩展（供双集合等场景复用）：
+      - text_field: 文本字段名（默认 "text"，问答集合可设为 "question"）
+      - extra_fields: 附加标量字段定义，格式
+        [{"name": ..., "datatype": ..., "max_length": ...}]
+        （VARCHAR 需给 max_length，INT32 等标量不用）
+
     使用示例：
         client = MilvusClient(uri=MILVUS_URI, db_name=MILVUS_DB_NAME)
         emb = AliyunEmbedding()
@@ -40,10 +48,18 @@ class HybridRetriever:
         results = retriever.hybrid_search("机器学习", emb.embed("机器学习"), top_k=3)
     """
 
-    def __init__(self, client, collection_name, emb=None):
+    def __init__(self, client, collection_name, emb=None,
+                 text_field="text", extra_fields=None):
         self.client = client
         self.collection_name = collection_name
         self.emb = emb
+
+        # 文本字段名（BM25 作用于此字段，检索时也返回它）
+        self.text_field = text_field
+        # 附加标量字段（如 file_name / chunk_index / answer / reasoning）
+        self.extra_fields = list(extra_fields) if extra_fields else []
+        # 检索时统一返回的字段 = 文本字段 + 附加标量字段
+        self._output_fields = [self.text_field] + [f["name"] for f in self.extra_fields]
 
     # ------------------------------------------------------------------
     # 创建 Collection
@@ -53,9 +69,9 @@ class HybridRetriever:
 
         BM25 Function 原理（Milvus 2.4+）：
           传统做法要在应用层手动「jieba 分词 + rank-bm25 算稀疏向量」再插入；
-          现在只需定义这个 BM25 Function，把 text 自动映射成 sparse 稀疏向量，
+          现在只需定义这个 BM25 Function，把文本字段自动映射成 sparse 稀疏向量，
           相当于把 BM25 计算从「应用层」下沉到「数据库层」。
-          前提：text 字段要开 enable_analyzer=True 分词（中文必须 analyzer_params
+          前提：文本字段要开 enable_analyzer=True 分词（中文必须 analyzer_params
           {"type": "chinese"}），Milvus 才能据此算出 BM25 稀疏向量。
 
         参数:
@@ -68,20 +84,27 @@ class HybridRetriever:
             is_primary=True,
             auto_id=True,
         )
+        # 文本字段（字段名可配置，如问答集合用 "question"）
         schema.add_field(
-            field_name="text",
+            field_name=self.text_field,
             datatype=DataType.VARCHAR,
             max_length=2000,
             enable_analyzer=True,
             analyzer_params={"type": "chinese"},  # 中文分词（BM25 全文检索必需）
         )
+        # 附加标量字段（如 file_name / answer 等，可选）
+        for f in self.extra_fields:
+            field_kwargs = {"field_name": f["name"], "datatype": f["datatype"]}
+            if f.get("max_length") is not None:
+                field_kwargs["max_length"] = f["max_length"]
+            schema.add_field(**field_kwargs)
         schema.add_field(field_name="dense", datatype=DataType.FLOAT_VECTOR, dim=dim)
         schema.add_field(field_name="sparse", datatype=DataType.SPARSE_FLOAT_VECTOR)
 
-        # BM25 函数：text → sparse（Milvus 自动分词并生成稀疏向量）
+        # BM25 函数：文本字段 → sparse（Milvus 自动分词并生成稀疏向量）
         bm25_function = Function(
-            name="text_bm25_emb",
-            input_field_names=["text"],
+            name=f"{self.text_field}_bm25_emb",
+            input_field_names=[self.text_field],
             output_field_names=["sparse"],
             function_type=FunctionType.BM25,
         )
@@ -113,13 +136,15 @@ class HybridRetriever:
     # ------------------------------------------------------------------
     # 插入数据
     # ------------------------------------------------------------------
-    def insert(self, documents, dense_vectors=None):
+    def insert(self, documents, dense_vectors=None, extra_data=None):
         """插入文档列表并 flush。
 
         参数:
-            documents: 原始文本列表
+            documents: 原始文本列表（写入 self.text_field 字段）
             dense_vectors: 与 documents 一一对应的稠密向量（可选）
                            不传则用 self.emb 现场生成
+            extra_data: 与 documents 一一对应的附加标量字段 dict 列表（可选）
+                        例如 [{"file_name": "a.txt", "chunk_index": 0}, ...]
         返回:
             int: 插入的文档数
         """
@@ -128,7 +153,13 @@ class HybridRetriever:
                 raise ValueError("insert 需要 self.emb 或显式传入 dense_vectors")
             dense_vectors = [self.emb.embed(doc) for doc in documents]
 
-        data = [{"text": doc, "dense": vec} for doc, vec in zip(documents, dense_vectors)]
+        data = []
+        for i, (doc, vec) in enumerate(zip(documents, dense_vectors)):
+            row = {self.text_field: doc, "dense": vec}
+            if extra_data and i < len(extra_data):
+                row.update(extra_data[i])
+            data.append(row)
+
         self.client.insert(collection_name=self.collection_name, data=data)
         self.client.flush(collection_name=self.collection_name)  # 关键：flush 后数据才可检索
         return len(data)
@@ -143,7 +174,7 @@ class HybridRetriever:
             data=[query_vec],
             anns_field="dense",
             limit=top_k,
-            output_fields=["text"],
+            output_fields=self._output_fields,
         )
         return res[0]
 
@@ -154,7 +185,7 @@ class HybridRetriever:
             data=[query],
             anns_field="sparse",
             limit=top_k,
-            output_fields=["text"],
+            output_fields=self._output_fields,
         )
         return res[0]
 
@@ -168,7 +199,7 @@ class HybridRetriever:
             ranker: "rrf" 或 "weighted"
             vector_weight: 加权融合时向量的权重（0-1）
         返回:
-            list: 命中结果，每项为 {"distance": 分数, "entity": {"text": 文本}}
+            list: 命中结果，每项为 {"distance": 分数, "entity": {字段名: 值}}
         """
         req_dense = AnnSearchRequest(
             data=[query_vec],
@@ -195,7 +226,7 @@ class HybridRetriever:
             reqs=[req_dense, req_sparse],
             ranker=ranker_obj,
             limit=top_k,
-            output_fields=["text"],
+            output_fields=self._output_fields,
         )
         return res[0]
 
@@ -207,6 +238,7 @@ class HybridRetriever:
 
         返回:
             list: [{"index": 1, "text": ..., "score": ...}, ...]
+            （"text" 的取值来自 self.text_field 字段）
         """
         if self.emb is None:
             raise ValueError("retrieve 需要 self.emb 才能生成查询向量")
@@ -218,7 +250,7 @@ class HybridRetriever:
         return [
             {
                 "index": i,
-                "text": hit["entity"]["text"],
+                "text": hit["entity"][self.text_field],
                 "score": round(hit["distance"], 4),
             }
             for i, hit in enumerate(hits, 1)

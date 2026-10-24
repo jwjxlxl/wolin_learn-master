@@ -38,7 +38,7 @@ embedding_examples/  Embedding 基础     ──→    util/embedding.py 共享�
 03_retrieval_methods/ 检索方法          ──→    core/file_chunk_retrieval.py 混合检索
 04_rag_api/        API 封装思路         ──→    core/rag_query.py RAG 问答封装
 05_rag_pipeline/   完整管道            ──→    整个项目的端到端流程
-06_rag_evaluation/ RAG 评估            ──→    可用来评测本项目的检索/生成质量
+07_rag_evaluation/ RAG 评估            ──→    可用来评测本项目的检索/生成质量
 06_rag_advanced/   Milvus 高级特性     ──→    BM25 Function、双集合、hybrid_search
 ```
 

@@ -36,7 +36,7 @@
     │  06_rag_advanced                            │
     │  ↓ 学习生产级高级架构（BM25/双集合/Mock→Real） │
     │                                             │
-    │  06_rag_evaluation                          │
+    │  07_rag_evaluation                          │
     │  ↓ 用 RAGAS 四大指标科学评估系统质量          │
     │                                             │
     └─────────────────────────────────────────────┘
@@ -274,7 +274,7 @@ API 封装让你把这些能力变成**可在其他项目中调用的模块**。
 
 | 文件 | 内容 | 难度 | 核心收获 |
 |------|------|------|---------|
-| [02_dual_collection_design.py](06_rag_advanced/02_dual_collection_design.py) | 双 Collection 设计 | ⭐⭐⭐⭐ | 文档切片 + QA 对双路检索 |
+| [02_dual_collection_design.py](06_rag_advanced/dual_collection_design.py) | 双 Collection 设计 | ⭐⭐⭐⭐ | 文档切片 + QA 对双路检索 |
 | [03_from_mock_to_real.py](06_rag_advanced/03_from_mock_to_real.py) | 从 Mock 到真实 Embedding | ⭐⭐⭐ | 理解教学代码到生产代码的跨越 |
 
 **学习路径**：
@@ -330,7 +330,7 @@ embedding_examples ──→ 01_milvus_basics ──→ 02_document_chunking
                                           ↓    ↓         ↓
                                      API封装  完整流水线  高级架构
                                                     ↓
-                                             06_rag_evaluation
+                                             07_rag_evaluation
                                                     ↓
                                               科学评估质量
 ```
@@ -420,7 +420,7 @@ rag_examples/
 ├── 04_rag_api/                  # RAG API 封装
 ├── 05_rag_pipeline/             # 完整 RAG 流水线
 ├── 06_rag_advanced/             # 高级检索技术
-├── 06_rag_evaluation/           # RAG 系统评估
+├── 07_rag_evaluation/           # RAG 系统评估
 ├── utils/                       # 共享工具模块
 ├── milvus_config.py             # 统一 Milvus 配置入口
 ├── convert_py_to_ipynb.py       # .py → .ipynb 转换脚本

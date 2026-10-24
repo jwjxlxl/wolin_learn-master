@@ -10,14 +10,25 @@
 #   3. 构建评估数据集 — 问题 + 标准答案 + 相关文档
 #   4. 自动化评估流程
 #
-# 注意：本模块提供评估框架的完整实现。如需使用 RAGAS 库进行更专业的评估：
-#   pip install ragas datasets
+# 注意：本模块提供两层评估能力：
+#   1. 离线原理版：纯关键词启发式，无需 API Key（用于理解指标如何计算）
+#   2. LLM 判定版：忠实度 / 答案相关性改用 LLM 判定（接近 ragas），
+#      并在文件末尾给出"对真实 RAG（Milvus + Qwen）做端到端评测"的完整示例
+# 如需使用 ragas 库进行更专业的评估：pip install ragas datasets
 # =============================================================================
 
 import os
+import re
+import sys
 import json
-import math
-from typing import List, Dict, Tuple
+from typing import List, Dict
+
+# Windows 控制台 UTF-8 编码（否则打印中文/emoji 会乱码）
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
 
 
 # =============================================================================
@@ -175,22 +186,31 @@ def explain_eval_dataset():
 class RAGEvaluator:
     """RAG 系统评估器
 
-    实现了简化的 RAGAS 风格评估指标，用于教学演示。
-    生产环境建议使用 ragas 库：pip install ragas
+    实现 RAGAS 风格的四大指标，支持两种计算方式：
+      - 离线关键词法（默认，无需 API Key，用于理解原理）
+      - LLM 判定法（传入 llm 后启用，忠实度 / 相关性接近 ragas 做法）
 
     用法：
+        # 离线原理版
         evaluator = RAGEvaluator()
-        evaluator.add_test_case(question, ground_truth, relevant_docs)
 
-        # 模拟一次 RAG 调用后
-        scores = evaluator.evaluate(
-            retrieved_docs=["doc1", "doc2"],
-            llm_answer="RAG 是..."
-        )
+        # LLM 判定版（需 ALIYUN_API_KEY）
+        evaluator = RAGEvaluator(llm=get_qwen_client())
+
+        evaluator.add_test_case(question, ground_truth, relevant_docs)
+        result = evaluator.evaluate_all(retrieval_fn, generation_fn)
+        evaluator.print_report(result)
     """
 
-    def __init__(self):
+    def __init__(self, llm=None):
+        """初始化评估器。
+
+        Args:
+            llm: 可选。LangChain 聊天模型（如 get_qwen_client() 返回的 ChatOpenAI）。
+                 传入后忠实度 / 答案相关性改用 LLM 判定；不传则用离线关键词法。
+        """
         self.test_cases: List[Dict] = []
+        self.llm = llm
 
     def add_test_case(self, question: str, ground_truth: str,
                       relevant_docs: List[str]):
@@ -354,6 +374,115 @@ class RAGEvaluator:
 
         return matched / len(keywords)
 
+    # ------------------------------------------------------------------
+    # LLM 判定版指标（接近 ragas 的"LLM-as-Judge"做法）
+    # ------------------------------------------------------------------
+
+    def _ask_llm(self, system_prompt: str, user_prompt: str):
+        """调用 LLM 做判断题，返回其输出文本；未配置 llm 时返回 None。"""
+        if self.llm is None:
+            return None
+        from langchain_core.messages import SystemMessage, HumanMessage
+        resp = self.llm.invoke([
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=user_prompt),
+        ])
+        return resp.content.strip()
+
+    def faithfulness_score_llm(self, llm_answer: str,
+                               retrieved_contents: List[str]) -> float:
+        """忠实度（LLM 判定版）：逐句判断回答是否有参考资料支撑。
+
+        对照 ragas 的 faithfulness：把回答拆成若干陈述句，由 LLM 判断
+        每句话是否能在检索到的上下文中找到依据，得分 = 有依据句数 / 总句数。
+        """
+        sentences = [s.strip() for s in llm_answer.replace("！", "。").replace("？", "。").split("。") if s.strip()]
+        if not sentences or not retrieved_contents:
+            return 0.0
+
+        context = "\n".join(f"[{i}] {c}" for i, c in enumerate(retrieved_contents, 1))
+        numbered = "\n".join(f"{i}. {s}" for i, s in enumerate(sentences, 1))
+
+        system_prompt = (
+            "你是 RAG 系统的忠实度（Faithfulness）评估员。"
+            "你的任务是判断答案的每一句话是否有'参考资料'的支撑，只依据参考资料判断，不考虑外部知识。"
+        )
+        user_prompt = (
+            f"参考资料：\n{context}\n\n"
+            f"待评估答案拆成的句子：\n{numbered}\n\n"
+            f"请逐句判断每句话是否有参考资料支撑，"
+            f"只输出 JSON 数组，元素为 1（有支撑）或 0（无支撑），"
+            f"长度必须等于句子数 {len(sentences)}，例如：[1, 0, 1]"
+        )
+
+        raw = self._ask_llm(system_prompt, user_prompt)
+        if raw is None:
+            return self.faithfulness_score(llm_answer, retrieved_contents)
+
+        digits = [int(ch) for ch in re.findall(r"[01]", raw)]
+        if not digits:
+            print("  ⚠️ 未解析出忠实度判定结果，回退关键词法")
+            return self.faithfulness_score(llm_answer, retrieved_contents)
+
+        # 对齐长度：不足补 0，多余截断
+        scores = (digits + [0] * len(sentences))[:len(sentences)]
+        return sum(scores) / len(sentences)
+
+    def answer_relevancy_llm(self, question: str, ground_truth: str,
+                             llm_answer: str) -> float:
+        """答案相关性（LLM 判定版）：对照问题 + 标准答案打分。
+
+        对照 ragas 的 answer relevancy：核心是回答是否切题、是否完整覆盖
+        标准答案的关键信息。这里让 LLM 直接输出 0~1 分数。
+        """
+        if not llm_answer:
+            return 0.0
+
+        system_prompt = (
+            "你是 RAG 系统的答案相关性（Answer Relevancy）评估员。"
+            "请对照'问题'和'标准答案'，评估'LLM 回答'是否切题、是否完整准确地回答了问题。"
+        )
+        user_prompt = (
+            f"问题：{question}\n"
+            f"标准答案：{ground_truth}\n"
+            f"LLM 回答：{llm_answer}\n\n"
+            f"请输出 0 到 1 之间的小数作为相关性得分（只输出数字，例如 0.85）。"
+        )
+
+        raw = self._ask_llm(system_prompt, user_prompt)
+        if raw is None:
+            return self.answer_relevancy_score(question, llm_answer)
+
+        m = re.search(r"(\d+(?:\.\d+)?)", raw)
+        if not m:
+            print("  ⚠️ 未解析出相关性分数，回退关键词法")
+            return self.answer_relevancy_score(question, llm_answer)
+
+        score = float(m.group(1))
+        if score > 1:
+            # LLM 可能误用百分制/十分制，做一次归一化
+            score = score / 100 if score > 100 else score / 10
+        return max(0.0, min(1.0, score))
+
+    def _faithfulness(self, llm_answer: str, retrieved_contents: List[str]) -> float:
+        """忠实度统一入口：有 LLM 用 LLM 判定，否则回退关键词法。"""
+        if self.llm is not None:
+            try:
+                return self.faithfulness_score_llm(llm_answer, retrieved_contents)
+            except Exception as e:
+                print(f"  ⚠️ LLM 忠实度评估失败，回退关键词法：{e}")
+        return self.faithfulness_score(llm_answer, retrieved_contents)
+
+    def _answer_relevancy(self, question: str, ground_truth: str,
+                          llm_answer: str) -> float:
+        """答案相关性统一入口：有 LLM 用 LLM 判定，否则回退关键词法。"""
+        if self.llm is not None:
+            try:
+                return self.answer_relevancy_llm(question, ground_truth, llm_answer)
+            except Exception as e:
+                print(f"  ⚠️ LLM 相关性评估失败，回退关键词法：{e}")
+        return self.answer_relevancy_score(question, llm_answer)
+
     def evaluate_single(self, question: str, ground_truth: str,
                         relevant_docs: List[str],
                         retrieved_docs: List[str],
@@ -363,7 +492,7 @@ class RAGEvaluator:
 
         Args:
             question: 测试问题
-            ground_truth: 标准答案
+            ground_truth: 标准答案（LLM 判定答案相关性时使用；离线关键词法下暂未使用）
             relevant_docs: 相关文档 ID 列表
             retrieved_docs: 系统检索到的文档 ID 列表
             llm_answer: LLM 生成的答案
@@ -379,8 +508,9 @@ class RAGEvaluator:
             "question": question[:40] + "..." if len(question) > 40 else question,
             "context_precision": self.context_precision(retrieved_docs, relevant_docs),
             "context_recall": self.context_recall(retrieved_docs, relevant_docs),
-            "faithfulness": self.faithfulness_score(llm_answer, retrieved_contents),
-            "answer_relevancy": self.answer_relevancy_score(question, llm_answer),
+            # 忠实度 / 相关性：配置了 LLM 用 LLM 判定，否则回退关键词法
+            "faithfulness": self._faithfulness(llm_answer, retrieved_contents),
+            "answer_relevancy": self._answer_relevancy(question, ground_truth, llm_answer),
         }
 
     def evaluate_all(self, retrieval_fn, generation_fn) -> Dict:
@@ -391,8 +521,12 @@ class RAGEvaluator:
             generation_fn: 生成函数 (question, contexts) -> answer
 
         Returns:
-            汇总结果
+            汇总结果（评估集为空时返回 None）
         """
+        if not self.test_cases:
+            print("⚠️ 评估集为空，请先调用 add_test_case 或 load_from_json 添加用例。")
+            return None
+
         results = []
         for case in self.test_cases:
             # 执行 RAG
@@ -426,6 +560,9 @@ class RAGEvaluator:
 
     def print_report(self, result: Dict):
         """打印评估报告"""
+        if result is None:
+            print("  没有可打印的评估结果（评估集为空）。")
+            return
         s = result["summary"]
         print("\n" + "=" * 60)
         print("  RAG 评估报告")
@@ -442,7 +579,6 @@ class RAGEvaluator:
      Answer Relevancy（相关性）： {s['answer_relevancy']:.2%}
 
   📊 综合得分：{s['overall']:.2%}
-  Recall@90
 """)
 
         # 评级
@@ -519,6 +655,128 @@ def evaluation_best_practices():
 
 
 # =============================================================================
+# 第六部分：对真实 RAG 做端到端评测（对接 05_rag_pipeline 的真实链路）
+# =============================================================================
+
+def run_real_rag_evaluation():
+    """对真实 RAG 做端到端评测（需 Milvus 运行 + ALIYUN_API_KEY）。
+
+    与前面 mock 演示的区别：
+      - 检索：真实 Milvus 混合检索（HybridRetriever），与 05_rag_pipeline 一致
+      - 生成：真实 Qwen LLM（get_qwen_client）
+      - 指标：忠实度 / 答案相关性改用 LLM 判定（接近 ragas）
+      - 文档 ID：插入时给每个切片分配稳定 doc_id，检索时读回，
+        这样评估数据集的 relevant_docs 才能引用，精确率 / 召回率才算得出来
+
+    说明：每条用例约 3 次 LLM 调用（生成 + 忠实度 + 相关性）。
+    """
+    print("\n" + "=" * 60)
+    print("第六部分：对真实 RAG 做端到端评测")
+    print("=" * 60)
+
+    # ---- 0. 检查云端 LLM（生成答案 + LLM 判定共用）----
+    try:
+        from utils.model_utils import get_qwen_client
+    except ImportError:
+        get_qwen_client = None
+
+    llm = get_qwen_client() if get_qwen_client else None
+    if llm is None:
+        print("\n✗ 未配置 ALIYUN_API_KEY，跳过真实 RAG 评测。")
+        print("  请先在 .env 配置 ALIYUN_API_KEY，再运行本段。")
+        return
+
+    # ---- 1. 连接 Milvus + 准备 Embedding ----
+    try:
+        from pymilvus import MilvusClient, DataType
+        from rag_examples.milvus_config import MILVUS_URI, MILVUS_DB_NAME
+        from rag_examples.utils.hybrid_retriever import HybridRetriever
+        from rag_examples.embedding_examples.aliyun_embedding import AliyunEmbedding
+        from langchain_core.messages import SystemMessage, HumanMessage
+
+        client = MilvusClient(uri=MILVUS_URI, db_name=MILVUS_DB_NAME)
+        emb = AliyunEmbedding()
+    except ImportError as e:
+        print(f"\n✗ 缺少依赖：{e}")
+        print("  请确认已安装 pymilvus / dashscope / langchain-core。")
+        return
+    except Exception as e:
+        print(f"\n✗ 连接 Milvus 失败：{e}")
+        print("  请先启动 Milvus 服务（Docker）。")
+        return
+
+    # ---- 2. 建库 + 插入（关键：给每个切片分配稳定 doc_id）----
+    retriever = HybridRetriever(
+        client, "rag_eval_demo", emb,
+        extra_fields=[{"name": "doc_id", "datatype": DataType.VARCHAR, "max_length": 64}],
+    )
+
+    documents = [
+        ("doc_0", "机器学习是人工智能的核心技术，通过数据训练模型实现预测和决策。"),
+        ("doc_1", "深度学习是机器学习的一个分支，使用多层神经网络进行表征学习。"),
+        ("doc_2", "自然语言处理让计算机理解、生成人类语言，应用于机器翻译和问答系统。"),
+        ("doc_3", "计算机视觉让计算机理解图像和视频，应用于人脸识别和自动驾驶。"),
+        ("doc_4", "推荐系统根据用户历史行为推荐内容，常用协同过滤算法。"),
+        ("doc_5", "知识图谱用图结构表示实体及其关系，支撑搜索和推理。"),
+    ]
+    doc_ids = [d[0] for d in documents]
+    texts = [d[1] for d in documents]
+
+    try:
+        dense_vectors = [emb.embed(t) for t in texts]
+        retriever.create_collection(dim=len(dense_vectors[0]))
+        retriever.insert(texts, dense_vectors,
+                         extra_data=[{"doc_id": i} for i in doc_ids])
+        print(f"  ✓ 知识库就绪（{len(texts)} 个带 doc_id 的切片）")
+    except Exception as e:
+        print(f"\n✗ 建库 / 插入失败：{e}")
+        return
+
+    # ---- 3. 构建评估数据集（question + ground_truth + relevant_docs）----
+    # 传入 llm：忠实度 / 相关性启用 LLM 判定（不再用关键词法）
+    evaluator = RAGEvaluator(llm=llm)
+    evaluator.add_test_case(
+        "什么是机器学习？",
+        "机器学习是人工智能的核心技术，通过数据训练模型实现预测和决策。",
+        ["doc_0"],
+    )
+    evaluator.add_test_case(
+        "深度学习和机器学习是什么关系？",
+        "深度学习是机器学习的一个分支，使用多层神经网络进行表征学习。",
+        ["doc_1", "doc_0"],
+    )
+    evaluator.add_test_case(
+        "自然语言处理有哪些应用？",
+        "自然语言处理应用于机器翻译和问答系统。",
+        ["doc_2"],
+    )
+
+    # ---- 4. 定义真实检索 / 生成函数（对接真实 RAG）----
+    def retrieval_fn(question):
+        """真实混合检索：返回 (doc_ids, doc_contents)。"""
+        query_vec = emb.embed(question)
+        hits = retriever.hybrid_search(question, query_vec, top_k=3)
+        ids = [h["entity"]["doc_id"] for h in hits]
+        contents = [h["entity"][retriever.text_field] for h in hits]
+        return ids, contents
+
+    def generation_fn(question, contexts):
+        """真实 LLM 生成：用检索到的上下文组装 Prompt 后调用 Qwen。"""
+        context_block = "\n".join(f"[{i}] {c}" for i, c in enumerate(contexts, 1))
+        user_prompt = f"参考资料：\n{context_block}\n\n问题：{question}"
+        resp = llm.invoke([
+            SystemMessage(content="你是严谨的知识问答助手，只能根据参考资料回答，禁止编造。"),
+            HumanMessage(content=user_prompt),
+        ])
+        return resp.content
+
+    # ---- 5. 运行评估 ----
+    print("\n  开始逐条评估（真实检索 + 真实生成 + LLM 判定）...")
+    result = evaluator.evaluate_all(retrieval_fn, generation_fn)
+    evaluator.print_report(result)
+
+
+# =============================================================================
 # 主程序：完整评估演示
 # =============================================================================
 
@@ -536,9 +794,9 @@ if __name__ == "__main__":
     # 3. 讲解数据集构建
     # explain_eval_dataset()
 
-    # 4. 演示评估计算
+    # 4. 演示评估计算（离线原理版：关键词法，无需 API Key）
     print("\n" + "=" * 60)
-    print("第四部分：评估演示")
+    print("第四部分：评估演示（离线原理版，无需 API Key）")
     print("=" * 60)
 
     evaluator = RAGEvaluator()
@@ -594,9 +852,13 @@ if __name__ == "__main__":
     # 5. 最佳实践
     # evaluation_best_practices()
 
+    # 6. 对真实 RAG 做端到端评测（需 Milvus + ALIYUN_API_KEY）
+    run_real_rag_evaluation()
+
     print("\n" + "=" * 70)
     print("  评估学习完成！你可以：")
-    print("  1. 用 RAGEvaluator 评估你的 rag_demo 项目")
-    print("  2. 对比不同配置下的评估得分")
-    print("  3. 安装 ragas 库进行更专业的评估")
+    print("  1. 离线原理版：用关键词法理解四大指标的计算（无需 API Key）")
+    print("  2. LLM 判定版：配置 ALIYUN_API_KEY 后，用 LLM 判定忠实度/相关性")
+    print("  3. 真实评测：用 run_real_rag_evaluation() 评你的 Milvus+Qwen RAG")
+    print("  4. 安装 ragas 库进行更专业的评估")
     print("=" * 70)

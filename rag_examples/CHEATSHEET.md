@@ -143,7 +143,7 @@ embedding_examples → Embedding 基础（API + 本地 + 对比）
 04_rag_api        → RAG API 封装
 05_rag_pipeline   → 完整 RAG 管道
 06_rag_advanced   → 高级检索（BM25 Function/稀疏向量/双集合/RRF vs 加权）
-06_rag_evaluation → RAG 评估（RAGAS/忠实度/相关性）
+07_rag_evaluation → RAG 评估（RAGAS/忠实度/相关性）
 rag_demo          → 综合实战项目
 ```
 

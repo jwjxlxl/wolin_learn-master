@@ -30,70 +30,24 @@ def demo_database_operations():
     DEMO_DB = "wolin_learn_demo"  # 演示用的临时数据库名
 
     # ── 0-A：列出所有数据库 ──
-    print(f"\n-- 示例 0-A: 列出所有数据库")
     client = MilvusClient(uri=MILVUS_URI)
     databases = client.list_databases()
     print(f"当前所有数据库：{databases}")
-    print(f"配置文件中的 MILVUS_DB_NAME：{MILVUS_DB_NAME}")
 
     # ── 0-B：创建新数据库 ──
-    print(f"\n-- 示例 0-B: 创建新数据库")
     # 如果演示库已存在则先清理（避免上次运行残留）
     if DEMO_DB in databases:
-        print(f"数据库 '{DEMO_DB}' 已存在，先删除旧版本...")
         client.drop_database(DEMO_DB)
     client.create_database(DEMO_DB)
-    print(f"✓ 数据库 '{DEMO_DB}' 创建成功")
     databases = client.list_databases()
-    print(f"更新后的所有数据库：{databases}")
 
     # ── 0-C：连接指定数据库 ──
-    print(f"\n-- 示例 0-C: 连接指定数据库")
     # 方式：创建客户端时传入 db_name 参数
     demo_client = MilvusClient(uri=MILVUS_URI, db_name=DEMO_DB)
     # 验证当前连接到了正确的数据库
     collections = demo_client.list_collections()
-    print(f"已连接到数据库 '{DEMO_DB}'")
     print(f"当前数据库内的集合：{collections}（应为空列表）")
 
-    print(f"\n💡 两种指定数据库的方式：")
-    print(f"   1. 创建客户端时指定：MilvusClient(uri=..., db_name='my_db')")
-    print(f"   2. 使用 use_database() 切换：client.use_database('my_db')")
-    print(f"   如果都不指定，默认使用 'default' 数据库。")
-
-    # ── 0-D：清理演示数据库 ──
-    print(f"\n-- 示例 0-D: 清理演示数据库")
-    demo_client.drop_database(DEMO_DB)
-    print(f"✓ 演示数据库 '{DEMO_DB}' 已删除")
-    databases = client.list_databases()
-    print(f"当前所有数据库：{databases}")
-
-    print(f"\n{'─' * 50}")
-    print(f"💡 小结：创建 Collection 前，务必确认已连接到正确的数据库。")
-    print(f"   如果在不存在的数据库中操作 Collection，会触发异常。")
-
-
-
-def connect_with_auth():
-    """带用户名密码认证的连接
-
-    适用于生产环境，需要权限控制的场景。
-    """
-    host = "localhost"
-    port = "19530"
-    uri = f"http://{host}:{port}"
-
-    user = "root"
-    password = "Milvus"  # Milvus 默认密码，生产环境应通过环境变量读取
-
-    print(f"正在连接到 {uri}...")
-    print(f"用户：{user}")
-
-    client = MilvusClient(uri=uri, user=user, password=password)
-
-    print("✓ 连接成功！")
-
-    return client
 
 
 def connection_parameters_explained():
@@ -134,38 +88,8 @@ URI 格式说明：
 """)
 
 
-def check_connection_health():
-    """检查 Milvus 连接健康状态"""
-    client = MilvusClient(uri=MILVUS_URI)
-
-    checks = {
-        "版本检查": lambda: client.get_server_version(),
-        "连接检查": lambda: client.list_collections() is not None,
-    }
-
-    print("执行健康检查...\n")
-
-    for name, check_func in checks.items():
-        try:
-            result = check_func()
-            print(f"[OK] {name}: {result}")
-        except Exception as e:
-            print(f"[ERROR] {name}: {e}")
-
-    print("\n[OK] 连接状态正常")
-
-    return True
-
-
 if __name__ == "__main__":
-    print("=" * 60)
-    print("  连接 Milvus")
-    print("=" * 60)
-    print(f"当前 Milvus URI: {MILVUS_URI}")
-    print()
 
     # 示例 0：数据库级别操作（创建/选择/删除数据库）
     demo_database_operations()
 
-    # 检查连接
-    check_connection_health()

@@ -214,9 +214,6 @@ def insert_single_data():
 
     适合实时写入场景，但性能较低。
     """
-    print("=" * 60)
-    print("示例 5: 单条插入数据")
-    print("=" * 60)
 
     from pymilvus import MilvusClient
 
@@ -309,9 +306,7 @@ def insert_with_custom_fields():
 
     演示如何插入包含多个标量字段的数据。
     """
-    print("=" * 60)
-    print("示例 7: 自定义字段 Collection 插入")
-    print("=" * 60)
+
 
     from pymilvus import MilvusClient, FieldSchema, CollectionSchema, DataType
     from pymilvus.milvus_client import IndexParams
@@ -390,121 +385,7 @@ def insert_with_custom_fields():
     return client, collection_name
 
 
-def insert_with_custom_id():
-    """演示手动指定 ID 的插入方式
-
-    适用于需要同步外部 ID 的场景。
-    """
-    print("=" * 60)
-    print("示例 8: 手动指定 ID 插入")
-    print("=" * 60)
-
-    from pymilvus import MilvusClient
-    from pymilvus.milvus_client import IndexParams
-
-    client = MilvusClient(uri=MILVUS_URI)
-    collection_name = "custom_id_docs"
-
-    if client.has_collection(collection_name):
-        client.drop_collection(collection_name)
-
-    client.create_collection(
-        collection_name=collection_name,
-        dimension=DEFAULT_DIMENSION,
-        auto_id=False,
-        metric_type="COSINE",
-    )
-
-    documents = prepare_test_data()
-    texts = [d["content"] for d in documents]
-    vectors = generate_mock_embeddings(texts)
-
-    print(f"手动指定 ID 插入数据...\n")
-
-    data_to_insert = []
-    custom_ids = [1001, 1002, 1003, 1004, 1005]
-
-    for i, doc in enumerate(documents):
-        data_to_insert.append({
-            "id": custom_ids[i],
-            "content": doc["content"],
-            "vector": vectors[i],
-        })
-
-    result = client.insert(collection_name=collection_name, data=data_to_insert)
-    print(f"✓ 插入完成")
-    print(f"  返回的 ID：{result.get('ids', [])}")
-
-    print("\n检查索引...")
-    index_list = client.list_indexes(collection_name=collection_name)
-    if not index_list:
-        index_params = IndexParams()
-        index_params.add_index(field_name="vector", index_type="FLAT", metric_type="COSINE")
-        client.create_index(collection_name=collection_name, index_params=index_params)
-        print("索引已创建")
-    else:
-        print("索引已存在")
-
-    print("加载集合...")
-    client.load_collection(collection_name=collection_name)
-
-    print("验证：通过 ID 查询 id=1003 的数据")
-    res = client.query(
-        collection_name=collection_name,
-        filter="id == 1003",
-        output_fields=["content"],
-    )
-
-    if res:
-        print(f"  查询结果：{res[0]['content'][:30]}...")
-
-    return client, collection_name
-
-
-def insert_best_practices():
-    """插入数据的最佳实践建议"""
-    print("=" * 60)
-    print("示例 9: 插入数据最佳实践")
-    print("=" * 60)
-
-    print(f"""
-┌─────────────────────────────────────────────────────────┐
-│ 插入数据最佳实践                                        │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│ 1. 批量插入优于单条插入                                  │
-│    - 批量大小建议：100-1000 条/批                         │
-│    - 太少：网络开销大                                   │
-│    - 太多：内存占用高，失败重试成本大                   │
-│                                                         │
-│ 2. 向量维度必须匹配                                      │
-│    - 插入前检查 Collection 的 dimension                   │
-│    - 向量长度 != dimension 会报错（当前：{DEFAULT_DIMENSION} 维）        │
-│                                                         │
-│ 3. 数据类型要一致                                        │
-│    - VARCHAR 字段不能超过 max_length                     │
-│    - INT64 字段必须是整数                               │
-│                                                         │
-│ 4. 错误处理                                              │
-│    - 捕获异常并记录失败的 data                          │
-│    - 实现重试机制                                       │
-│                                                         │
-│ 5. 性能优化                                              │
-│    - 插入前不创建索引（插入完成后再建索引）             │
-│    - 大量数据插入时考虑分区                             │
-│                                                         │
-│ 6. ID 选择策略                                           │
-│    - 无需外部同步：用 auto_id=True（推荐）              │
-│    - 需要同步外部 ID：用 auto_id=False                  │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
-""")
-
-
 if __name__ == "__main__":
-    print("\n" + "=" * 70)
-    print("  Milvus 基础 - 插入数据")
-    print("=" * 70 + "\n")
 
     # explain_embedding()
     # print()
@@ -522,9 +403,3 @@ if __name__ == "__main__":
     #
     # insert_with_custom_id()
     # print()
-    #
-    # insert_best_practices()
-
-    print("\n" + "=" * 70)
-    print("  数据插入学习完成！接下来：04_create_index.py（创建索引）")
-    print("=" * 70)

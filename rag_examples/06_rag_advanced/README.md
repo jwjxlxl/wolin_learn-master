@@ -25,7 +25,7 @@
 
 | # | 文件 | 内容 | 难度 | 核心收获 |
 |---|------|------|------|---------|
-| 1 | [02_dual_collection_design.py](02_dual_collection_design.py) | 双集合 RAG 架构 | ⭐⭐⭐⭐ | 文档切片 + QA 对并行检索 |
+| 1 | [02_dual_collection_design.py](dual_collection_design.py) | 双集合 RAG 架构 | ⭐⭐⭐⭐ | 文档切片 + QA 对并行检索 |
 | 2 | [03_from_mock_to_real.py](03_from_mock_to_real.py) | Mock → Real 过渡 | ⭐⭐⭐ | UniversalEmbedder、迁移检查清单 |
 
 ---
@@ -329,7 +329,7 @@ vectors = embedder.embed_batch(documents)
 # 确保 Milvus 2.4+ 已启动
 docker ps | grep milvus
 
-python 06_rag_advanced/02_dual_collection_design.py
+python 06_rag_advanced/dual_collection_design.py
 python 06_rag_advanced/03_from_mock_to_real.py
 ```
 

@@ -70,7 +70,7 @@
 | 04 | `04_rag_api/` | RAG 检索 API + 问答 API 封装 | Qwen |
 | 05 | `05_rag_pipeline/` | RAG 最小版 / 分步详解 / 完整流程 | Qwen |
 | 06 | `06_rag_advanced/` | 混合检索进阶 / 双集合设计 / Mock→Real | Qwen |
-| 07 | `06_rag_evaluation/` | RAGAS 四指标评估 | 无需模型 |
+| 07 | `07_rag_evaluation/` | RAGAS 四指标评估 | 无需模型（LLM 判定需 Qwen） |
 | — | `embedding_examples/` | Embedding 基础 / 阿里云 / 本地 / 对比 | 阿里云 API |
 
 - 配置入口：`milvus_config.py`（`DEFAULT_DIMENSION = 1024`、`MILVUS_URI`、`MILVUS_DB_NAME`）

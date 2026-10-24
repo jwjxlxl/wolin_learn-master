@@ -6,8 +6,8 @@
 #
 # 核心概念：
 #   - 索引 = 加速检索的数据结构（类比"书的目录"）
-#   - FLAT / IVF_FLAT / IVF_PQ / HNSW 索引类型对比
-#   - 索引参数调优
+#   - FLAT / IVF_FLAT / HNSW 三种常用索引的创建与检索
+#   - 索引选型与参数调优
 # =============================================================================
 
 import random
@@ -67,333 +67,160 @@ def insert_test_data(client, collection_name):
     client.insert(collection_name, data_to_insert)
     client.flush(collection_name=collection_name)
 
-    print(f"✓ 已插入 {len(documents)} 条测试数据")
+    print(f"  ✓ 已插入 {len(documents)} 条测试数据")
+
+
+def _demo_index(index_type, index_params=None, search_params=None, query="测试查询"):
+    """三种索引共用的演示骨架：建集合 → 插数据 → 建索引 → 检索。
+
+    FLAT / IVF_FLAT / HNSW 的流程完全一致，只有索引类型和参数不同，
+    故抽成这一个函数，避免三处复制粘贴。
+
+    关键点：`create_collection(dimension=...)` 会自动建一个 AUTOINDEX 索引并加载集合，
+    要换成指定索引类型，需先 release + drop 掉 AUTOINDEX，再 create_index。
+
+    参数:
+        index_type: 索引类型（FLAT / IVF_FLAT / HNSW）
+        index_params: 建索引参数（如 {"nlist": 4} 或 {"M": 16, "efConstruction": 200}）
+        search_params: 检索参数（如 {"params": {"nprobe": 3}} 或 {"params": {"ef": 64}}）
+        query: 检索用的查询词
+    """
+    collection_name = f"{index_type.lower()}_index_demo"
+    client = MilvusClient(uri=MILVUS_URI)
+
+    # 1. 建集合（先删旧集合，保证可重复运行）
+    if client.has_collection(collection_name):
+        client.drop_collection(collection_name)
+
+    client.create_collection(
+        collection_name=collection_name,
+        dimension=DEFAULT_DIMENSION,
+        auto_id=True,
+        metric_type="COSINE",
+    )
+
+    # 2. 插入测试数据
+    insert_test_data(client, collection_name)
+
+    # 3. 换掉自动建的 AUTOINDEX，改成指定索引类型
+    client.release_collection(collection_name=collection_name)
+    for index_name in client.list_indexes(collection_name=collection_name):
+        client.drop_index(collection_name=collection_name, index_name=index_name)
+
+    index_params_obj = client.prepare_index_params()
+    add_index_kwargs = {}
+    if index_params:
+        add_index_kwargs["params"] = index_params
+    index_params_obj.add_index(
+        field_name="vector",
+        index_type=index_type,
+        metric_type="COSINE",
+        **add_index_kwargs,
+    )
+    client.create_index(collection_name=collection_name, index_params=index_params_obj)
+
+    index_info = client.describe_index(collection_name, "vector")
+    print(f"  ✓ {index_type} 索引创建完成（度量：{index_info['metric_type']}）")
+
+    # 4. 加载并检索
+    client.load_collection(collection_name=collection_name)
+    test_vector = generate_mock_embeddings([query])
+
+    search_kwargs = {}
+    if search_params:
+        search_kwargs["search_params"] = search_params
+    res = client.search(
+        collection_name=collection_name,
+        data=[test_vector],
+        limit=3,
+        output_fields=["content"],
+        **search_kwargs,
+    )
+
+    for i, hit in enumerate(res[0]):
+        print(f"  {i+1}. 相似度：{hit['distance']:.4f} | 内容：{hit['entity']['content'][:20]}...")
+
+    return client, collection_name
 
 
 def create_flat_index():
-    """创建 FLAT 索引（精确搜索）
-
-    FLAT = 不建索引，暴力搜索。
-    适合数据量小（<1 万条）、要求 100% 精度的场景。
-    """
-    print("=" * 60)
-    print("示例 2: FLAT 索引（精确搜索）")
-    print("=" * 60)
-
-    client = MilvusClient(uri=MILVUS_URI)
-    client.use_database("ai0626")
-    collection_name = "flat_index_demo"
-
-    if client.has_collection(collection_name):
-        client.drop_collection(collection_name)
-
-    client.create_collection(
-        collection_name=collection_name,
-        dimension=DEFAULT_DIMENSION,
-        auto_id=True,
-        metric_type="COSINE",
-    )
-
-    insert_test_data(client, collection_name)
-
-    print("\n创建 FLAT 索引...")
-
-    # 检查表上目前已经有的索引，如果有，先删除
-    index_list = client.list_indexes(collection_name=collection_name)
-    client.release_collection(collection_name)
-    if index_list:
-        for index_name in index_list:
-            client.drop_index(collection_name=collection_name, index_name=index_name)
-        print(f"  已删除现有索引: {index_list}")
-
-    index_params = client.prepare_index_params()
-    index_params.add_index(
-        # 在哪个字段上添加索引
-        field_name="vector",
-        # 指定索引的类型
-        index_type="FLAT",
-        # 指定度量的类型
-        metric_type="COSINE",
-    )
-
-    client.create_index(collection_name=collection_name, index_params=index_params)
-    print("✓ FLAT 索引创建完成")
-
-    index_info = client.describe_index(collection_name, "vector")
-    print(f"  索引类型：{index_info['index_type']}")
-    print(f"  度量类型：{index_info['metric_type']}")
-
-    print("\n测试检索（FLAT 索引）：")
-    test_vector = generate_mock_embeddings(["Milvus"])
-
-    # 检索前先加载数据
-    client.load_collection(collection_name)
-
-    res = client.search(
-        collection_name=collection_name,
-        data=[test_vector],
-        limit=3,
-        # 指定返回的字段
-        output_fields=["id", "content"],
-    )
-
-    for i, hit in enumerate(res[0]):
-        print(f"  {i+1}. 相似度：{hit['distance']:.4f} | 内容：{hit['entity']['content'][:20]}...")
-
-    return client, collection_name
+    """FLAT 索引（精确搜索）—— 不建索引，暴力比较，100% 精度"""
+    print(f"\n-- 示例 1: FLAT 索引（精确搜索）")
+    print("   FLAT 不建索引、暴力比对，适合数据量小（<1 万条）、要求 100% 精度的场景。")
+    return _demo_index("FLAT")
 
 
 def create_ivf_flat_index():
-    """创建 IVF_FLAT 索引（倒排文件索引）
-
-    将向量空间分成 nlist 个簇，只在相关簇内搜索。
-    适合 1 万-100 万条数据的中等规模场景。
-    """
-    print("=" * 60)
-    print("示例 3: IVF_FLAT 索引（倒排文件索引）")
-    print("=" * 60)
-
-    client = MilvusClient(uri=MILVUS_URI)
-    collection_name = "ivf_flat_index_demo"
-
-    if client.has_collection(collection_name):
-        client.drop_collection(collection_name)
-
-    client.create_collection(
-        collection_name=collection_name,
-        dimension=DEFAULT_DIMENSION,
-        auto_id=True,
-        metric_type="COSINE",
-    )
-
-    insert_test_data(client, collection_name)
-
-    print("\n创建 IVF_FLAT 索引...")
-
-    client.release_collection(collection_name=collection_name)
-
-    index_list = client.list_indexes(collection_name=collection_name)
-    if index_list:
-        for index_name in index_list:
-            client.drop_index(collection_name=collection_name, index_name=index_name)
-        print(f"  已删除现有索引: {index_list}")
-
-    nlist = 4
-    index_params = client.prepare_index_params()
-    index_params.add_index(
-        field_name="vector",
-        index_type="IVF_FLAT",
-        metric_type="COSINE",
-        params={"nlist": nlist},
-    )
-
-    client.create_index(collection_name=collection_name, index_params=index_params)
-
-    print(f"✓ IVF_FLAT 索引创建完成（nlist={nlist}）")
-
-    client.load_collection(collection_name=collection_name)
-
-    index_info = client.describe_index(collection_name, "vector")
-    print(f"  索引类型：{index_info['index_type']}")
-    print(f"  度量类型：{index_info['metric_type']}")
-
-    print("\n测试检索（IVF_FLAT 索引）：")
-    test_vector = generate_mock_embeddings(["测试查询"])
-
-    res = client.search(
-        collection_name=collection_name,
-        data=[test_vector],
-        limit=3,
-        output_fields=["content"],
+    """IVF_FLAT 索引（倒排文件）—— 把向量分 nlist 个簇，只在相关簇内搜索"""
+    print(f"\n-- 示例 2: IVF_FLAT 索引（倒排文件索引）")
+    print("   把向量空间分成 nlist 个簇，只在相关簇内搜索，适合 1 万-100 万条。")
+    return _demo_index(
+        "IVF_FLAT",
+        index_params={"nlist": 4},
         search_params={"params": {"nprobe": 3}},
     )
 
-    for i, hit in enumerate(res[0]):
-        print(f"  {i+1}. 相似度：{hit['distance']:.4f} | 内容：{hit['entity']['content'][:20]}...")
-
-    return client, collection_name
-
 
 def create_hnsw_index():
-    """创建 HNSW 索引（图索引，高精度）
-
-    HNSW = Hierarchical Navigable Small World。
-    通过构建多层图结构实现快速导航搜索。
-    适合高精度、低延迟场景。
-    """
-    print("=" * 60)
-    print("示例 4: HNSW 索引（图索引，高精度）")
-    print("=" * 60)
-
-    client = MilvusClient(uri=MILVUS_URI)
-    collection_name = "hnsw_index_demo"
-
-    if client.has_collection(collection_name):
-        client.drop_collection(collection_name)
-
-    index_params = client.prepare_index_params()
-    index_params.add_index(
-        field_name="vector",
-        index_type="HNSW",
-        metric_type="COSINE",
-        params={
-            "M": 16,
-            "efConstruction": 200,
-        },
-    )
-
-    client.create_collection(
-        collection_name=collection_name,
-        dimension=DEFAULT_DIMENSION,
-        auto_id=True,
-        metric_type="COSINE",
-        index_params=index_params,
-    )
-
-    print("✓ 集合和 HNSW 索引创建完成")
-
-    insert_test_data(client, collection_name)
-
-    index_info = client.describe_index(collection_name, "vector")
-    print(f"  索引类型：{index_info['index_type']}")
-    print(f"  度量类型：{index_info['metric_type']}")
-
-    print("\n测试检索（HNSW 索引）：")
-    test_vector = generate_mock_embeddings(["测试查询"])
-
-    res = client.search(
-        collection_name=collection_name,
-        data=[test_vector],
-        limit=3,
-        output_fields=["content"],
+    """HNSW 索引（图索引）—— 多层图导航，高精度低延迟"""
+    print(f"\n-- 示例 3: HNSW 索引（图索引，高精度）")
+    print("   可导航小世界图，多层图快速导航，精度最高、延迟最低，但内存占用较高。")
+    return _demo_index(
+        "HNSW",
+        index_params={"M": 16, "efConstruction": 200},
         search_params={"params": {"ef": 64}},
     )
 
-    for i, hit in enumerate(res[0]):
-        print(f"  {i+1}. 相似度：{hit['distance']:.4f} | 内容：{hit['entity']['content'][:20]}...")
-
-    return client, collection_name
-
 
 def index_types_explained():
-    """详解 Milvus 支持的索引类型"""
-    print("=" * 60)
-    print("示例 5: 索引类型详解")
-    print("=" * 60)
+    """索引选型表 + 参数调优"""
+    print(f"\n-- 示例 4: 索引选型与参数调优")
 
-    print("""
-┌─────────────────────────────────────────────────────────┐
-│ Milvus 索引类型对比                                      │
-├──────────────┬────────────────┬─────────────────────────┤
-│    索引类型   │    适用场景     │         特点             │
-├──────────────┼────────────────┼─────────────────────────┤
-│ FLAT         │ <1 万条数据     │ 精确搜索，无需训练       │
-│              │ 小数据量场景    │ 100% 精度，无误差         │
-├──────────────┼────────────────┼─────────────────────────┤
-│ IVF_FLAT     │ 1 万 -100 万条   │ 倒排文件索引             │
-│              │ 通用场景       │ 将向量分 nlist 组         │
-│              │                │ 只在相关组内搜索         │
-├──────────────┼────────────────┼─────────────────────────┤
-│ IVF_PQ       │ >100 万条       │ 乘积量化索引             │
-│              │ 超大数据量     │ 向量压缩存储             │
-│              │                │ 有一定精度损失           │
-├──────────────┼────────────────┼─────────────────────────┤
-│ IVF_SQ8      │ 内存受限场景    │ 标量量化索引             │
-│              │                │ 8bit 压缩存储             │
-├──────────────┼────────────────┼─────────────────────────┤
-│ HNSW         │ 高精度场景      │ 可导航小世界图           │
-│              │ 对延迟敏感     │ 精度最高，速度最快       │
-│              │                │ 内存占用较高             │
-├──────────────┼────────────────┼─────────────────────────┤
-│ ANNOY        │ 读多写少场景    │ 近似最近邻搜索           │
-│              │                │ 不支持动态增删           │
-└──────────────┴────────────────┴─────────────────────────┘
+    print(f"""
+┌────────────┬──────────────┬──────────────────────┬───────────────┬────────┐
+│ 索引类型    │ 适用数据量    │ 特点                  │ 延迟(100万向量) │ 召回率 │
+├────────────┼──────────────┼──────────────────────┼───────────────┼────────┤
+│ FLAT       │ <1 万        │ 精确暴力搜索，无需训练  │ ~500ms        │ 100%   │
+│ IVF_FLAT   │ 1万-100万    │ 倒排文件，分 nlist 簇  │ ~50ms         │ 95-98% │
+│ IVF_PQ     │ >100 万      │ 乘积量化，压缩存储      │ ~20ms         │ 90-95% │
+│ HNSW       │ 高精度低延迟  │ 图导航，精度高速度快    │ ~10ms         │ 98-99% │
+└────────────┴──────────────┴──────────────────────┴───────────────┴────────┘
 
-💡 索引选择建议:
+💡 选型建议：
+  1. <1 万条、要 100% 精度          → FLAT
+  2. 1万-100万条、通用场景          → IVF_FLAT（nlist = √N）
+  3. >100万条、可接受轻微精度损失    → IVF_PQ
+  4. 高精度、低延迟、内存充裕        → HNSW
+  5. 不确定怎么选                    → AUTOINDEX（Milvus 自动选型，本示例 1-3 里被换掉的那个）
 
-1. 数据量 < 1 万：→ FLAT
-2. 数据量 1 万 - 100 万：→ IVF_FLAT（nlist = √N）
-3. 数据量 > 100 万：→ IVF_PQ
-4. 高精度要求：→ HNSW
-5. 内存受限：→ IVF_SQ8
-6. autoIndex: 自动索引
-
-📊 参数调优:
-
-IVF_FLAT:
-  - nlist: √N（N 为向量数）
-  - nprobe: √nlist（搜索时探查的分组数）
-
-HNSW:
-  - M: 16-64（默认 16）
-  - efConstruction: 200-400（构建时）
-  - ef: 64-256（搜索时）
+📊 参数调优：
+  IVF_FLAT:  nlist = √N（分簇数，N 为向量总数）；nprobe = √nlist（搜索时探查的簇数，越大越准越慢）
+  HNSW:      M = 16-64（每个点的连接数）；efConstruction = 200-400（构建时）；ef = 64-256（搜索时）
 """)
+
+    print("⚡ 加速原理（100 万向量）：")
+    print("   FLAT：    逐个比较 100 万次 → ~500ms")
+    print("   IVF_FLAT：只比较相关簇，约 1 万次 → ~50ms（约 10 倍加速）")
+    print("   HNSW：    图导航只需几步 → ~10ms（约 50 倍加速）")
 
 
 def index_management():
-    """索引的管理操作
+    """索引管理操作：查看 / 删除 / 重建"""
+    print(f"\n-- 示例 5: 索引管理操作")
 
-    查看、删除、重建索引。
-    """
-    print("=" * 60)
-    print("示例 6: 索引管理操作")
-    print("=" * 60)
+    print("1. 查看索引：")
+    print("   client.list_indexes(collection_name)            # 列出所有索引名")
+    print("   client.describe_index(collection_name, 'vector')  # 查看某索引详情")
 
-    client = MilvusClient(uri=MILVUS_URI)
-    collection_name = "flat_index_demo"
-
-    print("1. 查看索引信息：")
-    index_list = client.list_indexes(collection_name)
-    if index_list:
-        index_info = client.describe_index(collection_name, "vector")
-        print(f"   索引类型：{index_info['index_type']}")
-        print(f"   字段名：{index_info['field_name']}")
-    else:
-        print("   暂无索引")
-    print()
-
-    print("2. 删除索引（示例代码）：")
+    print("\n2. 删除索引（需先 release，不能删除已加载集合上的索引）：")
+    print("   client.release_collection(collection_name)")
     print("   client.drop_index(collection_name, 'vector')")
-    print()
 
-    print("3. 重建索引场景：")
-    print("""
-   何时需要重建索引？
-   - 数据大量更新后
-   - 索引参数需要调整
-   - 索引损坏或异常
-
-   重建步骤：
-   1. 删除旧索引：client.drop_index(...)
-   2. 创建新索引：client.create_index(...)
-   3. 等待索引构建完成
-""")
-
-
-def index_performance_comparison():
-    """索引性能对比说明"""
-    print("=" * 60)
-    print("示例 7: 索引性能对比")
-    print("=" * 60)
-
-    print(f"""
-┌─────────────────────────────────────────────────────────┐
-│ 不同索引类型性能对比（100 万向量，{DEFAULT_DIMENSION} 维）                   │
-├──────────────┬─────────────┬────────────┬───────────────┤
-│    索引类型   │  构建时间    │  检索延迟   │   召回率      │
-├──────────────┼─────────────┼────────────┼───────────────┤
-│ FLAT         │ 无需构建     │  ~500ms    │   100%       │
-│ IVF_FLAT     │   ~30 秒     │  ~50ms     │   95-98%     │
-│ IVF_PQ       │   ~20 秒     │  ~20ms     │   90-95%     │
-│ HNSW         │   ~60 秒     │  ~10ms     │   98-99%     │
-└──────────────┴─────────────┴────────────┴───────────────┘
-
-💡 检索速度对比（100 万向量）:
-- FLAT:    需要比较 100 万次 → 500ms
-- IVF_FLAT: 只需比较 1 万 次 → 50ms (10 倍加速)
-- HNSW:    图导航只需几步 → 10ms (50 倍加速)
-""")
+    print("\n3. 何时需要重建索引：")
+    print("   - 数据大量更新后")
+    print("   - 需要调整索引参数（如增大 nlist）")
+    print("   - 索引损坏或异常")
+    print("   重建 = 删除旧索引 → create_index 建新索引 → load_collection")
 
 
 if __name__ == "__main__":
@@ -404,19 +231,15 @@ if __name__ == "__main__":
     create_flat_index()
     print()
 
-    # create_ivf_flat_index()
-    # print()
-    #
-    # create_hnsw_index()
-    # print()
-    #
-    # index_types_explained()
-    # print()
-    #
+    create_ivf_flat_index()
+    print()
+
+    create_hnsw_index()
+    print()
+
+    index_types_explained()
+
     # index_management()
-    # print()
-    #
-    # index_performance_comparison()
 
     print("\n" + "=" * 70)
     print("  索引学习完成！接下来：02_document_chunking（文档切片）")

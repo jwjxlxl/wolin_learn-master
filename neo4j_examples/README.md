@@ -4,14 +4,18 @@
 
 ```
 neo4j_examples/
-├── neo4j_cypher_complete.cypher   # Neo4j Cypher 语法大全
-├── neo4j_python_guide.py          # Python 操作 Neo4j 指南
+├── neo4j_cypher_complete.cypher       # Neo4j Cypher 语法大全（英文电影版）
+├── neo4j_cypher_complete_v2.cypher    # Neo4j Cypher 语法大全（国产电影教学版）
+├── neo4j_python_guide.py              # Python 操作 Neo4j 指南
 ├── data/
-│   └── movies.csv                 # 批量导入示例数据
-├── requirements.txt               # Python 依赖
-├── .env.example                   # 环境变量配置示例
-└── README.md                      # 本说明文件
+│   └── movies.csv                     # 批量导入示例数据
+└── README.md                          # 本说明文件
 ```
+
+依赖与环境变量已整合到项目根目录统一管理：
+
+- **依赖**：根目录 `requirements.txt`（新增 `neo4j>=5.0.0`）
+- **环境变量**：根目录 `.env`（`NEO4J_URI` / `NEO4J_USER` / `NEO4J_PASSWORD` / `NEO4J_DATABASE`）
 
 ## Neo4j 核心概念白话版
 
@@ -235,23 +239,22 @@ Neo4j Cypher 语法大全，包含 18 个章节的循序渐进教程：
 Python 操作 Neo4j 的完整指南，包含：
 
 - **Neo4jClient 类**: 封装的客户端，提供简洁的 API
-- **CRUD 操作**: 创建、读取、更新、删除节点和关系
-- **MERGE 操作**: 查找或创建
-- **索引和约束**: 创建和管理
-- **复杂查询**: 合作网络、统计分析、最短路径
-- **进阶示例**: CSV 批量导入、全文检索、向量检索、GraphRAG 雏形
+- **底层通用方法**: run_query / run_write / verify_connection / close
+- **通用节点 / 关系操作**: create_node / get_nodes / update_node / delete_node / merge_node / create_relationship
+- **领域方法**: 电影知识图谱的演员 / 导演 / 电影 / 公司及关系（国产电影示例）
+- **复杂查询**: 合作关系、导演统计、评分范围筛选、GraphRAG 上下文扩展
+- **进阶示例**: CSV 批量导入、沿图关系扩展上下文
 
 **使用方法**:
 
 ```bash
-# 1. 安装依赖
+# 1. 在项目根目录安装依赖（含 neo4j）
 pip install -r requirements.txt
 
-# 2. 配置环境变量
-cp .env.example .env
-# 编辑 .env 文件，填入你的 Neo4j 连接信息和密码
+# 2. 在项目根目录 .env 中配置 Neo4j 连接信息
+#    NEO4J_URI / NEO4J_USER / NEO4J_PASSWORD / NEO4J_DATABASE
 
-# 3. 运行示例
+# 3. 运行示例（在 neo4j_examples/ 目录下）
 python neo4j_python_guide.py
 ```
 
@@ -260,25 +263,23 @@ python neo4j_python_guide.py
 ```python
 from neo4j_python_guide import Neo4jClient
 
-# 创建客户端
+# 创建客户端（自动读取项目根目录 .env 中的 NEO4J_* 配置）
 client = Neo4jClient()
 
 # 创建节点
-client.create_person("Alice", 30)
-client.create_movie("The Matrix", 1999, 8.7)
+client.create_person("吴京", 51)
+client.create_movie("流浪地球", 2019, 7.9)
 
 # 创建关系
-client.create_relationship_acted_in("Alice", "The Matrix", ["Neo"])
+client.create_acted_in("吴京", "流浪地球", ["刘培强"])
 
 # 查询
 persons = client.get_all_persons()
-movies = client.get_movies_by_rating_range(8.5, 9.0)
+movies = client.get_movies_by_rating_range(7.5, 10.0)
 
-# 更新
-client.update_person_age("Alice", 31)
-
-# 删除
-client.delete_person("Alice")
+# 更新 / 删除
+client.update_person_age("吴京", 52)
+client.delete_person("吴京")
 
 # 关闭连接
 client.close()
@@ -304,7 +305,7 @@ docker run -d \
 - Browser: http://localhost:7474
 - Bolt: bolt://localhost:7687
 
-如果你按上面的 Docker 命令启动，请在 `.env` 中保持一致：
+如果你按上面的 Docker 命令启动，请在项目根目录 `.env` 中保持一致：
 
 ```env
 NEO4J_URI=bolt://localhost:7687

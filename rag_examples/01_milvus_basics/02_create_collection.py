@@ -21,19 +21,15 @@ def create_simple_collection():
 
     包含最基础的字段：ID（自增）、文本、向量。
     """
-    print("=" * 60)
-    print("示例 1: 创建简单的 Collection")
-    print("=" * 60)
+
 
     client = MilvusClient(uri=MILVUS_URI)
 
     collection_name = "simple_docs"
 
     if client.has_collection(collection_name):
-        print(f"删除已存在的集合：{collection_name}")
         client.drop_collection(collection_name)
 
-    print(f"创建集合：{collection_name}")
 
     client.create_collection(
         collection_name=collection_name,
@@ -42,11 +38,8 @@ def create_simple_collection():
         metric_type=DEFAULT_METRIC_TYPE,
     )
 
-    print("✓ 创建成功！")
-    print()
 
     info = client.describe_collection(collection_name)
-    print(f"集合信息：")
     print(f"  名称：{info['collection_name']}")
     dimension = None
     for field in info.get('fields', []):
@@ -65,9 +58,6 @@ def create_custom_collection():
 
     定义多个标量字段，支持更复杂的查询。
     """
-    print("=" * 60)
-    print("示例 2: 创建自定义字段的 Collection")
-    print("=" * 60)
 
     client = MilvusClient(uri=MILVUS_URI)
 
@@ -108,45 +98,6 @@ def create_custom_collection():
         print(f"  - {field_name}: {field_type} {'(主键)' if is_primary else ''}")
 
 
-def create_multi_vector_collection():
-    """创建包含多个向量字段的 Collection
-
-    适用于多模态场景（如同时有文本向量和图像向量）。
-    """
-    print("=" * 60)
-    print("示例 3: 创建多向量字段的 Collection")
-    print("=" * 60)
-
-    client = MilvusClient(uri=MILVUS_URI)
-    collection_name = "multi_vector_docs"
-
-    if client.has_collection(collection_name):
-        client.drop_collection(collection_name)
-
-    print(f"创建集合：{collection_name}")
-
-    fields = [
-        FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
-        FieldSchema(name="content", dtype=DataType.VARCHAR, max_length=65535),
-        FieldSchema(name="text_embedding", dtype=DataType.FLOAT_VECTOR, dim=DEFAULT_DIMENSION),
-        FieldSchema(name="image_embedding", dtype=DataType.FLOAT_VECTOR, dim=512),
-    ]
-
-    schema = CollectionSchema(fields=fields)
-
-    client.create_collection(
-        collection_name=collection_name,
-        schema=schema,
-        metric_type=DEFAULT_METRIC_TYPE,
-    )
-
-    print("✓ 创建成功！")
-    print()
-    print("💡 多向量字段适用于：")
-    print("   - 图文混合检索")
-    print("   - 多模态 RAG 系统")
-    print("   - 跨模态搜索（以文搜图、以图搜文）")
-
 
 def create_dynamic_field_collection():
     """创建启用动态字段的 Collection（Milvus 2.3+ 新特性）
@@ -154,9 +105,6 @@ def create_dynamic_field_collection():
     动态字段允许插入数据时自动添加未预定义的字段，
     无需修改 Schema 就能存储不同结构的数据。
     """
-    print("=" * 60)
-    print("示例 4: 动态字段（Milvus 2.3+ 新特性）")
-    print("=" * 60)
 
     client = MilvusClient(uri=MILVUS_URI)
     collection_name = "dynamic_field_docs"
@@ -293,72 +241,7 @@ B = [2, 4, 6]  (A 的 2 倍)
 """)
 
 
-def collection_operations():
-    """Collection 的常见操作
-
-    列出、检查存在、查看详情、统计行数、删除、重命名等。
-    """
-    print("=" * 60)
-    print("示例 6: Collection 操作大全")
-    print("=" * 60)
-
-    client = MilvusClient(uri=MILVUS_URI)
-
-    # 1. 列出所有 Collection
-    print("1. 列出所有集合：")
-    collections = client.list_collections()
-    for col in collections:
-        print(f"   - {col}")
-    print()
-
-    # 2. 检查 Collection 是否存在
-    print("2. 检查集合是否存在：")
-    test_name = "simple_docs"
-    exists = client.has_collection(test_name)
-    print(f"   {test_name}: {'存在' if exists else '不存在'}")
-    print()
-
-    # 3. 获取 Collection 详细信息
-    if exists:
-        print("3. 获取集合详细信息：")
-        info = client.describe_collection(test_name)
-        print(f"   名称：{info['collection_name']}")
-        dimension = None
-        for field in info.get('fields', []):
-            if field.get('type') == 101:
-                dimension = field.get('params', {}).get('dim')
-                break
-        print(f"   维度：{dimension}")
-        print(f"   主键自增：{info['auto_id']}")
-        print()
-
-    # 4. 获取 Collection 行数
-    if exists:
-        print("4. 获取集合行数：")
-        count = client.get_collection_stats(test_name)
-        print(f"   行数：{count.get('row_count', 0)}")
-        print()
-
-    # 5. 删除 Collection（仅示例代码）
-    print("5. 删除集合（示例代码，不执行）：")
-    print("   client.drop_collection('collection_name')")
-    print()
-
-    # 6. 重命名 Collection（仅示例代码）
-    print("6. 重命名集合（示例代码，不执行）：")
-    print("   client.rename_collection('old_name', 'new_name')")
-
-
 if __name__ == "__main__":
-    print("\n" + "=" * 70)
-    print("  Milvus 基础 - 创建 Collection")
-    print("=" * 70 + "\n")
-
-    print("【说明】")
-    print("  本示例演示多种创建 Collection 的方式")
-    print("  建表前先删表，确保代码可重复运行")
-    print()
-
     # create_simple_collection()
 
     # create_custom_collection()
@@ -369,8 +252,3 @@ if __name__ == "__main__":
 
     create_dynamic_field_collection()
     # collection_operations()
-
-    print()
-    print("=" * 70)
-    print("  Collection 学习完成！接下来学习：03_insert_data.py（插入数据）")
-    print("=" * 70)

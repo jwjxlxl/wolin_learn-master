@@ -10,19 +10,24 @@
 #   3. 上下文合并：将不同来源的检索结果合并到 LLM 提示词中
 #   4. 引用来源标记：让 LLM 标注回答的来源
 #
+# 复用：建集合 / 插入 / 混合检索统一走 utils/hybrid_retriever.py 的 HybridRetriever，
+#       向量生成走 embedding_examples 的 AliyunEmbedding（不再手写 OpenAI 客户端）。
+# 依赖：Milvus 服务运行中 + ALIYUN_API_KEY（Embedding）
 # 这是 rag_demo/core/rag_query.py 的教学简化版。
 # =============================================================================
 
-import os
-import random
+import sys
 from dotenv import load_dotenv
 load_dotenv()
 
+from pymilvus import MilvusClient, DataType
 from rag_examples.milvus_config import MILVUS_URI, DEFAULT_DIMENSION
-from pymilvus import (
-    MilvusClient, DataType, Function, FunctionType,
-    AnnSearchRequest,
-)
+from rag_examples.utils.hybrid_retriever import HybridRetriever
+from rag_examples.embedding_examples.aliyun_embedding import AliyunEmbedding
+
+# Windows 控制台编码
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8")
 
 
 # =============================================================================
@@ -31,9 +36,7 @@ from pymilvus import (
 
 def explain_dual_collection():
     """讲解双集合 RAG 架构的设计思路"""
-    print("=" * 60)
-    print("第一部分：双集合 RAG 架构")
-    print("=" * 60)
+    print(f"\n-- 第一部分: 双集合 RAG 架构")
 
     print(f"""
 ┌─────────────────────────────────────────────────────────┐
@@ -85,131 +88,54 @@ def explain_dual_collection():
 
 
 # =============================================================================
-# 第二部分：创建双集合
+# 第二部分：创建双集合（复用 HybridRetriever）
 # =============================================================================
 
 def create_dual_collections():
-    """创建两个 Collection：documents 和 qa_pairs"""
+    """创建两个 Collection，各自一个 HybridRetriever 实例。
+
+    双集合与单集合的差别只在两点，交给 HybridRetriever 的两个扩展参数：
+      - text_field：文本字段名（文档集合是 text，问答集合是 question）
+      - extra_fields：附加标量字段（文档集合是 file_name/chunk_index，
+                       问答集合是 answer/reasoning）
+    """
     client = MilvusClient(uri=MILVUS_URI)
+    emb = AliyunEmbedding()
 
     # ── Collection 1: documents ──
-    doc_collection = "advanced_documents"
-
-    if client.has_collection(doc_collection):
-        client.drop_collection(doc_collection)
-
-    schema = client.create_schema()
-    schema.add_field(field_name="id", datatype=DataType.INT64, is_primary=True, auto_id=True)
-    schema.add_field(field_name="text", datatype=DataType.VARCHAR, max_length=2000,
-                       enable_analyzer=True, enable_match=True)
-    schema.add_field(field_name="file_name", datatype=DataType.VARCHAR, max_length=200)
-    schema.add_field(field_name="chunk_index", datatype=DataType.INT32)
-    schema.add_field(field_name="dense_vector", datatype=DataType.FLOAT_VECTOR, dim=DEFAULT_DIMENSION)
-    schema.add_field(field_name="sparse_vector", datatype=DataType.SPARSE_FLOAT_VECTOR)
-
-    bm25_fn = Function(name="text_bm25", input_field_names=["text"],
-                       output_field_names=["sparse_vector"], function_type=FunctionType.BM25)
-    schema.add_function(bm25_fn)
-
-    idx = client.prepare_index_params()
-    idx.add_index(field_name="dense_vector", index_type="AUTOINDEX", metric_type="COSINE")
-    idx.add_index(field_name="sparse_vector", index_type="SPARSE_INVERTED_INDEX", metric_type="BM25")
-
-    client.create_collection(collection_name=doc_collection, schema=schema, index_params=idx)
-    print(f"✓ 文档切片集合 '{doc_collection}' 创建成功")
+    doc_retriever = HybridRetriever(
+        client, "advanced_documents", emb,
+        text_field="text",
+        extra_fields=[
+            {"name": "file_name", "datatype": DataType.VARCHAR, "max_length": 200},
+            {"name": "chunk_index", "datatype": DataType.INT32},
+        ],
+    )
 
     # ── Collection 2: qa_pairs ──
-    qa_collection = "advanced_qa_pairs"
+    qa_retriever = HybridRetriever(
+        client, "advanced_qa_pairs", emb,
+        text_field="question",
+        extra_fields=[
+            {"name": "answer", "datatype": DataType.VARCHAR, "max_length": 2000},
+            {"name": "reasoning", "datatype": DataType.VARCHAR, "max_length": 2000},
+        ],
+    )
 
-    if client.has_collection(qa_collection):
-        client.drop_collection(qa_collection)
+    # create_collection 内部：建 schema（dense+sparse+BM25 函数）→ 建索引 → 自动加载
+    doc_retriever.create_collection(dim=DEFAULT_DIMENSION)
+    qa_retriever.create_collection(dim=DEFAULT_DIMENSION)
+    print(f"✓ 双集合创建成功：'advanced_documents' + 'advanced_qa_pairs'")
 
-    schema2 = client.create_schema()
-    schema2.add_field(field_name="qa_id", datatype=DataType.INT64, is_primary=True, auto_id=True)
-    schema2.add_field(field_name="question", datatype=DataType.VARCHAR, max_length=1000,
-                        enable_analyzer=True, enable_match=True)
-    schema2.add_field(field_name="answer", datatype=DataType.VARCHAR, max_length=2000)
-    schema2.add_field(field_name="reasoning", datatype=DataType.VARCHAR, max_length=2000)
-    schema2.add_field(field_name="dense_vector", datatype=DataType.FLOAT_VECTOR, dim=DEFAULT_DIMENSION)
-    schema2.add_field(field_name="sparse_vector", datatype=DataType.SPARSE_FLOAT_VECTOR)
-
-    bm25_fn2 = Function(name="question_bm25", input_field_names=["question"],
-                        output_field_names=["sparse_vector"], function_type=FunctionType.BM25)
-    schema2.add_function(bm25_fn2)
-
-    idx2 = client.prepare_index_params()
-    idx2.add_index(field_name="dense_vector", index_type="AUTOINDEX", metric_type="COSINE")
-    idx2.add_index(field_name="sparse_vector", index_type="SPARSE_INVERTED_INDEX", metric_type="BM25")
-
-    client.create_collection(collection_name=qa_collection, schema=schema2, index_params=idx2)
-    print(f"✓ 问答对集合 '{qa_collection}' 创建成功")
-
-    return client, doc_collection, qa_collection
+    return client, emb, doc_retriever, qa_retriever
 
 
 # =============================================================================
 # 第三部分：插入数据
 # =============================================================================
 
-def embed(texts):
-    """
-    生成文本向量（使用阿里云百炼 Embedding API）
-
-    参数:
-        texts: 文本或文本列表
-    返回:
-        向量列表
-    """
-    from openai import OpenAI
-
-    api_key = os.getenv("DASHSCOPE_API_KEY") or os.getenv("ALIYUN_API_KEY")
-
-    if isinstance(texts, str):
-        texts = [texts]
-
-    # 没有 API Key 时使用模拟向量（降级方案，演示模式）
-    if not api_key:
-        print("  未找到 API Key，使用模拟向量（演示模式）")
-        import random
-        random.seed(42)
-        return [[random.random() for _ in range(1024)] for _ in texts]
-
-    try:
-        client = OpenAI(
-            api_key=api_key,
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
-        )
-
-        # 批量处理（API 限制每次最多 25 条）
-        all_embeddings = []
-        batch_size = 25
-
-        for i in range(0, len(texts), batch_size):
-            batch = texts[i:i + batch_size]
-            response = client.embeddings.create(
-                model="text-embedding-v4",
-                input=batch,
-                encoding_format="float"
-            )
-            batch_embeddings = [item.embedding for item in response.data]
-            all_embeddings.extend(batch_embeddings)
-
-        print(f"已生成 {len(all_embeddings)} 个 Embedding 向量")
-        return all_embeddings
-
-    except Exception as e:
-        print(f"  Embedding API 调用失败：{e}，使用模拟向量")
-        import random
-        random.seed(42)
-        return [[random.random() for _ in range(1024)] for _ in texts]
-
-def insert_dual_collection_data(client, doc_collection, qa_collection):
-    """向两个集合分别插入测试数据"""
-    # 模拟向量生成
-    def mock_embedding(text):
-        random.seed(hash(text) % 10000)
-        return [random.uniform(-1, 1) for _ in range(DEFAULT_DIMENSION)]
-
+def insert_dual_collection_data(emb, doc_retriever, qa_retriever):
+    """向两个集合分别插入测试数据（复用 HybridRetriever.insert）"""
     # ── 插入文档切片 ──
     doc_chunks = [
         {"text": "Milvus 向量数据库支持混合检索，结合稠密向量和稀疏向量提高召回率。", "file_name": "milvus_intro.txt", "chunk_index": 0},
@@ -217,17 +143,15 @@ def insert_dual_collection_data(client, doc_collection, qa_collection):
         {"text": "BM25 算法基于 TF-IDF 改进，考虑了词频饱和度和文档长度归一化。", "file_name": "search_tech.txt", "chunk_index": 0},
     ]
 
-    doc_data = []
-    for chunk in doc_chunks:
-        doc_data.append({
-            "text": chunk["text"],
-            "file_name": chunk["file_name"],
-            "chunk_index": chunk["chunk_index"],
-            "dense_vector": embed(chunk["text"])[0],
-        })
-
-    client.insert(collection_name=doc_collection, data=doc_data)
-    print(f"✓ 向 '{doc_collection}' 插入了 {len(doc_data)} 条文档切片")
+    doc_retriever.insert(
+        [c["text"] for c in doc_chunks],
+        [emb.embed(c["text"]) for c in doc_chunks],
+        extra_data=[
+            {"file_name": c["file_name"], "chunk_index": c["chunk_index"]}
+            for c in doc_chunks
+        ],
+    )
+    print(f"✓ 向 'advanced_documents' 插入 {len(doc_chunks)} 条文档切片")
 
     # ── 插入问答对 ──
     qa_pairs = [
@@ -236,57 +160,32 @@ def insert_dual_collection_data(client, doc_collection, qa_collection):
         {"question": "BM25 和向量检索有什么区别？", "answer": "BM25 基于关键词匹配，适合精确术语搜索；向量检索基于语义相似度，适合理解同义词和上下文。", "reasoning": "两者互补：BM25 精确匹配关键词（如产品型号），向量检索理解语义（如用户意图）。混合使用效果最佳。"},
     ]
 
-    qa_data = []
-    for qa in qa_pairs:
-        qa_data.append({
-            "question": qa["question"],
-            "answer": qa["answer"],
-            "reasoning": qa["reasoning"],
-            # 对问题进行向量化的处理
-            "dense_vector": embed(qa["question"])[0],
-        })
-
-    client.insert(collection_name=qa_collection, data=qa_data)
-    print(f"✓ 向 '{qa_collection}' 插入了 {len(qa_data)} 条问答对")
+    qa_retriever.insert(
+        [q["question"] for q in qa_pairs],
+        [emb.embed(q["question"]) for q in qa_pairs],
+        extra_data=[
+            {"answer": q["answer"], "reasoning": q["reasoning"]}
+            for q in qa_pairs
+        ],
+    )
+    print(f"✓ 向 'advanced_qa_pairs' 插入 {len(qa_pairs)} 条问答对")
 
 
 # =============================================================================
 # 第四部分：双集合并行检索
 # =============================================================================
 
-def dual_collection_search(client, doc_collection, qa_collection, query: str):
-    """同时对两个集合执行混合检索"""
-    # 生成查询向量
-    random.seed(hash(query) % 10000)
-    # 对用户的问题进行向量化处理
-    query_vector = embed(query)[0]
+def dual_collection_search(emb, doc_retriever, qa_retriever, query):
+    """同时对两个集合执行混合检索（复用 HybridRetriever.hybrid_search）。
 
-    def hybrid_search(collection_name, output_fields, top_k=3):
-        req_dense = AnnSearchRequest(
-            data=[query_vector], anns_field="dense_vector",
-            param={"nprobe": 10}, limit=top_k,
-        )
-        req_sparse = AnnSearchRequest(
-            data=[query], anns_field="sparse_vector",
-            param={"metric_type": "BM25"}, limit=top_k,
-        )
-        ranker = Function(
-            name="rrf", function_type=FunctionType.RERANK,
-            params={"reranker": "rrf", "k": 100},
-            input_field_names=[],
-        )
-        return client.hybrid_search(
-            collection_name=collection_name,
-            reqs=[req_dense, req_sparse], ranker=ranker,
-            limit=top_k,
-            output_fields=output_fields
-        )
+    返回:
+        (doc_results, qa_results)：各为一个命中列表，
+        每项 {"distance": 分数, "entity": {字段名: 值}}
+    """
+    query_vec = emb.embed(query)
 
-    # 并行检索两个集合
-    # 检索文档切片的表格
-    doc_results = hybrid_search(doc_collection, ["text", "file_name", "chunk_index"], top_k=3)
-    # 对问答对进行检索
-    qa_results = hybrid_search(qa_collection, ["question", "answer", "reasoning"], top_k=3)
+    doc_results = doc_retriever.hybrid_search(query, query_vec, top_k=3)
+    qa_results = qa_retriever.hybrid_search(query, query_vec, top_k=3)
 
     return doc_results, qa_results
 
@@ -300,24 +199,22 @@ def build_rag_prompt(query, doc_results, qa_results):
     context_parts = []
 
     # 文档片段
-    for i, hits in enumerate(doc_results):
-        for j, hit in enumerate(hits):
-            entity = hit.get("entity", {})
-            context_parts.append(
-                f"[文档片段{j+1}] {entity.get('text', '')}\n"
-                f"来源：{entity.get('file_name', '')}"
-            )
+    for j, hit in enumerate(doc_results, 1):
+        entity = hit.get("entity", {})
+        context_parts.append(
+            f"[文档片段{j}] {entity.get('text', '')}\n"
+            f"来源：{entity.get('file_name', '')}"
+        )
 
     # 问答对
-    for i, hits in enumerate(qa_results):
-        for j, hit in enumerate(hits):
-            entity = hit.get("entity", {})
-            context_parts.append(
-                f"[问答对{j+1}]\n"
-                f"问：{entity.get('question', '')}\n"
-                f"答：{entity.get('answer', '')}\n"
-                f"推理：{entity.get('reasoning', '')}"
-            )
+    for j, hit in enumerate(qa_results, 1):
+        entity = hit.get("entity", {})
+        context_parts.append(
+            f"[问答对{j}]\n"
+            f"问：{entity.get('question', '')}\n"
+            f"答：{entity.get('answer', '')}\n"
+            f"推理：{entity.get('reasoning', '')}"
+        )
 
     context = "\n\n".join(context_parts)
 
@@ -327,8 +224,7 @@ def build_rag_prompt(query, doc_results, qa_results):
         "如果上下文中没有相关信息，请如实告知。"
     )
 
-    prompt = f"{system_prompt}\n\n## 检索到的上下文\n{context}\n\n用户问题：{query}"
-    return prompt
+    return f"{system_prompt}\n\n## 检索到的上下文\n{context}\n\n用户问题：{query}"
 
 
 # =============================================================================
@@ -337,9 +233,7 @@ def build_rag_prompt(query, doc_results, qa_results):
 
 def dual_collection_summary():
     """双集合架构的关键要点"""
-    print("\n" + "=" * 60)
-    print("第六部分：双集合架构关键要点")
-    print("=" * 60)
+    print(f"\n-- 第六部分: 双集合架构关键要点")
 
     print("""
 ┌─────────────────────────────────────────────────────────┐
@@ -381,49 +275,35 @@ if __name__ == "__main__":
     print("  双集合 RAG 检索架构")
     print("=" * 70 + "\n")
 
-    # 1. 讲解架构
+    # 1. 讲解架构（纯文字，无依赖）
     # explain_dual_collection()
 
     # 2. 创建双集合
-    client, doc_col, qa_col = create_dual_collections()
+    client, emb, doc_retriever, qa_retriever = create_dual_collections()
 
     # 3. 插入数据
-    insert_dual_collection_data(client, doc_col, qa_col)
+    insert_dual_collection_data(emb, doc_retriever, qa_retriever)
 
-    # 4. 加载集合
-    client.load_collection(doc_col)
-    client.load_collection(qa_col)
+    # 4. 并行检索演示
+    print(f"\n-- 第四部分: 双集合并行检索演示")
+    query = "什么是 RAG？"
+    doc_results, qa_results = dual_collection_search(emb, doc_retriever, qa_retriever, query)
 
-    # 5. 并行检索演示
-    print("\n" + "=" * 60)
-    print("第四部分：双集合并行检索演示")
-    print("=" * 60)
+    print(f"\n查询：{query}")
+    print("\n  文档片段结果：")
+    for hit in doc_results:
+        entity = hit.get("entity", {})
+        print(f"    [{hit['distance']:.4f}] {entity.get('text', '')[:50]}...")
 
-    # queries = ["Milvus 支持什么检索方式？", "什么是 BM25？"]
-    # for query in queries:
-    #     print(f"\n查询：{query}")
-    #     # 调用双集合的检索结果
-    #     doc_results, qa_results = dual_collection_search(client, doc_col, qa_col, query)
-    #
-    #     print("  文档片段结果：")
-    #     for hits in doc_results:
-    #         for hit in hits:
-    #             entity = hit.get("entity", {})
-    #             print(f"    [{hit['distance']:.4f}] {entity.get('text', '')[:50]}...")
-    #
-    #     print("  问答对结果：")
-    #     for hits in qa_results:
-    #         for hit in hits:
-    #             entity = hit.get("entity", {})
-    #             print(f"    [{hit['distance']:.4f}] Q: {entity.get('question', '')[:40]}...")
+    print("\n  问答对结果：")
+    for hit in qa_results:
+        entity = hit.get("entity", {})
+        print(f"    [{hit['distance']:.4f}] Q: {entity.get('question', '')[:40]}...")
 
-    # 6. 展示提示词构建
-    doc_results, qa_results = dual_collection_search(client, doc_col, qa_col, "什么是 RAG？")
-    prompt = build_rag_prompt("什么是 RAG？", doc_results, qa_results)
-    print("\n" + "=" * 60)
-    print("第五部分：生成的 RAG 提示词（前 300 字）")
-    print("=" * 60)
+    # 5. 展示提示词构建
+    prompt = build_rag_prompt(query, doc_results, qa_results)
+    print(f"\n-- 第五部分: 生成的 RAG 提示词（前 500 字）")
     print(prompt[:500] + "...")
 
-    # 7. 总结
+    # 6. 总结
     # dual_collection_summary()

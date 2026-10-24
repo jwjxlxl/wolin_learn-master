@@ -1,4 +1,4 @@
-# 06_rag_evaluation — RAG 系统评估
+# 07_rag_evaluation — RAG 系统评估
 
 > 难度：⭐⭐⭐ | 前置：05_rag_pipeline 完整流水线 | 后续：无（课程收官）
 
@@ -301,6 +301,11 @@ evaluator.print_report(result)
 # 运行完整评估演示
 python 07_rag_evaluation/01_rag_evaluation.py
 ```
+
+> 💡 该文件现在包含两种评测模式：
+> 1. **离线原理版**（默认）：纯关键词法，无需 API Key，用于理解指标如何计算；
+> 2. **LLM 判定版**：`RAGEvaluator(llm=get_qwen_client())` 后，忠实度 / 答案相关性改用 LLM 判定（接近 ragas），
+>    并在文件末尾的 `run_real_rag_evaluation()` 中对真实 RAG（Milvus + Qwen）做端到端评测。
 
 ## ⚠️ 常见问题
 

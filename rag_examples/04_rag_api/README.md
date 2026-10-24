@@ -1,68 +1,71 @@
-# 04_rag_api - RAG API 封装
+# 04_rag_api — 已合并（本模块已移除）
 
-本模块封装两个核心 API，用于 RAG 应用开发。
+> 本模块原有的两个 API 文件（`rag_retrieval_api.py`、`rag_qna_api.py`）已删除，
+> 其内容分别并入「03 检索」与「05 RAG Pipeline」，本目录仅保留此指引。
 
-## API 列表
+## 原来想教什么
 
-| API | 功能 | 难度 |
-|------|------|------|
-| [rag_retrieval_api.py](rag_retrieval_api.py) | 检索文件 API | ⭐⭐⭐ |
-| [rag_qna_api.py](rag_qna_api.py) | RAG 问答 API | ⭐⭐⭐ |
+04 原本想做两件事：把「Milvus 检索」和「检索 + LLM 生成」各封装成一个类，方便复用。
 
-## 检索文件 API
+这两件事现在都有了更规范、更完整的实现，所以 04 不再需要。
+
+## 去哪了（对照表）
+
+| 原来在 04 | 现在去哪学 |
+|-----------|-----------|
+| 建库 / 插入 / 检索的封装 | `utils/hybrid_retriever.py` 的 `HybridRetriever`（混合检索，比 04 的单向量更强） |
+| 向量生成 | `embedding_examples/` 的 `AliyunEmbedding`（统一入口，不再手写 OpenAI 客户端） |
+| 文档切片 | `02_document_chunking/` 模块 |
+| Rerank 重排序 | `03_retrieval_methods/05_rerank.py` |
+| 检索 → 组装 Prompt → 生成 → 引用 | `05_rag_pipeline/rag_hybrid_pipeline.py`（更完整：引用溯源 + 防注入） |
+
+## 学习路径（合并后）
+
+```
+01_milvus_basics        → 会用 Milvus 建库、插数据
+        ↓
+02_document_chunking    → 学会把文档切成片段
+        ↓
+03_retrieval_methods    → 学会各种检索 + HybridRetriever + Rerank
+        ↓
+05_rag_pipeline         → 把检索接上 LLM，跑通完整 RAG（引用溯源 + 防注入）
+        ↓
+06_rag_advanced         → 双集合设计、Mock→Real 进阶
+```
+
+## 两个核心类的新用法
+
+**原 `RAGRetriever`（检索）→ `HybridRetriever`**
 
 ```python
-# 用法示例
-from rag_retrieval_api import RAGRetriever
+from pymilvus import MilvusClient
+from rag_examples.milvus_config import MILVUS_URI, MILVUS_DB_NAME
+from rag_examples.utils.hybrid_retriever import HybridRetriever
+from rag_examples.embedding_examples.aliyun_embedding import AliyunEmbedding
 
-retriever = RAGRetriever(
-    milvus_uri="milvus_demo.db",
-    embedding_model="bge-large-zh-v1.5"
-)
+client = MilvusClient(uri=MILVUS_URI, db_name=MILVUS_DB_NAME)
+emb = AliyunEmbedding()
+retriever = HybridRetriever(client, "demo", emb)
 
-# 检索相关文档
-results = retriever.search(
-    query="什么是机器学习？",
-    top_k=5,
-    use_rerank=True
-)
-
-for doc in results:
-    print(f"相似度：{doc['score']}")
-    print(f"内容：{doc['content']}")
+retriever.create_collection(dim=1024)
+retriever.insert(documents, dense_vectors)
+results = retriever.retrieve("机器学习需要什么基础？", top_k=3)  # → [{"index","text","score"}]
 ```
 
-## RAG 问答 API
+**原 `RAGQnA`（问答）→ `05_rag_pipeline/rag_hybrid_pipeline.py`**
 
 ```python
-# 用法示例
-from rag_qna_api import RAGQnA
+from rag_examples.milvus_config import MILVUS_URI, MILVUS_DB_NAME
+from rag_examples.utils.hybrid_retriever import HybridRetriever
+from rag_examples.embedding_examples.aliyun_embedding import AliyunEmbedding
+from rag_examples.05_rag_pipeline.rag_hybrid_pipeline import rag_answer, print_answer_with_sources
+from utils.model_utils import get_qwen_client
 
-qna = RAGQnA(
-    milvus_uri="milvus_demo.db",
-    llm_provider="ollama",
-    embedding_model="bge-large-zh-v1.5"
-)
+client = MilvusClient(uri=MILVUS_URI, db_name=MILVUS_DB_NAME)
+retriever = HybridRetriever(client, "demo", AliyunEmbedding())
 
-# 问答
-answer = qna.ask(
-    question="机器学习需要什么基础？",
-    top_k=5,
-    use_rerank=True
-)
-
-print(f"答案：{answer['answer']}")
-print(f"引用：{answer['sources']}")
+answer, contexts = rag_answer("什么是机器学习？", retriever, get_qwen_client())
+print_answer_with_sources(answer, contexts)
 ```
 
-## 运行前准备
-
-```bash
-pip install -r ../requirements.txt
-```
-
-## 学习建议
-
-1. 先学习检索 API（更基础）
-2. 再学习问答 API（在检索基础上增加 LLM 生成）
-3. 理解整个 RAG 流程
+完整演示直接运行 `python -m rag_examples.05_rag_pipeline.rag_hybrid_pipeline`。

@@ -163,7 +163,7 @@ def run_pipeline_demo():
     retriever.insert(documents, dense_vectors)
     print(f"  ✓ 知识库已就绪")
 
-    # ---- 生成模型 ----
+    # ---- 用来回答问题的模型 ----
     llm = get_qwen_client()
     if llm is None:
         print("\n✗ 未配置 ALIYUN_API_KEY，无法生成答案。")

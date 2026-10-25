@@ -18,7 +18,7 @@ def without_langchain():
     想象你要做一个"翻译助手"：调 API、拼 Prompt、解析结果、加记忆...
     每一步都要手写样板代码，换个服务商格式全变。
     """
-    print(f"\n-- 没有 LangChain 时，写一个翻译助手需要...")
+    print("\n-- 没有 LangChain 时，写一个翻译助手需要...")
 
     print("""
     # 1. 手动拼接 Prompt（容易出错）
@@ -55,7 +55,7 @@ def what_is_langchain():
       Retriever 块 — 检索外部知识
       Tool 块      — 让 AI 调用外部工具
     """
-    print(f"\n-- LangChain = AI 应用的乐高积木")
+    print("\n-- LangChain = AI 应用的乐高积木")
 
     components = {
         "Model（模型）":       {"比喻": "会聊天的大脑",        "代码": "ChatOllama(), ChatOpenAI()"},
@@ -75,7 +75,7 @@ def what_is_langchain():
 
 def langchain_applications():
     """LangChain 能做什么应用？列举典型场景和用到的组件。"""
-    print(f"\n-- LangChain 的典型应用场景")
+    print("\n-- LangChain 的典型应用场景")
 
     cases = [
         ("智能客服",   "自动回答用户问题，支持多轮对话",       "Chat Model + Memory + Prompt"),
@@ -98,4 +98,4 @@ if __name__ == '__main__':
     what_is_langchain()
     langchain_applications()
 
-    print(f"\n-- 概念理解完成！接下来运行 first_chain.py 体验真正的代码")
+    print("\n-- 概念理解完成！接下来运行 first_chain.py 体验真正的代码")

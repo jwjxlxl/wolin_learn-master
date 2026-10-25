@@ -24,7 +24,7 @@ Agent 记忆 vs 手动记忆：
   checkpointer 是 LangChain 1.0 新增的功能，用于持久化 Agent 的状态。
   它可以用于保存 Agent 的历史消息、工具状态等。
   
-  conversationMemery 是 checkpointer 的实现之一，用于保存 Agent 的历史消息。
+  conversationMemory 是 checkpointer 的实现之一，用于保存 Agent 的历史消息。
 
   thread_id 就像聊天软件的"会话 ID"——同一个会话的消息自动关联，
   不同会话互不干扰。
@@ -35,7 +35,6 @@ from langchain_core.tools import tool
 from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.memory import InMemorySaver
-from langchain_ollama import ChatOllama
 
 
 # =============================================================================
@@ -58,7 +57,6 @@ def simple_memory_demo():
         """查询指定城市的天气。"""
         return {"北京": "晴，25°C", "上海": "多云，28°C"}.get(city, f"暂无 {city} 数据")
 
-    # model = ChatOllama(model="qwen3.5:2b")
     model = get_model("qwen")
     agent = create_agent(
         model=model,
@@ -125,7 +123,6 @@ def trim_messages_demo():
         """查询天气。"""
         return {"北京": "晴，25°C"}.get(city, "暂无数据")
 
-    # model = ChatOllama(model="qwen3.5:2b")
     model = get_model("qwen")
     agent = create_agent(model=model, tools=[get_weather],
                          system_prompt="你是一个有用的助手。",
@@ -145,7 +142,4 @@ def trim_messages_demo():
 if __name__ == '__main__':
     print("\n>>> 09_agent/agent_memory — Agent 记忆管理\n")
 
-    # simple_memory_demo()
     trim_messages_demo()
-
-    # 接下来学习: middleware.py（中间件拦截器）

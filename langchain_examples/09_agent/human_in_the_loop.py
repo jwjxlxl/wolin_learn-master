@@ -10,7 +10,6 @@
 # 需要: ALIYUN_API_KEY 环境变量
 # =============================================================================
 
-from langchain_examples.utils import get_qwen_client
 from langchain.agents import create_agent
 from langchain.agents.middleware import HumanInTheLoopMiddleware
 from langgraph.checkpoint.memory import InMemorySaver
@@ -98,8 +97,6 @@ def run():
     })
 
     model = get_model("qwen")
-    if model is None:
-        return
 
     agent = create_agent(model=model, tools=[send_email],
                          system_prompt="你是一个邮件助手，帮用户发送邮件。也可以回答一些用户问题",

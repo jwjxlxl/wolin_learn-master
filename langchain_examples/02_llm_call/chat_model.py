@@ -12,23 +12,8 @@ import sys
 import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
 
-from langchain_ollama import ChatOllama
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from llm_basic import get_model
-
-
-"""
-三种消息类型 — 像戏剧中的三个角色：
-
-  SystemMessage（导演）— 设定 AI 的人设和行为准则
-    例子: "你是一位友好的助手"、"用小学生的语言解释"
-
-  HumanMessage（观众）— 用户的问题和输入
-    例子: "你好"、"什么是人工智能"
-
-  AIMessage（演员）— AI 的回复，手动添加到历史中用于多轮对话
-    例子: "你好！很高兴见到你"
-"""
 
 
 # =============================================================================
@@ -44,7 +29,6 @@ def system_message_demo():
     """
     print(f"\n-- 示例 1: SystemMessage — 设定 AI 人设")
 
-    # model = ChatOllama(model="qwen3.5:2b")
     model = get_model("qwen")
 
     personas = [
@@ -79,7 +63,6 @@ def multiturn_demo():
     """
     print(f"\n-- 示例 2: 多轮对话 — 让 AI 记住上下文")
 
-    # model = ChatOllama(model="qwen3.5:2b")
     model = get_model("qwen")
     messages = [SystemMessage(content="你是一位友好的助手。")]
 
@@ -110,7 +93,6 @@ def roleplay_demo():
     """
     print(f"\n-- 示例 3: 角色扮演 — 英语老师")
 
-    # model = ChatOllama(model="qwen3.5:2b")
     model = get_model("qwen")
     messages = [
         SystemMessage(content="""你是一位英语老师。
@@ -133,7 +115,3 @@ if __name__ == '__main__':
     print("\n>>> 02_llm_call/chat_model — 消息类型详解\n")
 
     system_message_demo()
-    # multiturn_demo()
-    # roleplay_demo()
-
-    # 接下来学习: streaming_output.py（流式输出）

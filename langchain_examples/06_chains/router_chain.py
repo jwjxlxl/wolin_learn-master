@@ -11,28 +11,10 @@
 import sys
 import io
 
-from langchain_community.llms.aviary import get_models
-
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
 
 
-"""
-什么是 Router Chain？
-
-  普通 Chain: 无论什么输入，都走同一条路
-  路由 Chain: 根据输入类型，自动选择不同的处理路径
-
-  例如客服系统:
-    用户问题 → 路由判断 → 技术问题 → 技术客服
-                         售后问题 → 售后客服
-                         投诉     → 人工处理
-
-  生活化比喻: Router = 医院分诊台
-    病人 → 分诊护士判断 → 内科/外科/儿科...
-"""
-
 from langchain_core.prompts import PromptTemplate
-from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import StrOutputParser
 from utils.model_utils import get_model
 
@@ -49,7 +31,6 @@ def simple_if_else_router():
     """
     print(f"\n-- 示例 1: if-else 路由")
 
-    # model = ChatOllama(model="qwen3.5:2b")
     model = get_model()
     parser = StrOutputParser()
 
@@ -84,7 +65,6 @@ def intelligent_router():
     """
     print(f"\n-- 示例 2: 智能路由（AI 自动判断类型）")
 
-    # model = ChatOllama(model="qwen3.5:2b")
     model = get_model("qwen")
     # 分类 Chain — 判断输入类型 相当于意图识别
     classifier = (
@@ -122,7 +102,4 @@ def intelligent_router():
 if __name__ == '__main__':
     print("\n>>> 06_chains/router_chain — 路由链\n")
 
-    # simple_if_else_router()
     intelligent_router()
-
-    # 接下来学习: 07_retrieval/document_loader.py（文档加载）

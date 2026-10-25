@@ -1,4 +1,4 @@
-from langchain_community.document_loaders import TextLoader, PyPDFLoader
+from langchain_community.document_loaders import TextLoader
 from langchain_community.embeddings import DashScopeEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from dotenv import load_dotenv
@@ -17,8 +17,8 @@ documents = loader.load()
 
 # 2. 切片（自动按语义边界切分）
 splitter = RecursiveCharacterTextSplitter(
-    chunk_size=50,      # 每片约 500 token
-    chunk_overlap=10,    # 切片间重叠 50 token（防止信息在边界丢失）
+    chunk_size=50,      # 每片约 50 token
+    chunk_overlap=10,    # 切片间重叠 10 token（防止信息在边界丢失）
     separators=["\n\n", "\n", "。", "，", " "]
 )
 chunks = splitter.split_documents(documents)

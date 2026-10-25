@@ -5,7 +5,6 @@
 # 学完本文件你将能够：
 #   ✅ 理解 Agent = LLM + 工具 + 决策循环
 #   ✅ 使用 create_agent() 一行创建 Agent
-#   在LangChain1.0+中，create_agent是推荐的Agent创建方式
 #   ✅ 观察 ReAct 模式（思考 → 行动 → 观察 → 循环）
 
 # 在LangChain1.0+中，create_agent是推荐的Agent创建方式
@@ -17,23 +16,9 @@ import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
 
 
-"""
-什么是 Agent？
-
-  普通 LLM: 你问 → 它答（没有工具，只能"说"）
-  Agent:    你问 → 它思考需要什么信息 → 调用工具获取 → 综合回答
-
-  ReAct 循环: Reason(推理) → Act(调用工具) → Observe(观察结果) → 重复
-
-  生活化比喻: Agent = 餐厅服务员
-    顾客点餐 → 服务员判断需要什么 → 去厨房/吧台取 → 端给顾客
-    复杂订单？多跑几趟！（迭代）
-"""
-
 from langchain_core.tools import tool
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain.agents import create_agent
-from langchain_ollama import ChatOllama
 from utils.model_utils import get_model
 
 
@@ -56,7 +41,6 @@ def bind_tools_demo(question: str = "北京今天天气怎么样？"):
         weather_db = {"北京": "晴，25°C", "上海": "多云，28°C", "广州": "小雨，30°C"}
         return weather_db.get(city, f"暂无 {city} 的天气数据")
 
-    # model = ChatOllama(model="qwen3.5:2b")
     model = get_model("qwen")
     agent = create_agent(
         model=model,
@@ -95,8 +79,6 @@ def create_agent_demo():
             return f"计算错误: {e}"
 
 
-    #
-    model = ChatOllama(model="qwen3.5:2b")
     model = get_model("qwen")
     agent = create_agent(model=model, tools=[get_weather, calculator],
                          system_prompt="你是一个有用的助手，必须根据工具的返回结果回答问题，不允许自己回答")
@@ -114,7 +96,4 @@ def create_agent_demo():
 if __name__ == '__main__':
     print("\n>>> 09_agent/agent — create_agent 智能体\n")
 
-    # bind_tools_demo(question="帮我计算一下 23 加 45 等于多少？")
     create_agent_demo()
-
-    # 接下来学习: agent_memory.py（Agent 记忆管理）

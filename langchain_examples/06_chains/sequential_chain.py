@@ -15,21 +15,6 @@ from utils import get_model
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
 
 
-"""
-什么是 Sequential Chain？
-
-  简单 Chain: prompt | model | parser（一个步骤）
-  顺序 Chain: 步骤1 → 步骤2 → 步骤3（多步骤流水线）
-
-  例如写文章: 生成大纲 → 写正文 → 起标题
-  例如分析问题: 找原因 → 给建议 → 写方案
-  其中的每个步骤都可以用一个 Chain 来实现
-
-  生活化比喻: 工厂流水线
-    原料 → 加工1 → 加工2 → 组装 → 成品
-    上一步的输出自动传到下一步
-"""
-
 from langchain_core.prompts import PromptTemplate
 from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import StrOutputParser
@@ -84,7 +69,6 @@ def article_generator():
     """
     print(f"\n-- 示例 2: 文章生成器（三步流水线）")
 
-    # model = ChatOllama(model="qwen3.5:9b")
     model = get_model("qwen")
     parser = StrOutputParser()
 
@@ -120,7 +104,4 @@ def article_generator():
 if __name__ == '__main__':
     print("\n>>> 06_chains/sequential_chain — 顺序链\n")
 
-    # manual_sequential()
     article_generator()
-
-    # 接下来学习: router_chain.py（路由链）

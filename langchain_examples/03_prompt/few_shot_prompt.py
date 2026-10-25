@@ -13,26 +13,6 @@ import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
 
 
-"""
-什么是 Few-Shot Prompting？
-
-  不用 Few-Shot:
-    你: "把下面的话分类为正面或负面"
-    AI: "好的，这句话是..."（可能不理解你想要的格式）
-
-  用 Few-Shot:
-    你: "例子1: '今天天气真好' → 正面"
-        "例子2: '我心情不好' → 负面"
-        "现在分类: '这个餐厅很难吃'"
-    AI: "负面"（明白了格式和要求）
-
-  生活化比喻: Few-Shot = 教小孩做题
-    "看，这道题是这样做的..."（给例子）
-    "现在你来做这道..."（让小孩模仿）
-    
-    在做意图识别的时候，使用的比较多
-"""
-
 from langchain_core.prompts import PromptTemplate
 from langchain_ollama import ChatOllama
 from utils import get_model
@@ -90,9 +70,7 @@ def sentiment_classification():
 评论: "{review}"
 情感:""")
 
-    # model = ChatOllama(model="qwen3.5:2b")
-
-    model = get_model("qwen-plus")
+    model = get_model("qwen")
     for review in ["这个产品太棒了，我非常喜欢！", "完全不值这个价，浪费钱。"]:
         r = model.invoke(prompt.format(review=review))
         print(f"  \"{review}\" → {r.content}")
@@ -135,7 +113,6 @@ def using_langchain_fewshot():
         input_variables=["question"],
     )
 
-    # model = ChatOllama(model="qwen3.5:2b")
     model = get_model("qwen")
     response = model.invoke(few_shot.format(question="日本首都是哪里？"))
     print(f"回复: {response.content}")
@@ -148,8 +125,4 @@ def using_langchain_fewshot():
 if __name__ == '__main__':
     print("\n>>> 03_prompt/few_shot — Few-Shot 示例\n")
 
-    # simplest_few_shot()
-    # sentiment_classification()
     using_langchain_fewshot()
-
-    # 接下来学习: 04_output_parser/string_parser.py（输出解析）

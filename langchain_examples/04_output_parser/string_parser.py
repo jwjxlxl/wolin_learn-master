@@ -11,23 +11,10 @@
 import sys
 import io
 
-from langchain_classic.chains.question_answering.map_rerank_prompt import output_parser
-
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
 
 
-"""
-什么是 OutputParser？
-
-  AI 的原始输出是 Message 对象（带着元数据），
-  程序需要的是纯字符串。Parser = 翻译官，负责这个转换。
-
-  不用 Parser: response.content   → 每次都手动取
-  用 Parser:   prompt | model | parser → 自动返回字符串
-"""
-
 from langchain_core.prompts import PromptTemplate
-from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import StrOutputParser
 from utils.model_utils import get_model
 
@@ -43,7 +30,6 @@ def compare_with_without_parser():
     不用 Parser: invoke() 返回 Message 对象，需要 .content 取文本
     用 Parser:    invoke() 直接返回纯字符串
     """
-    # model = ChatOllama(model="qwen3.5:2b")
     model = get_model("qwen")
     question = "请用一句话介绍 Python。"
 
@@ -57,15 +43,12 @@ def compare_with_without_parser():
 
     # 用 Parser
     print(f"\n[用 StrOutputParser]")
-    # langchain  把所有用到的组件组成一个chain
-    # 构建Chain，使用管道符 |
     output_parser = StrOutputParser()
     chain = model | output_parser
     result = chain.invoke(question)
     print(f"  返回类型: {type(result).__name__}")
     print(f"  直接就是: {result}")
 
-# StrOutputParser() 就相当于提取到大模型返回结果中的content字段
 
 # =============================================================================
 # 示例 2: 完整的 Pipeline + 批量处理
@@ -80,11 +63,9 @@ def pipeline_with_batch():
     print(f"\n-- 示例 2: 三段式 Pipeline + 批量处理")
 
     prompt = PromptTemplate.from_template("用{num}个字介绍{topic}。")
-    # model = ChatOllama(model="qwen3.5:2b")
     model = get_model("qwen")
 
     output_parser = StrOutputParser()
-    # 链式调用: 通过管道符号|把LangChain中的每个组件按照前后的顺序拼接成一个链条
     chain = prompt | model | output_parser
 
     # 批量输入
@@ -94,12 +75,6 @@ def pipeline_with_batch():
         {"topic": "C++",    "num": 10},
     ]
 
-    '''
-        client.invoke()  向大模型发起一次请求
-        client.stream()  向大模型发起一次请求，并实时返回中间结果
-        client.batch()   批量向大模型发起请求
-        client.ainvoke()  向大模型发起异步请求
-    '''
     for inp, result in zip(inputs, chain.batch(inputs)):
         print(f"  {inp['topic']}: {result}")
 
@@ -111,7 +86,4 @@ def pipeline_with_batch():
 if __name__ == '__main__':
     print("\n>>> 04_output_parser/string_parser — StrOutputParser\n")
 
-    # compare_with_without_parser()
     pipeline_with_batch()
-
-    # 接下来学习: json_parser.py（JSON 结构化输出）

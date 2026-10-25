@@ -1,4 +1,4 @@
-from langchain_community.document_loaders import TextLoader, PDFMinerLoader, UnstructuredMarkdownLoader, UnstructuredWordDocumentLoader
+from langchain_community.document_loaders import TextLoader
 from langchain_community.embeddings import DashScopeEmbeddings
 from langchain_community.vectorstores.milvus import Milvus
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -10,14 +10,7 @@ load_dotenv()
 os.environ["DASHSCOPE_API_KEY"] = os.getenv("ALIYUN_API_KEY", "")
 
 # 1. 加载文档
-'''
-    Langchain 提供了一系列文档加载器，可以从不同来源加载文档。
-    这里使用 TextLoader 加载一个本地文本文件。
-    也可以使用 PDFMinerLoader 加载 PDF 文件，UnstructuredMarkdownLoader 加载 Markdown 文件。
-'''
 loader = TextLoader("test_doc.txt", encoding="utf-8")
-# 假如文档是PDF，使用PDFMinerLoader
-# loader = PDFMinerLoader("test_doc.pdf")
 documents = loader.load()
 
 # 2. 切片
@@ -29,7 +22,7 @@ documents = loader.load()
 """
 splitter = RecursiveCharacterTextSplitter(
     chunk_size=500,      # 每片约 500 token
-    chunk_overlap=20,    # 切片间重叠 50 token（防止信息在边界丢失）
+    chunk_overlap=20,    # 切片间重叠 20 token（防止信息在边界丢失）
     separators=["\n\n", "\n", "。", "，", " "]
 )
 chunks = splitter.split_documents(documents)

@@ -12,16 +12,6 @@ import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
 
 
-"""
-为什么 LLM 记不住之前的对话？
-
-  LLM 本身是"无状态"的——每次 model.invoke() 都是独立的。
-  就像每次都拨通一个新电话，对方不知道你上一通说了什么。
-
-  解决方案: 手动保存历史消息，每次调用时把历史一起传过去。
-  这就像每次打电话前先翻看聊天记录，然后把记录一起给 AI 看。
-"""
-
 from langchain_ollama import ChatOllama
 from langchain_core.messages import HumanMessage, AIMessage
 
@@ -58,12 +48,6 @@ def manual_memory():
     """
     用 Python 列表保存对话历史，每次调用时把完整历史传给模型。
 
-    步骤:
-    1. history = []                             — 初始化空历史
-    2. history.append(HumanMessage(...))        — 加用户消息
-    3. response = model.invoke(history)          — 带历史调模型
-    4. history.append(AIMessage(...))           — 加 AI 回复
-
     这是所有 Memory 组件的底层原理——后面 Agent 模块会用 InMemorySaver 更优雅地做这件事。
     """
     print(f"\n-- 示例 2: 手动实现记忆")
@@ -93,5 +77,3 @@ if __name__ == '__main__':
 
     without_memory()
     manual_memory()
-
-    # 接下来学习: buffer_memory.py（不同记忆策略）

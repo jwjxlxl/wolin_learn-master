@@ -99,8 +99,6 @@ def ollama_multiturn():
 
     print(f"\n-- 示例 2: 多轮对话（带消息历史）")
 
-    # model = ChatOllama(model="qwen3.5:2b")
-
     model = get_model("qwen")
     # 构建消息列表：有系统提示、用户输入、AI 回复
     messages = [
@@ -133,9 +131,6 @@ def unified_model_demo():
     response = model.invoke("你好，请用一句话介绍你自己。")
     print(f"回复: {response.content}")
 
-    # 切换到 Qwen 云端模型（需要配置 .env 中的 ALIYUN_API_KEY）
-    # model = get_model("qwen")
-
 
 # =============================================================================
 # 主程序入口
@@ -144,12 +139,4 @@ def unified_model_demo():
 if __name__ == '__main__':
     print("\n>>> 02_llm_call — LLM 基础调用\n")
 
-    # ollama_basic()
     ollama_multiturn()
-    # unified_model_demo()
-    #
-    # model = get_model(provider="ollama")
-    # model_ds = get_model(provider="deepseek")
-    # model_qwen = get_model(provider="qwen")
-
-    # 接下来学习: chat_model.py（消息类型详解）

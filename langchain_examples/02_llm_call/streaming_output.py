@@ -10,23 +10,9 @@
 
 import sys
 from llm_basic import get_model
-from langchain_ollama import ChatOllama
 
 import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
-
-
-"""
-invoke() vs stream():
-
-  invoke() = 等人把话全说完再转述给你
-     用户提问 → 等待 5 秒 → 一次性显示完整答案
-     体验：感觉"卡住"了
-
-  stream() = 对方边说边转述，每出一个字就显示一个字
-     用户提问 → 0.5 秒开始逐字显示 → 持续到完成
-     体验：看到内容在生成，知道模型在工作
-"""
 
 
 # =============================================================================
@@ -43,7 +29,6 @@ def simplest_streaming():
 
     print(f"\n-- 示例 1: 最简单的流式调用")
 
-    # model = ChatOllama(model="qwen3.5:2b")
     model = get_model("qwen")
     print("AI 正在输入: ", end="", flush=True)
     for chunk in model.stream("请用 50 字左右介绍人工智能。"):
@@ -66,7 +51,6 @@ def streaming_vs_invoke():
 
     print(f"\n-- 示例 2: 流式 vs 非流式对比")
 
-    # model = ChatOllama(model="qwen3.5:2b")
     model = get_model("qwen")
     question = "请用三句话介绍你自己。"
 
@@ -96,11 +80,8 @@ def collect_while_streaming():
 
     做法：用一个列表收集所有 chunk，最后 join 起来即可。
     """
-    from langchain_ollama import ChatOllama
-
     print(f"\n-- 示例 3: 边显示边收集完整内容")
 
-    # model = ChatOllama(model="qwen3.5:2b")
     model = get_model("qwen")
     collected = []
 
@@ -123,6 +104,3 @@ if __name__ == '__main__':
 
     simplest_streaming()
     streaming_vs_invoke()
-    # collect_while_streaming()
-
-    # 接下来学习: 03_prompt/prompt_template.py（Prompt 模板）

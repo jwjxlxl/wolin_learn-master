@@ -210,8 +210,6 @@ if __name__ == '__main__':
 
     # ★ 默认运行最简单的示例 — 让学生第一次就成功
     simplest_call()
-    # streaming_call()
-    # call_with_error_handling()
 
     # 有 API Key 可取消注释体验云端模型
     cloud_api_call()

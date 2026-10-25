@@ -10,28 +10,8 @@
 import sys
 import io
 
-from langchain_openai import ChatOpenAI
-
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
 
-
-"""
-记忆策略对比:
-
-  ConversationBufferMemory（完整记忆）
-    保存所有对话，一字不漏
-    适合: 短对话、需要完整上下文
-    缺点: 对话长了消耗大量 Token（成本高、速度慢）
-
-  ConversationBufferWindowMemory（窗口记忆）
-    只保留最近 K 轮对话，旧的自动丢弃
-    适合: 长对话、节省 Token
-    类似: 手机短信——往上翻只能看到最近几条
-
-  生活化比喻:
-    Buffer = 录像机（全程录制，但硬盘会满）
-    Window = 行车记录仪（循环覆盖，只保留最近一段）
-"""
 
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_classic.memory import ConversationBufferMemory, ConversationBufferWindowMemory
@@ -110,17 +90,4 @@ def window_memory_demo():
 if __name__ == '__main__':
     print("\n>>> 05_memory/buffer_memory — 记忆策略\n")
 
-    # buffer_memory_demo()
     window_memory_demo()
-
-    # 接下来学习: 06_chains/simple_chain.py（LCEL Pipeline）
-    '''
-        LangChain提供了几种关于记忆的策略，例如保留所有对话记录的记忆，只保留最近几轮对话记录的记忆，
-        或者只保留最近几轮对话记录的窗口记忆。
-        
-        在实际的开发过程中，组件只是帮我们来理解记忆功能，真实的记忆功能是很重要，需要自己设计：
-        1. 短期记忆：记忆当前会话的记录，通常情况下保留在内存中（可能是内存，也可能是Redis）
-        2. 长期记忆：把记忆的messages做持久化的存储，通常情况下是存储在数据库中（可能是MySQL，也可能是MongoDB）
-        3. 设计一个号的记忆系统的时候，考虑的是记得住，查的准
-        4. 不能够简单的把所有的历史信息存储下来，采取的方案：把问题向量化的存储，为了找我之前聊过什么话题
-    '''

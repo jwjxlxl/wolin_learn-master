@@ -13,23 +13,7 @@ import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
 
 
-"""
-为什么需要 JSON 输出？
-
-  文本输出: "小明今年25岁，是一名软件工程师"
-  → 程序需要自己从文字中提取 name/age/job，容易出错
-
-  JSON 输出: {"name": "小明", "age": 25, "job": "软件工程师"}
-  → 程序直接 json.loads() 就能用，准确可靠
-
-  生活化比喻: JSON 输出 = 让 AI 填表格而不是写作文
-  
-  输入一段文本，实现添加学生的功能
-  先要把文本解析成json格式 ， 调用添加学生的接口，把json格式数据传给接口，接口会把数据存储到数据库中
-"""
-
 from langchain_core.prompts import PromptTemplate
-from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import JsonOutputParser
 from utils.model_utils import get_model
 
@@ -64,17 +48,13 @@ JSON:""")
 
     # 注入格式指令
     format_instructions = parser.get_format_instructions()
-    print("jsonoutput:", format_instructions)
     prompt = prompt.partial(format_instructions=format_instructions)
 
-    # model = ChatOllama(model="qwen3.5:2b")
     model = get_model("qwen")
     chain = prompt | model | parser
 
     result = chain.invoke({})
     print(f"  解析结果: {result}, {type(result)}")
-    # 命名实体识别：从文本中提取出对应的实体：Entity    ->  milvus 中 Entity代表一行记录
-    # 一行记录表示一个对象：name,age,job,id,company...
     print(f"  name: {result.get('name')}, age: {result.get('age')}, job: {result.get('job')}")
 
 
@@ -111,7 +91,6 @@ JSON:""")
 
     prompt = prompt.partial(format_instructions=parser.get_format_instructions())
 
-    # model = ChatOllama(model="qwen3.5:2b")
     model = get_model("qwen")
     chain = prompt | model | parser
 
@@ -133,7 +112,4 @@ JSON:""")
 if __name__ == '__main__':
     print("\n>>> 04_output_parser/json_parser — JsonOutputParser\n")
 
-    # using_json_parser()
     product_review_analysis()
-
-    # 接下来学习: pydantic_parser.py（强类型解析）

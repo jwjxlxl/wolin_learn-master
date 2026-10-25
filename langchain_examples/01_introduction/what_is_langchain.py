@@ -7,8 +7,11 @@
 # =============================================================================
 
 import sys
-import io
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+
+from utils.model_utils import setup_encoding
+setup_encoding()
 
 
 def without_langchain():

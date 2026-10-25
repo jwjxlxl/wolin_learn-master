@@ -9,14 +9,14 @@
 # =============================================================================
 
 import sys
-import io
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
-
+from utils.model_utils import get_model, setup_encoding
+setup_encoding()
 
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from utils.model_utils import get_model
 
 
 # =============================================================================

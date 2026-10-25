@@ -12,14 +12,16 @@
 # =============================================================================
 
 import sys
-import io
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 
+from utils.model_utils import get_model, setup_encoding
+from utils.agent_tools import get_weather
+setup_encoding()
 
 from langchain_core.tools import tool
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain.agents import create_agent
-from utils.model_utils import get_model
 
 
 # =============================================================================
@@ -34,12 +36,6 @@ def bind_tools_demo(question: str = "北京今天天气怎么样？"):
     如果它觉得不需要工具（比如简单问候），就直接回答。
     """
     print(f"\n-- 示例 1: bind_tools — 让模型知道工具有哪些")
-
-    @tool
-    def get_weather(city: str) -> str:
-        """查询指定城市的天气。"""
-        weather_db = {"北京": "晴，25°C", "上海": "多云，28°C", "广州": "小雨，30°C"}
-        return weather_db.get(city, f"暂无 {city} 的天气数据")
 
     model = get_model("qwen")
     agent = create_agent(
@@ -63,12 +59,6 @@ def create_agent_demo():
     Model + Tools + SystemPrompt 组合成可运行的 Agent。
     """
     print(f"\n-- 示例 2: create_agent — 多工具 Agent")
-
-    @tool
-    def get_weather(city: str) -> str:
-        """查询指定城市的天气。"""
-        weather_db = {"北京": "晴，25°C", "上海": "多云，28°C", "深圳": "晴，29°C"}
-        return weather_db.get(city, f"暂无 {city} 的天气数据")
 
     @tool
     def calculator(expression: str) -> str:

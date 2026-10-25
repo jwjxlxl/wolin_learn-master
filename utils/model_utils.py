@@ -1,9 +1,10 @@
 """
-项目共享模型工具模块
+项目共享工具模块
 
-提供统一的模型获取接口：
+提供统一的模型获取接口和通用工具：
   - get_qwen_client():  阿里云 Qwen 云端模型（需要 API Key）
   - get_model():        通用模型获取（默认 Ollama 本地，可选云端）
+  - setup_encoding():   设置 stdout 为 UTF-8（Windows 中文环境防乱码）
 """
 
 import os
@@ -72,3 +73,12 @@ def get_model(provider: str = None):
 
     else:
         raise ValueError(f"不支持的服务商: {provider}")
+
+
+def setup_encoding():
+    """设置 stdout 为 UTF-8（Windows 中文环境必需，防止中文/emoji 乱码）。"""
+    import sys
+    import io
+    sys.stdout = io.TextIOWrapper(
+        sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True
+    )

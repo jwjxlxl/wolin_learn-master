@@ -33,7 +33,7 @@ embeddings = DashScopeEmbeddings(model="text-embedding-v3")
 vectorstore = Milvus.from_documents(
     chunks,
     embeddings,
-    connection_args={"host": "192.168.142.128", "port": "19530"},
+    connection_args={"uri": os.getenv("MILVUS_URI", "http://localhost:19530")},
     collection_name="edu_policy",
 )
 

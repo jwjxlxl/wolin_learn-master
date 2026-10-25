@@ -10,13 +10,17 @@
 # 需要: ALIYUN_API_KEY 环境变量
 # =============================================================================
 
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+
 from langchain.agents import create_agent
 from langchain.agents.middleware import HumanInTheLoopMiddleware
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.types import Command
 from langchain_core.tools import tool
 from langchain_core.messages import HumanMessage
-from utils.model_utils import get_model
+from utils.model_utils import get_qwen_client
 
 
 """
@@ -96,10 +100,15 @@ def run():
         "send_email": {"allowed_decisions": ["approve", "edit", "reject"]},
     })
 
-    model = get_model("qwen")
+    model = get_qwen_client()
+    if model is None:
+        print("未配置 ALIYUN_API_KEY，跳过本示例")
+        return
 
     agent = create_agent(model=model, tools=[send_email],
                          system_prompt="你是一个邮件助手，帮用户发送邮件。也可以回答一些用户问题",
+                         # InMemorySaver 只在进程内可恢复；生产环境需换成持久化检查点
+                         # （如 langgraph.checkpoint.sqlite.SqliteSaver）才能真正跨进程/跨重启重放
                          middleware=[hitl], checkpointer=InMemorySaver())
 
     config = {"configurable": {"thread_id": "email_approval"}}
@@ -114,10 +123,13 @@ def run():
         print(f"\nAgent 直接回答: {result['messages'][-1].content}")
         return
 
-    for interrupt in interrupts:
-        decision = human_decision(interrupt)
+    while interrupts:
+        decision = human_decision(interrupts[0])
         result = agent.invoke(Command(resume=decision), config)
-        print(f"\n✅ Agent: {result['messages'][-1].content}")
+        # 恢复后可能触发新的中断（如 agent 连发多封邮件），需重新检查
+        interrupts = result.get("__interrupt__", [])
+        if not interrupts:
+            print(f"\n✅ Agent: {result['messages'][-1].content}")
 
 
 if __name__ == '__main__':

@@ -5,12 +5,15 @@
 # 学完本文件你将能够：
 #   ✅ 用本地 Ollama 模型进行单轮和多轮对话
 #   ✅ 理解 SystemMessage / HumanMessage / AIMessage 三种角色
-#   ✅ 封装统一的模型切换函数（本地 ↔ 云端自由切换）
+#   ✅ 使用统一封装切换本地/云端模型
 # =============================================================================
 
 import sys
-import io
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+
+from utils.model_utils import get_model, setup_encoding
+setup_encoding()
 
 
 # =============================================================================
@@ -36,46 +39,6 @@ def ollama_basic():
     model = ChatOllama(model="qwen3.5:2b")
     response = model.invoke("你好，请用一句话介绍你自己。")
     print(f"回复: {response.content}")
-
-# =============================================================================
-# 示例 3: 统一模型封装（本地 ↔ 云端自由切换）
-# 设计模式：工厂模式
-# =============================================================================
-
-def get_model(provider: str = "ollama"):
-    """
-    根据服务商名称返回对应的模型实例。
-
-    好处：切换模型只改一行参数，不需要到处改代码。
-    """
-    if provider == "ollama":
-        from langchain_ollama import ChatOllama
-        return ChatOllama(model="qwen3.5:2b")
-
-    elif provider == "qwen":
-        import os
-        from dotenv import load_dotenv
-        from langchain_openai import ChatOpenAI
-        load_dotenv()
-        return ChatOpenAI(
-            model="qwen-plus",
-            api_key=os.getenv("ALIYUN_API_KEY"),
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-        )
-
-    elif provider == "deepseek":
-        import os
-        from dotenv import load_dotenv
-        from langchain_openai import ChatOpenAI
-        load_dotenv()
-        return ChatOpenAI(
-            model="deepseek-chat",
-            api_key=os.getenv("DEEPSEEK_API_KEY"),
-            base_url="https://api.deepseek.com",
-        )
-
-    else:
-        raise ValueError(f"不支持的服务商: {provider}")
 
 # =============================================================================
 # 示例 2: 多轮对话（带消息历史）
@@ -110,9 +73,6 @@ def ollama_multiturn():
 
     response = model.invoke(messages)
     print(f"回复: {response.content}")
-
-
-
 
 
 def unified_model_demo():

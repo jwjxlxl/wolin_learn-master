@@ -27,7 +27,7 @@ chunks = splitter.split_documents(documents)
 
 embeddings = DashScopeEmbeddings(model="text-embedding-v3")
 # 定义一个Faiss向量存储 ，替换了Milvus
-store = FAISS.from_documents(documents, embeddings)
+store = FAISS.from_documents(chunks, embeddings)
 
 # 语义搜索: "人工智能相关的技术" 应该找到 ai 来源的文档
 query = "机器学习"

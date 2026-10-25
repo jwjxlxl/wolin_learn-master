@@ -15,17 +15,16 @@
 # 2. 已下载模型：ollama pull qwen3.5:2b
 # -----------------------------------------------------------------------------
 
-# 设置 UTF-8 编码（Windows 中文环境必需）
 import sys
-import io
-sys.stdout = io.TextIOWrapper(
-    sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True
-)
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+
+from utils.model_utils import get_model, setup_encoding
+setup_encoding()
 
 from langchain_core.prompts import PromptTemplate
 from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import StrOutputParser
-from utils.model_utils import get_model
 
 
 # =============================================================================

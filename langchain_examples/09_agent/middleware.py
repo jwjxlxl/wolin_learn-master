@@ -9,9 +9,12 @@
 # =============================================================================
 
 import sys
-import io
-from utils.model_utils import get_model
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+
+from utils.model_utils import get_model, setup_encoding
+from utils.agent_tools import get_weather
+setup_encoding()
 
 
 """
@@ -84,11 +87,6 @@ def decorator_middleware_demo():
         response = handler(request)
         print(f"  [wrap_model_call] 耗时 {time.time() - start:.2f}秒")
         return response
-
-    @tool
-    def get_weather(city: str) -> str:
-        """查询天气。"""
-        return {"北京": "晴，25°C", "上海": "多云，28°C"}.get(city, "暂无数据")
 
     model = get_model("qwen")
     agent = create_agent(model=model, tools=[get_weather],

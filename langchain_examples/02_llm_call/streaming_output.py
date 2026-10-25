@@ -9,10 +9,11 @@
 # =============================================================================
 
 import sys
-from llm_basic import get_model
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 
-import io
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
+from utils.model_utils import get_model, setup_encoding
+setup_encoding()
 
 
 # =============================================================================

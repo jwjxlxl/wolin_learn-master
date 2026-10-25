@@ -9,15 +9,16 @@
 # =============================================================================
 
 import sys
-import io
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 
+from utils.model_utils import get_model, setup_encoding
+setup_encoding()
 
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
-from utils.model_utils import get_model
 
 
 # =============================================================================

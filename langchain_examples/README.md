@@ -23,9 +23,9 @@ LangChain 是连接模型、提示词、文档和工具的 Python 组件库，�
 | 5 | [conversation_memory.py](05_memory/conversation_memory.py) | 显式传递对话历史 | 是 |
 | 6 | [simple_chain.py](06_chains/simple_chain.py) | LCEL 三段式 | 是 |
 | 7 | [retrieval_demo.py](07_retrieval/retrieval_demo.py) | 加载、切片、关键词检索 | 否 |
-| 8 | [agent.py](09_agent/agent.py) | 一个模拟订单工具与 Agent | 是 |
+| 8 | [agent.py](09_agent/agent.py) | 天气 + 计算器工具与 Agent | 否 |
 
-本课程有意不展开旧式 Memory 类、复杂链、Agent 中间件及生产级 RAG。这些主题分别可继续阅读 `langgraph_examples/` 与 `rag_examples/`。
+本课程有意不展开旧式 Memory 类、复杂链及生产级 RAG。这些主题可继续阅读 `langgraph_examples/` 与 `rag_examples/`。目录编号跳过 `08_project/`（综合项目模块），该实战内容见 `rag_demo/`。
 
 ## 运行
 
@@ -45,6 +45,6 @@ ollama pull qwen3.5:2b
 python langchain_examples/01_introduction/first_chain.py
 ```
 
-`09_agent/agent.py` 还要求本地模型支持工具调用。模拟订单状态是固定数据，不会连接真实企业系统。全部示例均不需要 API Key。
+`09_agent/` 系列使用云端 Qwen 模型，需要 `ALIYUN_API_KEY`。天气、计算器等工具返回的是固定模拟数据，不会连接真实外部系统。其余示例默认使用本地 Ollama，无需 API Key。
 
 > 示例使用 LangChain 1.x API。课程以 `.py` 为准；旧测试报告与重复的学习路线已移除。

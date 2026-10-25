@@ -9,9 +9,11 @@
 # =============================================================================
 
 import sys
-import io
-from utils.model_utils import get_model
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+
+from utils.model_utils import get_model, setup_encoding
+setup_encoding()
 
 
 """

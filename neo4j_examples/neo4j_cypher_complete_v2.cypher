@@ -685,21 +685,21 @@ RETURN m.title AS `电影`, m.rating AS `评分`;
 
 // --- 18.4 向量检索：GraphRAG 的语义召回基础 ---
 // 真实项目中 embedding 来自文本向量模型；这里用 3 维模拟向量讲清楚原理。
-MATCH (m:Movie)
-WHERE m.title IN ['流浪地球', '战狼2', '你好，李焕英', '满江红']
-SET m.embedding =
-    CASE m.title
-        WHEN '流浪地球' THEN [0.90, 0.10, 0.20]
-        WHEN '战狼2' THEN [0.80, 0.25, 0.30]
-        WHEN '你好，李焕英' THEN [0.20, 0.90, 0.35]
-        WHEN '满江红' THEN [0.65, 0.30, 0.70]
-    END
-RETURN m.title, m.embedding;
-
-// 用普通查询查看已经写入的模拟向量，保证整份文件默认可以跑通。
-MATCH (m:Movie)
-WHERE m.embedding IS NOT NULL
-RETURN m.title AS `电影`, m.embedding AS `模拟向量`;
+//MATCH (m:Movie)
+//WHERE m.title IN ['流浪地球', '战狼2', '你好，李焕英', '满江红']
+//SET m.embedding =
+//    CASE m.title
+//        WHEN '流浪地球' THEN [0.90, 0.10, 0.20]
+//        WHEN '战狼2' THEN [0.80, 0.25, 0.30]
+//        WHEN '你好，李焕英' THEN [0.20, 0.90, 0.35]
+//        WHEN '满江红' THEN [0.65, 0.30, 0.70]
+//    END
+//RETURN m.title, m.embedding;
+//
+//// 用普通查询查看已经写入的模拟向量，保证整份文件默认可以跑通。
+//MATCH (m:Movie)
+//WHERE m.embedding IS NOT NULL
+//RETURN m.title AS `电影`, m.embedding AS `模拟向量`;
 
 // 可选进阶：Neo4j 5.11+ 向量索引写法
 // 如果你的 Neo4j 版本支持向量索引，可以单独复制下面几句执行：
@@ -719,7 +719,6 @@ RETURN m.title AS `电影`, m.embedding AS `模拟向量`;
 // YIELD node, score
 // RETURN node.title AS `相似电影`, node.rating AS `评分`, score AS `相似度`
 // ORDER BY score DESC;
-
 // --- 18.5 GraphRAG 雏形：向量召回后沿图关系扩展上下文 ---
 // 第一步：用向量找到相关电影节点
 // 第二步：沿着电影节点扩展导演、演员、公司等结构化上下文
@@ -733,40 +732,3 @@ RETURN movie.title AS `召回电影`,
        director.name AS `导演`,
        collect(DISTINCT actor.name) AS `演员`,
        company.name AS `制作公司`;
-
-// --- 18.6 校园选课推荐：把同一套图查询能力迁移到真实业务 ---
-// 这组数据使用中文标签，与电影示例并存，便于对比“同一 Cypher，两个业务”。
-MERGE (张三:学生 {学号: 'S001'}) SET 张三.姓名 = '张三', 张三.年级 = '大一'
-MERGE (李四:学生 {学号: 'S002'}) SET 李四.姓名 = '李四', 李四.年级 = '大一'
-MERGE (王五:学生 {学号: 'S003'}) SET 王五.姓名 = '王五', 王五.年级 = '大二'
-MERGE (赵六:学生 {学号: 'S004'}) SET 赵六.姓名 = '赵六', 赵六.年级 = '大二'
-MERGE (Python:课程 {课程编号: 'C101'}) SET Python.名称 = 'Python程序设计', Python.学分 = 3
-MERGE (数据结构:课程 {课程编号: 'C102'}) SET 数据结构.名称 = '数据结构', 数据结构.学分 = 4
-MERGE (数据库:课程 {课程编号: 'C103'}) SET 数据库.名称 = '数据库系统', 数据库.学分 = 3
-MERGE (机器学习:课程 {课程编号: 'C104'}) SET 机器学习.名称 = '机器学习入门', 机器学习.学分 = 3
-MERGE (数据结构)-[:先修课程]->(Python)
-MERGE (数据库)-[:先修课程]->(Python)
-MERGE (机器学习)-[:先修课程]->(数据结构)
-MERGE (张三)-[:选修 {成绩: 88}]->(Python)
-MERGE (张三)-[:选修 {成绩: 91}]->(数据库)
-MERGE (李四)-[:选修 {成绩: 85}]->(Python)
-MERGE (李四)-[:选修 {成绩: 89}]->(数据结构)
-MERGE (王五)-[:选修 {成绩: 90}]->(数据结构)
-MERGE (王五)-[:选修 {成绩: 87}]->(机器学习)
-MERGE (赵六)-[:选修 {成绩: 92}]->(Python)
-MERGE (赵六)-[:选修 {成绩: 88}]->(数据库);
-
-// 基于“选过相同课程的同学”推荐张三还没有选的课程。
-MATCH (:学生 {姓名: '张三'})-[:选修]->(已修课程:课程)
-MATCH (同学:学生)-[:选修]->(已修课程)
-MATCH (同学)-[:选修]->(推荐课程:课程)
-WHERE NOT EXISTS {
-    MATCH (:学生 {姓名: '张三'})-[:选修]->(推荐课程)
-}
-RETURN 推荐课程.名称 AS `推荐课程`,
-       count(DISTINCT 同学) AS `推荐依据人数`
-ORDER BY `推荐依据人数` DESC;
-
-// ============================================================
-// 结束 - 以上语句可依次执行学习 Neo4j Cypher 语法
-// ============================================================

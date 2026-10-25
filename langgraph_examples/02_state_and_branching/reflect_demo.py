@@ -22,9 +22,6 @@ if __name__ == '__main__':
     if hasattr(ou, "score"):
         print(getattr(ou, "score"))
 
-    # delattr(ou, 'name')
-    # print(ou.name)
-
     if hasattr(ou, "study"):
         print("有study_方法")
         ou.study()

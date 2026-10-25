@@ -1,4 +1,19 @@
-"""知识图谱构建器 — 从术语数据构建 AI 知识图谱
+"""知识图谱构建器 — 从 AI 术语数据构建知识图谱
+
+作用：把 AI 领域的术语（如 Transformer、RAG、Agent）存入 Neo4j 图数据库，
+      以「概念（Concept）节点 + 关系（RELATED 边）」的形式组织成知识图谱，
+      演示图数据库如何表达概念之间的联系（如「BERT 基于 Transformer」）。
+
+核心结构：
+    class KnowledgeGraphBuilder  —— 封装 Neo4j 的增查操作
+        - add_concept()                添加/更新一个概念节点
+        - add_relation()               在两个概念之间建立带类型的关系
+        - get_related_concepts()       查询与某概念直接相关的所有概念（含入向/出向）
+        - get_concepts_by_category()   按分类（如「Agent架构」）批量查询概念
+        - verify_connection()          检测 Neo4j 连接是否可用
+
+运行方式（在项目根目录执行，需本地 Neo4j 已启动）：
+    python neo4j_examples/generate_graph_demo1.py
 
 Neo4j 连接信息从项目根目录 .env 读取：
     NEO4J_URI / NEO4J_USER / NEO4J_PASSWORD / NEO4J_DATABASE

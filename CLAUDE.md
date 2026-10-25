@@ -38,21 +38,22 @@
 - 云端 API 示例（`first_chain.cloud_api_call()`、`human_in_the_loop.py`）用 `utils/model_utils.get_qwen_client()` 统一获取客户端。
 - 每个教学文件 2-3 个示例，用 `print(f"\n-- 示例 N: 标题")` 分隔。
 
-### langgraph_examples/ 专属（LangGraph Agent 教程，5 模块）
+### langgraph_examples/ 专属（LangGraph Agent 教程，7 模块）
 
 | # | 模块 | 内容 | 默认模型 |
 |---|------|------|----------|
 | 01 | `01_introduction/` | 概念 + 最简图 | 无需模型 |
 | 02 | `02_state_and_branching/` | 状态管理 + 条件分支 | 无需模型 |
-| 03 | `03_agent_loop/` | ReAct Agent 循环 + create_agent 对比 | Ollama `qwen3.5:2b` |
-| 04 | `04_workflows/` | 提示链 / 路由 / 并行化 / 评估器-优化器 | Ollama `qwen3.5:2b` |
-| 05 | `05_practical/` | 智能问答 Agent 综合实战 | Ollama `qwen3.5:2b` |
+| 03 | `03_agent_loop/` | ReAct Agent 循环 | 云端 Qwen `qwen-plus` |
+| 04 | `04_workflows/` | 提示链 / 路由 / 并行化 / 评估器-优化器 | 云端 Qwen `qwen-plus` |
+| 05 | `05_practical/` | 智能问答 Agent 综合实战 | 云端 Qwen `qwen-plus` |
+| 06 | `06_multi_agent/` | Agent-as-Tool / Handoff / Supervisor | 云端 Qwen `qwen-plus` |
+| 07 | `07_deep_agents/` | DeepAgents（子代理 / Skills / 文件系统） | 云端 Qwen `qwen-plus` + `deepagents` |
 
-- **默认使用 Ollama 本地模型**：通过 `utils/model_utils.get_model()` 获取（默认 `qwen3.5:2b`）。
-- 云端 API 切换：`get_model(use_cloud=True)` → 自动使用 `get_qwen_client()`。
-- 测试：`tests/`，pytest 框架（11 个测试）。
-- 共享工具：`utils/graph_helpers.py`（`create_tool_node` / `create_router` / `build_react_agent`）。
-- 每个教学文件含 2 个示例（1 个 LLM + 1 个纯逻辑），确保无 API Key 也能跑通至少一个。
+- **默认使用云端 Qwen 模型**：通过 `utils/model_utils.get_qwen_client()` 获取（默认 `qwen-plus`，需 `ALIYUN_API_KEY`）。
+- 未配置 Key 时：教学文件打印提示并跳过 LLM 调用；纯逻辑示例（01/02）无需 Key。
+- 测试：`tests/`，pytest 框架（17 个测试）。
+- 共享工具：`utils/graph_helpers.py`（`create_tool_node` / `create_router` / `build_react_agent` / `save_graph_png`）。
 
 ### rag_examples/ 专属（RAG + Milvus 主课程）
 
@@ -96,8 +97,8 @@
 
 | 组件 | 技术 | 约束 |
 |------|------|------|
-| 本地 LLM | Ollama `qwen3.5:2b` | langchain_examples + langgraph_examples 默认模型，需本地运行 `ollama serve` |
-| 云端 LLM | 阿里云 Qwen `qwen-plus` | rag_examples AI 切片/摘要 + langgraph 可选云端模式；需 `ALIYUN_API_KEY` |
+| 本地 LLM | Ollama `qwen3.5:2b` | langchain_examples 默认模型，需本地运行 `ollama serve` |
+| 云端 LLM | 阿里云 Qwen `qwen-plus` | rag_examples AI 切片/摘要 + langgraph_examples 默认模型；需 `ALIYUN_API_KEY` |
 | 云端 LLM | DeepSeek `deepseek-chat` | rag_demo QA 生成；需 `DEEPSEEK_API_KEY` |
 | LLM 框架 | LangChain 1.0+ (`create_agent`, LCEL) | langchain_examples 使用；**已弃用** `ConversationBufferMemory`、`SequentialChain` |
 | Agent 框架 | LangGraph (`StateGraph`, `Send`, `create_react_agent`) | langgraph_examples 核心 + langchain_examples 09_agent 使用 |
@@ -125,6 +126,14 @@ MILVUS_DB_NAME=default
 各子项目有独立的 `.env.example` 模板文件。
 
 ## 改造历史
+
+### 2026-10-25 — langgraph_examples 精简 + 云端模型统一
+
+- **删除死代码**：6 个注释掉的示例函数（`simple_math_agent`、`agent_with_prebuilt`、`multi_source_search`、`evaluator_optimizer_no_llm`、`simplest_deep_agent`、`subagent_basics`）及多余注释块
+- **合并 create_agent_demo**：删除 `create_agent_demo.py`，其"create_react_agent() vs 手动构建"对比内容并入 `agent_react.py`
+- **模型统一为云端 Qwen**：全部教学文件 `get_model("qwen")` → `get_qwen_client()`（未配置 `ALIYUN_API_KEY` 时打印提示并跳过），修正文件头"默认 Ollama"的误导
+- **修复 graph_helpers**：`build_react_agent()` 的 `system_prompt` 参数由声明未用改为实际生效，并修正 docstring
+- **文档同步**：更新各模块 README/.explain.md 对已删示例的描述、顶层 README 文件清单、CLAUDE.md 模块表（5→7 模块、Ollama→云端 Qwen、11→17 测试）
 
 ### 2026-06-13 — langgraph_examples 三阶段重构
 

@@ -8,9 +8,8 @@
 #   ✅ 理解路由模式和条件分支的区别（路由 = LLM 做判断）
 #
 # 运行前检查：
-# 1. 已安装依赖：pip install langgraph langchain-core langchain-ollama pydantic
-# 2. 已安装 Ollama 并下载模型：ollama pull qwen3.5:2b
-# 3. （可选）配置 .env 中的 ALIYUN_API_KEY 使用云端模型
+# 1. 已安装依赖：pip install langgraph langchain-core langchain-openai pydantic
+# 2. 配置 .env 中的 ALIYUN_API_KEY（使用云端 Qwen 模型）
 # =============================================================================
 
 import sys
@@ -25,7 +24,7 @@ from typing import TypedDict
 from typing_extensions import Literal
 from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph, START, END
-from utils.model_utils import get_model
+from utils.model_utils import get_qwen_client
 
 
 # =============================================================================
@@ -68,13 +67,12 @@ def routing_demo():
     """
     print(f"\n-- 示例: 路由 — LLM 判断问题类型后选择回答路径")
 
-    model = get_model("qwen")
+    model = get_qwen_client()
     if model is None:
-        print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
+        print("  【跳过】请先在 .env 配置 ALIYUN_API_KEY")
         return
 
-    # 1. 结构化路由：让 LLM 判断问题类型
-    # 意图识别：确保意图识别是准确的（限制大模型的输出，不能只靠大模型进行判断，进行关键词判断+大模型的判断）
+    # 1. 结构化路由：用 Literal 约束输出，让 LLM 的判断可控
     class RouteDecision(BaseModel):
         """路由决策：判断问题属于哪种类型"""
         question_type: Literal["technical", "philosophical", "creative"] = Field(

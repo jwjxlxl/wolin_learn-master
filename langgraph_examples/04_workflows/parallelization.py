@@ -9,8 +9,8 @@
 #   ✅ 对比顺序执行和并行执行的效率差异
 #
 # 运行前检查：
-# 1. 已安装依赖：pip install langgraph langchain-core langchain-ollama
-# 2. 已安装 Ollama 并下载模型：ollama pull qwen3.5:2b
+# 1. 已安装依赖：pip install langgraph langchain-core langchain-openai
+# 2. 配置 .env 中的 ALIYUN_API_KEY（使用云端 Qwen 模型）
 # =============================================================================
 
 import sys
@@ -27,7 +27,7 @@ from typing import Annotated
 from typing_extensions import TypedDict
 from langgraph.graph import StateGraph, START, END
 from langgraph.types import Send
-from utils.model_utils import get_model
+from utils.model_utils import get_qwen_client
 
 
 # =============================================================================
@@ -60,7 +60,7 @@ from utils.model_utils import get_model
 
 
 # =============================================================================
-# 示例 1: Send() 基础 — 并行生成笑话
+# 示例: Send() 基础 — 并行生成笑话
 # =============================================================================
 
 def parallel_joke_generation():
@@ -76,11 +76,11 @@ def parallel_joke_generation():
       - 3 个 generate_joke 节点可以同时运行
       - summarizer 在所有 generate_joke 完成后才执行
     """
-    print(f"\n-- 示例 1: Send() 基础 — 并行生成笑话")
+    print(f"\n-- 示例: Send() 基础 — 并行生成笑话")
 
-    model = get_model("qwen")
+    model = get_qwen_client()
     if model is None:
-        print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
+        print("  【跳过】请先在 .env 配置 ALIYUN_API_KEY")
         return
 
     # 1. 定义状态
@@ -91,19 +91,8 @@ def parallel_joke_generation():
 
     # 2. 定义节点
     def planner(state: JokeState):
-        """
-        规划节点：为每个主题创建一个 Send()，派发给 generate_joke 节点。
-
-        条件边（add_conditional_edges）负责返回 Send 列表：
-          Send("generate_joke", {"topics": ["程序员"]})
-          Send("generate_joke", {"topics": ["产品经理"]})
-          Send("generate_joke", {"topics": ["设计师"]})
-
-        每个 Send 会在目标节点中作为一个独立执行分支，
-        传入的参数会合并到该分支的状态中。
-        """
+        """规划节点：本身只打印提示；真正的扇出由下方 add_conditional_edges 里的 Send 列表完成。"""
         print(f"  [节点: planner] 为 {len(state['topics'])} 个主题分配任务")
-        # 节点本身不做路由，由条件边负责扇出
         return {}
 
     def generate_joke(state: JokeState):
@@ -138,8 +127,7 @@ def parallel_joke_generation():
         .add_node("generate_joke", generate_joke)
         .add_node("summarizer", summarizer)
         .add_edge(START, "planner")
-        # ★ Send 条件边：planner 节点返回 Send 列表，LangGraph 自动并行执行
-        # 注意：planner 函数的返回值就是 Send 列表，不需要额外的 continue_to_jokes
+        # ★ Send 条件边：这里的 lambda 返回 Send 列表，LangGraph 为每个 Send 开一个并行分支
         .add_conditional_edges("planner", lambda state: [Send("generate_joke", {"topics": [topic]}) for topic in state["topics"]], ["generate_joke"])
         .add_edge("generate_joke", "summarizer")
         .add_edge("summarizer", END)
@@ -172,132 +160,12 @@ def parallel_joke_generation():
     print()
 
 
-# =============================================================================
-# 示例 2: 扇出-扇入 — 多数据源查询后聚合
-# =============================================================================
-
-def multi_source_search():
-    """
-    实用案例：同时查询多个"数据源"，聚合结果。
-
-    模拟场景：一个搜索请求 → 同时搜索新闻库、百科库、论坛库 → 聚合
-
-    图结构：
-      START → dispatcher → Send → search_news
-                                 → search_wiki
-                                 → search_forum
-                                 ↘ aggregator → END
-
-    关键点：
-      - 不需要 LLM：用模拟数据演示 Send() 的编排能力
-      - 所有 search 节点同时执行
-      - aggregator 等待所有 search 完成后聚合
-    """
-    print(f"\n-- 示例 2: 扇出-扇入 — 多数据源查询后聚合")
-
-    from typing import Annotated
-    import operator
-
-    class SearchState(TypedDict):
-        query: str
-        results: Annotated[list, operator.add]  # 自动追加
-        final_answer: str
-
-    # 模拟数据源
-    NEWS_DB = ["AI 技术突破：大模型进入多模态时代",
-               "OpenAI 发布最新推理模型",
-               "LangGraph 2.0 发布新特性"]
-    WIKI_DB = ["人工智能：计算机科学的分支",
-               "大语言模型：基于 Transformer 架构",
-               "LangGraph：基于图结构的 Agent 框架"]
-    FORUM_DB = ["网友热议：AI 会取代程序员吗？",
-                "实战分享：用 LangGraph 搭建客服系统",
-                "对比评测：LangChain vs LangGraph"]
-
-    def dispatcher(state: SearchState):
-        """调度节点：无操作，仅触发扇出"""
-        print(f"  [节点: dispatcher] 查询: '{state['query']}'")
-        return {}
-
-    def search_news(state: SearchState):
-        """搜索新闻库"""
-        print(f"  [节点: search_news] 搜索中...")
-        time.sleep(0.2)  # 模拟网络延迟
-        matched = [r for r in NEWS_DB if any(w in r for w in state["query"].split())]
-        return {"results": matched or ["（新闻库）无匹配"]}
-
-    def search_wiki(state: SearchState):
-        """搜索百科库"""
-        print(f"  [节点: search_wiki] 搜索中...")
-        time.sleep(0.2)
-        matched = [r for r in WIKI_DB if any(w in r for w in state["query"].split())]
-        return {"results": matched or ["（百科库）无匹配"]}
-
-    def search_forum(state: SearchState):
-        """搜索论坛库"""
-        print(f"  [节点: search_forum] 搜索中...")
-        time.sleep(0.2)
-        matched = [r for r in FORUM_DB if any(w in r for w in state["query"].split())]
-        return {"results": matched or ["（论坛库）无匹配"]}
-
-    def aggregator(state: SearchState):
-        """聚合节点：汇总所有搜索结果"""
-        print(f"  [节点: aggregator] 聚合 {len(state['results'])} 条结果")
-        return {"final_answer": f"找到 {len(state['results'])} 条相关结果：\n" +
-                "\n".join(f"  - {r}" for r in state["results"])}
-
-    def fan_out(state: SearchState):
-        """扇出函数：返回 Send 列表，每个 Send 指向不同数据源"""
-        # 必须把 query 传入每个 Send，否则 worker 分支拿不到原始查询
-        return [
-            Send("search_news", {"query": state["query"]}),
-            Send("search_wiki", {"query": state["query"]}),
-            Send("search_forum", {"query": state["query"]}),
-        ]
-
-    graph = (
-        StateGraph(SearchState)
-        .add_node("dispatcher", dispatcher)
-        .add_node("search_news", search_news)
-        .add_node("search_wiki", search_wiki)
-        .add_node("search_forum", search_forum)
-        .add_node("aggregator", aggregator)
-        .add_edge(START, "dispatcher")
-        # ★ 从 dispatcher 扇出到 3 个数据源（并行）
-        .add_conditional_edges("dispatcher", fan_out, [
-            "search_news", "search_wiki", "search_forum"
-        ])
-        # 所有数据源 → 聚合器（扇入）
-        .add_edge("search_news", "aggregator")
-        .add_edge("search_wiki", "aggregator")
-        .add_edge("search_forum", "aggregator")
-        .add_edge("aggregator", END)
-        .compile()
-    )
-
-    start = time.time()
-    result = graph.invoke({
-        "query": "AI LangGraph",
-        "results": [],
-        "final_answer": ""
-    })
-    elapsed = time.time() - start
-
-    print(f"\n{result['final_answer']}")
-    print(f"  【耗时】{elapsed:.1f} 秒（3 个数据源并行查询）")
-    print()
-
-
 if __name__ == '__main__':
     print("\n" + "=" * 70)
     print("  并行化（Parallelization）— Send() API 多节点并行执行")
     print("  Fan-out（扇出）→ 并行处理 → Fan-in（扇入）")
     print("=" * 70 + "\n")
 
-    # 示例 2 不需要 LLM，先运行
-    # multi_source_search()
-
-    # 示例 1 需要 LLM
     parallel_joke_generation()
 
     print("=" * 70)

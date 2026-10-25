@@ -14,8 +14,8 @@
 from langchain_core.messages import ToolMessage
 from langgraph.graph import StateGraph, START, END
 
-# get_model 已移至项目根 utils/model_utils.py，作为跨子项目共享的通用函数
-# 教学文件请使用: from utils.model_utils import get_model
+# 模型统一由项目根 utils/model_utils.py 提供（跨子项目共享）
+# 本模块教学文件使用: from utils.model_utils import get_qwen_client
 
 
 def create_tool_node(tools: list):
@@ -45,9 +45,9 @@ def create_tool_node(tools: list):
         results = []
 
         for tool_call in last_message.tool_calls:
-            tool_name = tool_call["name"]      # 工具名，如 "add"
-            tool_args = tool_call["args"]      # 工具参数，如 {"a": 3, "b": 4}
-            tool_id = tool_call["id"]          # 调用 ID，用于匹配 ToolMessage
+            tool_name = tool_call["name"]
+            tool_args = tool_call["args"]
+            tool_id = tool_call["id"]
 
             tool_func = tools_by_name[tool_name]
             result = tool_func.invoke(tool_args)
@@ -102,6 +102,7 @@ def build_react_agent(model, tools, system_prompt=None):
         编译好的 LangGraph 图对象，可直接 invoke()
 
     用法：
+        from utils.model_utils import get_qwen_client
         model = get_qwen_client()
         tools = [add, multiply]
         agent = build_react_agent(model.bind_tools(tools), tools)
@@ -110,6 +111,7 @@ def build_react_agent(model, tools, system_prompt=None):
     from typing import Annotated
     from typing_extensions import TypedDict
     from langgraph.graph.message import add_messages
+    from langchain_core.messages import SystemMessage
 
     # 工具执行节点
     tool_executor = create_tool_node(tools)
@@ -122,7 +124,10 @@ def build_react_agent(model, tools, system_prompt=None):
 
     # LLM 调用节点
     def llm_call(state: AgentState):
-        messages = state["messages"]
+        messages = list(state["messages"])
+        # 传入 system_prompt 时，在消息开头插入一条系统提示（仅首次）
+        if system_prompt and (not messages or not isinstance(messages[0], SystemMessage)):
+            messages = [SystemMessage(content=system_prompt)] + messages
         response = model.invoke(messages)
         return {"messages": [response]}
 

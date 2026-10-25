@@ -207,7 +207,7 @@ def run_demo():
     """完整演示：三种改写场景 + 改写前后检索对比 + 多子查询合并检索"""
     # ---- 改写模型：默认 Ollama 本地（无需 API Key）----
     # 想走云端可改成 get_model("qwen")，但需 ALIYUN_API_KEY
-    llm = get_model()
+    llm = get_model("qwen")
 
     # ---- 场景 1：太口语 → 标准表述 ----
     print(f"\n-- 示例 1: 口语化改写（太口语 → 标准表述）")

@@ -60,22 +60,7 @@ create_deep_agent()      → 再封装：内置文件系统/子代理/Skills/上
 - 添加自定义工具
 - 配置 `FilesystemBackend` 实现安全的文件读写
 
-#### 示例 1：最简 DeepAgent
-
-```python
-from deepagents import create_deep_agent
-
-agent = create_deep_agent(
-    model=model,           # 任意 LangChain 模型
-    tools=[my_tool],       # 用户自定义工具
-    instructions="你是一个智能助手。",
-)
-result = agent.invoke({"messages": [HumanMessage(content="...")]})
-```
-
-**重点：** 对比 `create_react_agent()`——DeepAgent 自动内置了文件系统、任务规划等额外能力。
-
-#### 示例 2：文件操作能力
+#### 示例：文件操作能力
 
 ```python
 from deepagents import create_deep_agent
@@ -112,33 +97,7 @@ agent = create_deep_agent(
 - 理解"上下文隔离"的委派机制
 - 用 `SKILL.md` 文件定义可复用技能
 
-#### 示例 1：子代理基础
-
-```python
-from deepagents import create_deep_agent, Subagent
-
-# 定义专业子代理
-data_analyst = Subagent(
-    name="data_analyst",
-    description="分析数据并生成统计报告",
-    model=model,
-    system_prompt="你是一个数据分析师...",
-)
-
-# 主 Agent 注册子代理
-agent = create_deep_agent(
-    model=model,
-    subagents=[data_analyst],
-    instructions="遇到数据分析任务请委派给数据分析师。",
-)
-```
-
-**关键特征：**
-1. **上下文隔离**：子代理有独立的对话上下文，不影响主 Agent
-2. **独立模型**：子代理可用不同模型（如主 Agent 用轻量模型，子代理用强模型）
-3. **自动委派**：主 Agent 根据任务描述自动判断是否委派
-
-#### 示例 2：Skills 加载
+#### 示例：Skills 加载
 
 创建 `SKILL.md` 文件：
 ```markdown
@@ -184,13 +143,9 @@ agent = create_deep_agent(
 # 1. 安装 DeepAgents（额外依赖）
 pip install deepagents
 
-# 2. 确保 Ollama 正在运行
-ollama serve
+# 2. 配置 ALIYUN_API_KEY（复制 .env.example 为 .env）
 
-# 3. 下载模型（首次运行）
-ollama pull qwen3.5:2b
-
-# 4. 运行各个示例
+# 3. 运行各个示例
 python what_is_deepagent.py        # 纯概念，无需模型
 python quickstart.py               # 最简入门 + 文件操作
 python subagents_and_skills.py     # 子代理 + Skills

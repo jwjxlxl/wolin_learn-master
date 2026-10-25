@@ -54,7 +54,7 @@ if sys.platform == "win32":
 
 # 默认 LLM 服务商：None = Ollama 本地 qwen3.5:2b（无需 API Key）
 #                  "qwen" = 阿里云 qwen-plus（需 ALIYUN_API_KEY，Function Calling 更稳）
-DEFAULT_LLM_PROVIDER = None
+DEFAULT_LLM_PROVIDER = "qwen"
 
 # ---- 图谱 Schema 描述（供 LLM 生成 Cypher 时参考）----
 SCHEMA_DESC = """知识图谱 Schema：

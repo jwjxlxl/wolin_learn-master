@@ -9,9 +9,8 @@
 #   ✅ 用 Pydantic 模型定义输出格式
 #
 # 运行前检查：
-# 1. 已安装依赖：pip install langgraph langchain-core langchain-ollama pydantic
-# 2. 已安装 Ollama 并下载模型：ollama pull qwen3.5:2b
-# 3. （可选）配置 .env 中的 ALIYUN_API_KEY 使用云端模型
+# 1. 已安装依赖：pip install langgraph langchain-core langchain-openai pydantic
+# 2. 配置 .env 中的 ALIYUN_API_KEY（使用云端 Qwen 模型）
 # =============================================================================
 
 import sys
@@ -25,7 +24,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 from typing import TypedDict
 from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph, START, END
-from utils.model_utils import get_model
+from utils.model_utils import get_qwen_client
 
 
 # =============================================================================
@@ -76,12 +75,12 @@ def prompt_chain_demo():
         needs_improvement: bool = Field(description="如果笑话需要改进返回 true")
         reason: str = Field(description="评价原因")
 
-    model = get_model("qwen")
+    model = get_qwen_client()
     if model is None:
-        print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
+        print("  【跳过】请先在 .env 配置 ALIYUN_API_KEY")
         return
 
-    # 相当于  Prompt | modle | PydanticOutputParser
+    # 相当于 Prompt | model | PydanticOutputParser
     evaluator = model.with_structured_output(JokeEvaluation)
 
     # 2. 定义状态
@@ -99,9 +98,6 @@ def prompt_chain_demo():
         print(f"  [节点: generate_joke] 为主题 '{state['topic']}' 生成笑话")
         response = model.invoke(f"写一个关于 {state['topic']} 的简短中文笑话")
         return {"joke": response.content}
-        # return {"joke": "A B C 三个人犯法了，A B 进监狱了，C 没进监狱，为什么？ 答案：因为没关系(谐音C)"}
-
-
 
     def evaluate_joke(state: JokeState):
         """评估节点：使用结构化输出判断笑话质量"""

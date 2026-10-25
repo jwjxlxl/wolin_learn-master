@@ -846,8 +846,8 @@ if __name__ == "__main__":
             return "无法回答。"
 
     # 运行评估
-    result = evaluator.evaluate_all(mock_retrieval, mock_generation)
-    evaluator.print_report(result)
+    # result = evaluator.evaluate_all(mock_retrieval, mock_generation)
+    # evaluator.print_report(result)
 
     # 5. 最佳实践
     # evaluation_best_practices()

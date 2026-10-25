@@ -45,63 +45,9 @@ Supervisor:
 - 用编译好的子图包装为 `@tool`
 - 掌握"控制权始终在主 Agent"的架构特点
 
-#### 示例 1：无 LLM 版 — 关键词路由的客服总台（理解模式结构）
+#### 示例：LLM 版 — 真正的 Agent-as-Tool
 
-**场景：** 公司智能客服总台，前台接待员（主 Agent）接到员工电话后判断问题归属，转接对应部门专员（子 Agent）。
-
-**架构图：**
-```
-员工提问 → 主 Agent（前台接待员）
-              ├── IT 问题 → 调用 IT 支持子 Agent（密码/系统状态）→ 返回结果
-              ├── 人事问题 → 调用 HR 支持子 Agent（年假/政策）→ 返回结果
-              └── 财务问题 → 调用财务支持子 Agent（预算/报销）→ 返回结果
-           主 Agent 汇总结果 → 回答员工
-```
-
-**三个子 Agent，每个都是独立的 mini StateGraph：**
-
-| 子 Agent | 工具 | 处理范围 |
-|---------|------|---------|
-| **IT 支持** | `reset_password` / `check_system_status` | 密码重置、系统状态查询 |
-| **HR 支持** | `check_leave_balance` / `lookup_policy` | 年假查询、人事政策 |
-| **财务支持** | `check_budget` / `calculate_reimbursement` | 部门预算、报销计算 |
-
-**关键代码片段：**
-```python
-# 子 Agent 是独立的 StateGraph（完整的 ReAct Agent）
-it_graph = (
-    StateGraph(ITState)
-    .add_node("it_llm", it_llm)
-    .add_node("it_tool", it_tool_node)
-    .add_edge(START, "it_llm")
-    .add_conditional_edges("it_llm", it_router, ["it_tool", END])
-    .add_edge("it_tool", "it_llm")
-    .compile()
-)
-
-# 子 Agent 打包为 @tool
-@tool
-def call_it_support(query: str) -> str:
-    """将 IT 相关问题转接给 IT 支持专员"""
-    result = it_graph.invoke({"messages": [HumanMessage(content=query)]})
-    return extract_final_answer(result)
-
-# 主 Agent 把子 Agent 当作普通工具调用
-all_tools = [call_it_support, call_hr_support, call_finance]
-main_model = model.bind_tools(all_tools)
-```
-
-**测试用例：**
-| 员工提问 | 转接部门 | 最终回答 |
-|---------|---------|---------|
-| "我的电脑密码忘记了，怎么办？" | IT 支持 | 重置密码，初始密码 123456 |
-| "我想查一下年假还剩几天？" | HR 支持 | 年假余额 5 天，已使用 7 天 |
-| "技术部今年的预算用得怎么样了？" | 财务支持 | 预算 200 万，已使用 72.5% |
-| "OA 系统今天怎么这么慢？" | IT 支持 | OA 系统运行正常，响应时间 120ms |
-
-#### 示例 2：LLM 版 — 真正的 Agent-as-Tool
-
-架构与示例 1 完全相同，但"关键词匹配"换成了"LLM 理解"。子 Agent 使用 `build_react_agent()` 一行创建，主 Agent 用 LLM 判断问题归属。
+子 Agent 使用 `build_react_agent()` 一行创建，主 Agent 用 LLM 判断问题归属。
 
 **实际应用场景：**
 - 🏢 **企业智能助手**：员工问各种问题 → 主 Agent 判断领域 → 转接 HR/IT/财务/行政子 Agent
@@ -147,63 +93,9 @@ Command(goto="目标节点", update={状态更新})
 | **子 Agent 返回后** | 回到主 Agent 继续决策 | 不会回来（除非显式 goto 回来） |
 | **适合** | 需要统一入口和汇总的场景 | 每个环节独立处理、无需回传的场景 |
 
-#### 示例 1：无 LLM 版 — 关键词路由的医院分诊
+#### 示例：LLM 版 — 真正的 Handoff
 
-**流程图：**
-```
-START → 分诊护士 →（症状判断）
-            ├── 心脏相关 → 心内科 →（需拍片？）→ 放射科 → END
-            ├── 神经相关 → 神经内科 → END
-            └── 常见症状 → END（直接处理）
-```
-
-**关键代码片段：**
-```python
-def triage_nurse(state: HandoffState):
-    symptom = state["symptom"]
-    if any(k in symptom for k in ["胸闷", "心悸", "心脏", "胸痛"]):
-        return Command(goto="cardiology", update={
-            "path": ["分诊"],
-            "diagnosis": "疑似心脏问题，请心内科接诊",
-        })
-    elif any(k in symptom for k in ["头痛", "眩晕", "麻木"]):
-        return Command(goto="neurology", update={
-            "path": ["分诊"],
-            "diagnosis": "疑似神经问题，请神经内科接诊",
-        })
-    # ...
-
-def cardiology(state: HandoffState):
-    # 心内科独立决策：需要拍片 → 转放射科；不需要 → 直接结束
-    if need_xray:
-        return Command(goto="radiology", update={...})
-    else:
-        return Command(goto=END, update={...})
-
-# 构建图：不需要条件边！Command(goto=...) 自己决定去哪
-graph = (
-    StateGraph(HandoffState)
-    .add_node("triage", triage_nurse)
-    .add_node("cardiology", cardiology)
-    .add_node("neurology", neurology)
-    .add_node("radiology", radiology)
-    .add_node("general", general)
-    .add_edge(START, "triage")
-    .compile()
-)
-```
-
-**测试用例：**
-| 患者症状 | 就诊路径 | 诊断结果 |
-|---------|---------|---------|
-| "胸闷、心悸一周" | 分诊 → 心内科 → 放射科 → END | 心脏彩超显示轻度二尖瓣反流 |
-| "头痛、眩晕" | 分诊 → 神经内科 → END | 建议做脑部 CT 进一步检查 |
-| "胸痛加剧" | 分诊 → 心内科 → 放射科 → END | 需拍片确认 |
-| "发烧 38 度" | 分诊 → END | 多休息多喝水，必要时服药 |
-
-#### 示例 2：LLM 版 — 真正的 Handoff
-
-架构与示例 1 相同，关键词匹配换成了 LLM 判断。分诊护士用结构化输出决定转哪个科室，各科室用 LLM 做专业诊断。
+分诊护士用结构化输出决定转哪个科室，各科室用 LLM 做专业诊断。
 
 **实际应用场景：**
 - 🏥 **医疗分诊系统**：患者症状 → 分诊 → 专科医生 → 检查科室 → 出报告
@@ -251,52 +143,7 @@ graph = (
 | **子 Agent 返回后** | 直接返回结果给主 Agent | 回到主管，主管审查后再分配 |
 | **适合** | 简单的问答转接 | 需要迭代审查的多步骤任务 |
 
-#### 示例 1：无 LLM 版 — 规则驱动的软件开发团队
-
-**流程图：**
-```
-START → 项目经理（分配任务）
-            ├── researcher（调研）→ 回到项目经理
-            ├── coder（编码）    → 回到项目经理
-            └── reviewer（评审） → 回到项目经理 →（三次后完成）→ END
-```
-
-**关键代码片段：**
-```python
-def supervisor(state: SupervisorState):
-    """项目经理：决定下一个任务分配给谁。"""
-    # 按顺序分配：研究 → 编码 → 评审
-    task_order = ["researcher", "coder", "reviewer"]
-    next_worker = task_order[iteration % 3]
-
-    return Command(goto=next_worker, update={
-        "next": next_worker,
-        "messages": [AIMessage(content=f"请 {next_worker} 处理: {task}")],
-    })
-
-def researcher(state: SupervisorState):
-    """研究员：调研技术方案。完成后回到项目经理。"""
-    product = f"调研报告：{task} 可采用 Python + LangGraph 实现..."
-    return Command(goto="supervisor", update={
-        "work_product": product,
-        "all_products": state["all_products"] + [product],
-        "iteration": state["iteration"] + 1,
-        "next": "",  # 清空，让 supervisor 重新决定
-    })
-
-# 构建图：不需要条件边，Command(goto=...) 自己决定去哪
-graph = (
-    StateGraph(SupervisorState)
-    .add_node("supervisor", supervisor)
-    .add_node("researcher", researcher)
-    .add_node("coder", coder)
-    .add_node("reviewer", reviewer)
-    .add_edge(START, "supervisor")
-    .compile()
-)
-```
-
-#### 示例 2：LLM 版 — 真正的 Supervisor
+#### 示例：LLM 版 — 真正的 Supervisor
 
 项目经理用 LLM 结构化输出决定分配给哪个工人，各工人用 LLM 执行专业工作。
 
@@ -369,18 +216,14 @@ graph = (
 ## 运行方式
 
 ```bash
-# 确保 Ollama 正在运行
-ollama serve
+# 复制 .env.example 为 .env，填写 ALIYUN_API_KEY（云端 Qwen）
 
-# 下载模型（首次运行）
-ollama pull qwen3.5:2b
-
-# 运行各个示例（示例 1 均无需 LLM，可立即运行）
+# 运行各个示例
 python agent_as_tool.py    # Agent-as-Tool 模式
 python handoffs.py         # Handoff 模式
 python supervisor.py       # Supervisor 模式
 ```
 
-建议学习顺序：先理解无 LLM 示例（理解控制流），再看 LLM 版本（理解智能决策）。
+建议学习顺序：Agent-as-Tool → Handoff → Supervisor（控制权从"集中调用"到"接力移交"再到"主管审查"的演进）。
 
 > 🎉 运行完成后，LangGraph 课程全部模块学习完毕！

@@ -213,11 +213,7 @@ eval(expression, {"__builtins__": {}}, {})
 ## 运行方式
 
 ```bash
-# 确保 Ollama 正在运行
-ollama serve
-
-# 下载模型（首次运行）
-ollama pull qwen3.5:2b
+# 复制 .env.example 为 .env，填写 ALIYUN_API_KEY（云端 Qwen）
 
 # 运行示例
 python search_qa_agent.py

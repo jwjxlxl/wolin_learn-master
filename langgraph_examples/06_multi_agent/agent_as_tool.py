@@ -8,9 +8,8 @@
 #   ✅ 掌握"控制权始终在主 Agent"的架构特点
 #
 # 运行前检查：
-# 1. 已安装依赖：pip install langgraph langchain-core langchain-ollama pydantic
-# 2. 已安装 Ollama 并下载模型：ollama pull qwen3.5:2b
-# 3. 示例 1 无需 LLM（纯逻辑演示，可立即运行）
+# 1. 已安装依赖：pip install langgraph langchain-core langchain-openai pydantic
+# 2. 配置 .env 中的 ALIYUN_API_KEY（使用云端 Qwen 模型）
 # =============================================================================
 
 import sys
@@ -27,7 +26,7 @@ from langchain_core.messages import HumanMessage, ToolMessage
 from langchain_core.tools import tool
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
-from utils.model_utils import get_model
+from utils.model_utils import get_qwen_client
 
 
 # =============================================================================
@@ -54,7 +53,7 @@ Agent-as-Tool（Agent 作为工具）
 """
 
 # =============================================================================
-# 示例 : LLM 版 — 真正的 Agent-as-Tool（主 Agent 用 LLM 决策）
+# 示例: LLM 版 — 真正的 Agent-as-Tool（主 Agent 用 LLM 决策）
 # =============================================================================
 
 def agent_as_tool_with_llm():
@@ -62,17 +61,16 @@ def agent_as_tool_with_llm():
     用 LLM 做决策的 Agent-as-Tool 模式。
 
     主 Agent 使用 LLM 判断问题归属，子 Agent 使用 LLM 处理专业问题。
-    架构与示例 1 完全相同，只是"关键词匹配"换成了"LLM 理解"。
 
     关键点：
       - 子 Agent 用 build_react_agent() 一行创建（复用 graph_helpers）
       - 主 Agent 标准 ReAct 循环，只是工具是"另一个 Agent"
     """
-    print(f"\n-- 示例 2: LLM 版 — 真正的 Agent-as-Tool")
+    print(f"\n-- 示例: LLM 版 — 真正的 Agent-as-Tool")
 
-    model = get_model("qwen")
+    model = get_qwen_client()
     if model is None:
-        print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
+        print("  【跳过】请先在 .env 配置 ALIYUN_API_KEY")
         return
 
     # ===== 子 Agent 1: IT 支持 =====

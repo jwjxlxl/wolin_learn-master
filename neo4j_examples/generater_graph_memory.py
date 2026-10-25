@@ -1,4 +1,18 @@
-"""Agent 记忆图谱 — 把经历存成图，经验可以复用
+"""Agent 记忆图谱 — 把经历存成图，让经验可以复用
+
+作用：为 Agent 建立「记忆」，把每次解决问题的经历拆成
+      问题(Problem) → 工具(Tool) → 结果(Result) → 教训(Lesson) 等节点，
+      并用关系边串起来存进 Neo4j。遇到新问题时，按关键字在图里
+      找回类似问题曾经用过的工具和教训，实现「经验复用」。
+
+核心结构：
+    class MemoryGraph  —— 封装记忆的写入与检索
+        - remember()   记录一次完整经历，一次 MERGE 出 Agent/Problem/Tool/Result/Lesson 五个节点及关系
+        - recall()     按关键字顺图找回相关经验（问题 → 工具 → 教训）
+        - verify_connection()  检测 Neo4j 连接是否可用
+
+运行方式（在项目根目录执行，需本地 Neo4j 已启动）：
+    python neo4j_examples/generater_graph_memory.py
 
 Neo4j 连接信息从项目根目录 .env 读取：
     NEO4J_URI / NEO4J_USER / NEO4J_PASSWORD / NEO4J_DATABASE

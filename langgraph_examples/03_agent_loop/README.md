@@ -46,60 +46,16 @@ START → LLM 思考 → (需要工具?) ──是──→ 执行工具 → 观
 
 ## 文件说明
 
-### 1. `agent_react.py` — 手动构建 ReAct Agent
+### `agent_react.py` — 手动构建 ReAct Agent
 
 **学什么：**
 - 用 `@tool` 装饰器定义 AI 可调用的工具
 - 用 `bind_tools()` 把工具绑定到模型
 - 构建带循环的图（`tool_node → llm_call` 形成闭环）
 - 理解 `AIMessage.tool_calls` 和 `ToolMessage` 的消息流转
+- 对比 `create_react_agent()` 预构建与手动构建
 
-#### 示例 1：最简 Agent — 数学计算
-
-**流程图：**
-```
-START → llm_call → (有 tool_calls?) → tool_node → 回到 llm_call
-                    ↘ (无) ──────────────────────→ END
-```
-
-**代码案例：** 定义 `add`、`multiply`、`divide` 三个工具，让 AI 能用它们回答数学问题。
-
-**关键代码片段：**
-```python
-# 1. 用 @tool 装饰器定义工具
-@tool
-def add(a: int, b: int) -> int:
-    """计算两个数的和"""
-    return a + b
-
-# 2. 绑定工具到模型
-model_with_tools = model.bind_tools(tools)
-
-# 3. 定义状态（消息列表自动追加）
-class AgentState(TypedDict):
-    messages: Annotated[list, add_messages]
-
-# 4. 构建带循环的图
-graph = (
-    StateGraph(AgentState)
-    .add_node("llm_call", llm_call)
-    .add_node("tool_node", tool_node)
-    .add_edge(START, "llm_call")
-    .add_conditional_edges("llm_call", should_continue, ["tool_node", END])
-    .add_edge("tool_node", "llm_call")  # ★ 循环的关键
-    .compile()
-)
-```
-
-**消息流示例（用户问 "3 加 4 等于多少？"）：**
-```
-[0] HumanMessage: "3 加 4 等于多少？"
-[1] AIMessage: 调用工具 add(a=3, b=4)
-[2] ToolMessage: 结果: 7
-[3] AIMessage: "3 加 4 等于 7"
-```
-
-#### 示例 2：多工具组合 — 单次对话使用多个工具
+#### 示例：多工具组合 — 单次对话使用多个工具
 
 演示一个复杂问题触发**多次工具调用**：`(3 + 4) × 5 等于多少？`
 
@@ -119,50 +75,7 @@ Agent 自动决定工具调用顺序：
 
 ---
 
-### 2. `create_agent_demo.py` — 两种 Agent 构建方式对比
-
-**学什么：**
-- 使用 `create_react_agent()` 一行创建 Agent（官方推荐方式）
-- 理解 `create_react_agent()` 底层做的事（就是 `agent_react.py` 的内容！）
-- 知道何时用 `create_react()`，何时手动构建 StateGraph
-
-#### 示例 1：用 `create_react_agent()` 创建 Agent（推荐方式）
-
-**代码案例：** 用一行代码创建和 `agent_react.py` 完全相同的 Agent。
-
-```python
-# ★ 一行搞定！底层就是 agent_react.py 中手写的所有逻辑
-agent = create_react_agent(model, tools)
-result = agent.invoke({"messages": [HumanMessage("(3 + 4) × 5 等于多少？")]})
-```
-
-同时还展示了**消息流追踪**，打印每条消息的类型和内容，帮助调试理解：
-```
-【消息流追踪】（共 X 条消息）
-    [0] HumanMessage: (3 + 4) × 5 等于多少？
-    [1] AIMessage: 调用工具: ['add']
-    [2] ToolMessage: 结果: 7
-    [3] AIMessage: 调用工具: ['multiply']
-    [4] ToolMessage: 结果: 35
-    [5] AIMessage: (3 + 4) × 5 等于 35
-```
-
-#### 示例 2：手动构建相同 Agent（对比理解）
-
-手动构建 ~20 行代码，展示 `create_react_agent()` 底层做了什么：
-
-```python
-# 这就是 create_react_agent() 内部做的事
-graph = (
-    StateGraph(AgentState)
-    .add_node("llm_call", llm_call)
-    .add_node("tool_node", tool_executor)
-    .add_edge(START, "llm_call")
-    .add_conditional_edges("llm_call", router, ["tool_node", END])
-    .add_edge("tool_node", "llm_call")
-    .compile()
-)
-```
+#### 手动构建 vs 预构建（create_react_agent）
 
 **对比总结：**
 | | `create_react_agent()` | 手动 StateGraph |
@@ -262,15 +175,10 @@ def should_continue(state: AgentState):
 ## 运行方式
 
 ```bash
-# 确保 Ollama 正在运行
-ollama serve
+# 复制 .env.example 为 .env，填写 ALIYUN_API_KEY（云端 Qwen）
 
-# 下载模型（首次运行）
-ollama pull qwen3.5:2b
-
-# 运行各个示例
-python agent_react.py          # 手动构建 ReAct Agent
-python create_agent_demo.py    # 两种构建方式对比
+# 运行示例
+python agent_react.py          # 手动构建 ReAct Agent（多工具组合 + create_react_agent 对比）
 ```
 
-建议学习顺序：先理解 `agent_react.py`（手动构建，理解原理），再看 `create_agent_demo.py`（对比封装方式）。
+建议学习顺序：先理解 `agent_react.py` 的手动构建（理解原理），再看其中的 `create_react_agent()` 对比（提高生产力）。

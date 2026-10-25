@@ -61,7 +61,7 @@ DeepAgents = "batteries-included" Agent 框架
 
 6. 模型灵活性
    支持任何 LangChain 支持的模型（openai:gpt-5.5、anthropic:claude-sonnet-4 等）
-   与 get_model() 获取的 Ollama 本地模型兼容
+   与 get_qwen_client() 获取的云端 Qwen 模型兼容
 """
 
 

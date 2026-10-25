@@ -10,9 +10,8 @@
 #   ✅ 理解 AIMessage.tool_calls 和 ToolMessage 的消息流转
 #
 # 运行前检查：
-# 1. 已安装依赖：pip install langgraph langchain-core langchain-ollama
-# 2. 已安装 Ollama 并下载模型：ollama pull qwen3.5:2b
-# 3. （可选）配置 .env 中的 ALIYUN_API_KEY 使用云端模型
+# 1. 已安装依赖：pip install langgraph langchain-core langchain-openai
+# 2. 配置 .env 中的 ALIYUN_API_KEY（使用云端 Qwen 模型）
 # =============================================================================
 
 import sys
@@ -29,15 +28,13 @@ from langchain_core.messages import HumanMessage, ToolMessage
 from langchain_core.tools import tool
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
-from utils.model_utils import get_model
+from utils.model_utils import get_qwen_client
 
 
 # =============================================================================
 # 核心概念：ReAct Agent 循环
 # =============================================================================
 """
-    ReAct 模式 Agent工作的原理，流程？   -- 面试题
-    create_agent()
 什么是 ReAct Agent？
 
   ReAct = Reasoning（推理） + Acting（行动）
@@ -63,130 +60,49 @@ from utils.model_utils import get_model
 
 
 # =============================================================================
-# 示例 1: 最简 Agent — 数学计算
+# 核心概念：手动构建 vs 预构建（create_react_agent）
 # =============================================================================
+"""
+两种构建 ReAct Agent 的方式
 
-def simple_math_agent():
-    """
-    最简 ReAct Agent：能用 add/multiply/divide 工具的 AI。
+方式 A：预构建 create_react_agent()（推荐入门）
+  from langgraph.prebuilt import create_react_agent
+  agent = create_react_agent(model, tools)
+  result = agent.invoke({"messages": [HumanMessage("...")]})
+  一行搞定！
 
-    START → llm_call → (有 tool_calls?) → tool_node → 回到 llm_call
-                          ↘ (无) ──────────────────────→ END
+方式 B：手动 StateGraph（理解原理，即下方示例）
+  graph = StateGraph(...)
+    .add_node("llm_call", llm_call)
+    .add_node("tool_node", tool_node)
+    .add_edge(START, "llm_call")
+    .add_conditional_edges("llm_call", should_continue, ["tool_node", END])
+    .add_edge("tool_node", "llm_call")
+    .compile()
 
-    关键点：
-      - @tool 装饰器把普通函数变成 AI 可调用的工具
-      - bind_tools 让模型知道有哪些工具可用
-      - tool_node → llm_call 这条边形成了循环！
-      - 直到模型不再有 tool_calls，循环才终止
-    """
-    print(f"\n-- 示例 1: 最简 ReAct Agent — 数学计算")
+create_react_agent() 底层做的事（就是下方示例手动写的代码）：
+  1. 用 MessagesState 管理消息（Annotated[list, add_messages]）
+  2. 创建 llm_call 节点（调用带工具的模型）
+  3. 创建 tool_node 节点（执行工具调用）
+  4. 创建条件路由（有 tool_calls → tool_node，没有 → END）
+  5. 编译成 graph
 
-    # 1. 定义工具
-    @tool
-    def add(a: int, b: int) -> int:
-        """计算两个数的和"""
-        result = a + b
-        print(f"  [工具: add] {a} + {b} = {result}")
-        return result
+何时用哪种？
+  用 create_react_agent()：
+    - 快速原型开发
+    - 标准的 ReAct Agent（不需要自定义逻辑）
+    - 只想关注 Tool 定义，不想管图结构
 
-    @tool
-    def multiply(a: int, b: int) -> int:
-        """计算两个数的乘积"""
-        result = a * b
-        print(f"  [工具: multiply] {a} × {b} = {result}")
-        return result
-
-    @tool
-    def divide(a: int, b: int) -> float:
-        """计算 a 除以 b 的商"""
-        if b == 0:
-            return "错误：除数不能为 0"
-        result = a / b
-        print(f"  [工具: divide] {a} ÷ {b} = {result}")
-        return result
-
-    tools = [add, multiply, divide]
-    tools_by_name = {t.name: t for t in tools}
-
-    # 2. 获取模型并绑定工具（默认使用 Ollama 本地模型，免费无需 API Key）
-    model = get_model()
-    if model is None:
-        print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
-        return
-    model_with_tools = model.bind_tools(tools)
-
-    # 3. 定义状态
-    class AgentState(TypedDict):
-        messages: Annotated[list, add_messages]
-
-    # 4. 定义节点
-    def llm_call(state: AgentState):
-        """LLM 节点：调用带工具的模型"""
-        messages = state["messages"]
-        print(f"  [节点: llm_call] 调用模型，消息数: {len(messages)}")
-        response = model_with_tools.invoke(messages)
-        if response.content:
-            print(f"    模型回复: {response.content[:80]}...")
-        if hasattr(response, 'tool_calls') and response.tool_calls:
-            print(f"    模型要调用工具: {[tc['name'] for tc in response.tool_calls]}")
-        return {"messages": [response]}
-
-    def tool_node(state: AgentState):
-        """工具节点：执行模型请求的工具调用"""
-        messages = state["messages"]
-        last_message = messages[-1]
-        results = []
-
-        for tool_call in last_message.tool_calls:
-            tool_name = tool_call["name"]
-            tool_args = tool_call["args"]
-            tool_id = tool_call["id"]
-            tool_func = tools_by_name[tool_name]
-            result = tool_func.invoke(tool_args)
-            results.append(ToolMessage(content=str(result), tool_call_id=tool_id))
-
-        return {"messages": results}
-
-    def should_continue(state: AgentState):
-        """路由函数：检查模型是否要调用工具"""
-        last_message = state["messages"][-1]
-        has_tool_calls = hasattr(last_message, 'tool_calls') and last_message.tool_calls
-        if has_tool_calls:
-            print(f"  [路由] 需要调用工具: {[tc['name'] for tc in last_message.tool_calls]} → 走 tool_node")
-            return "tool_node"
-        else:
-            print(f"  [路由] 无需工具 → 结束")
-            return END
-
-    # 5. 构建图 — 经典的 ReAct Agent 循环
-    agent = (
-        StateGraph(AgentState)
-        .add_node("llm_call", llm_call)
-        .add_node("tool_node", tool_node)
-        .add_edge(START, "llm_call")
-        .add_conditional_edges("llm_call", should_continue, ["tool_node", END])
-        .add_edge("tool_node", "llm_call")  # ★ 循环的关键：工具执行后回到 LLM
-        .compile()
-    )
-
-    # 6. 测试
-    questions = [
-        "3 加 4 等于多少？",
-        "5 乘以 6 等于多少？",
-        "20 除以 4 等于多少？",
-    ]
-
-    for q in questions:
-        print(f"【用户提问】{q}")
-        result = agent.invoke({"messages": [HumanMessage(content=q)]})
-        final_msg = result["messages"][-1]
-        if hasattr(final_msg, 'content') and final_msg.content:
-            print(f"【Agent 回答】{final_msg.content}")
-        print()
+  手动构建 StateGraph：
+    - 需要自定义状态（不只是 messages）
+    - 需要多个 LLM 节点
+    - 需要在工具执行前后加自定义逻辑
+    - 需要混合工作流模式（如：先路由、再 Agent、再汇总）
+"""
 
 
 # =============================================================================
-# 示例 2: Agent 多工具组合 — 单次对话使用多个工具
+# 示例: Agent 多工具组合 — 单次对话使用多个工具
 # =============================================================================
 
 def multi_tool_agent():
@@ -198,7 +114,7 @@ def multi_tool_agent():
       - Agent 自动决定工具调用的顺序
       - 消息流如何在循环中传递
     """
-    print(f"\n-- 示例 2: 多工具组合 — Agent 自动编排")
+    print(f"\n-- 示例: 多工具组合 — Agent 自动编排")
 
     # 1. 定义工具
     @tool
@@ -223,13 +139,13 @@ def multi_tool_agent():
     tools = [add, multiply, divide]
     tools_by_name = {t.name: t for t in tools}
 
-    model = get_model("qwen")
+    model = get_qwen_client()
     if model is None:
-        print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
+        print("  【跳过】请先在 .env 配置 ALIYUN_API_KEY")
         return
     model_with_tools = model.bind_tools(tools)
 
-    # 2. 定义图和节点（与示例 1 同构）
+    # 2. 定义图和节点
     class AgentState(TypedDict):
         messages: Annotated[list, add_messages]
 
@@ -280,9 +196,11 @@ if __name__ == '__main__':
     print("  理解思考→行动→观察→再思考的核心循环")
     print("=" * 70 + "\n")
 
-    # simple_math_agent()
     multi_tool_agent()
 
     print("=" * 70)
+    print("  总结：")
+    print("    本文件手动构建 ReAct Agent，帮助你理解底层原理")
+    print("    生产环境可直接用 create_react_agent(model, tools) 一行搞定")
     print("  接下来学习：04_workflows/（工作流模式）")
     print("=" * 70 + "\n")

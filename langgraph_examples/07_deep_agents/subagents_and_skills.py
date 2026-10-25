@@ -1,16 +1,14 @@
 # =============================================================================
-# DeepAgents 进阶 — 子代理 + Skills
+# DeepAgents 进阶 — Skills 可复用技能
 # =============================================================================
 #
 # 学完本文件你将能够：
-#   ✅ 用 Subagent 定义独立的专业子代理
-#   ✅ 理解子代理的"上下文隔离"特性
 #   ✅ 用 SKILL.md 文件定义可复用技能
 #   ✅ 通过 skills 参数让 Agent 自动发现并加载技能
 #
 # 运行前检查：
 # 1. 已安装依赖：pip install deepagents langgraph langchain-core
-# 2. 已安装 Ollama 并下载模型：ollama pull qwen3.5:2b
+# 2. 配置 .env 中的 ALIYUN_API_KEY（使用云端 Qwen 模型）
 # =============================================================================
 
 import sys
@@ -23,95 +21,11 @@ if sys.stdout.encoding != 'utf-8':
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 
 from langchain_core.messages import HumanMessage
-from utils.model_utils import get_model
+from utils.model_utils import get_qwen_client
 
 
 # =============================================================================
-# 示例 1: 子代理基础 — 委派专业任务
-# =============================================================================
-
-def subagent_basics():
-    """
-    子代理 = 上下文隔离的独立 Agent。
-
-    主 Agent 遇到专业任务时，可以委派给专门的子代理：
-      - 子代理有独立的模型、工具、系统提示
-      - 子代理的上下文不影响主 Agent
-      - 委派完成后结果返回主 Agent
-
-    类比：
-      主 Agent = 项目经理
-      子代理   = 专业外包（写完代码就交回来，不污染主对话）
-    """
-    print(f"\n-- 示例 1: 子代理基础 — 委派专业任务")
-
-    try:
-        from deepagents import create_deep_agent, SubAgent
-        from deepagents.backends import FilesystemBackend
-    except ImportError as e:
-        print(f"  【跳过】请安装 deepagents：pip install deepagents{e}")
-        return
-
-    model = get_model("qwen")
-    if model is None:
-        print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
-        return
-
-    # 1. 定义子代理
-    # 子代理是独立的 Agent，有自己的模型和指令
-    # 这里用一个简化的配置（实际中可指定不同模型）
-    data_analyst = SubAgent(
-        name="data_analyst",
-        description="分析数据并生成统计报告",
-
-        model=model,
-        system_prompt=(
-            "你是一个数据分析师。当收到数据时， 请分析其统计特征（平均值、最大值、最小值）并返回清晰的报告。回答的最后加上一句：报告已生成，请查看。"
-        ),
-    )
-
-    # 2. 创建主 Agent，注册子代理
-    agent = create_deep_agent(
-        model=model,
-        # deep agent中可以配置多个子Agent
-        subagents=[data_analyst],
-        system_prompt="你是项目经理。遇到数据分析任务请委派给数据分析师。",
-    )
-
-    # 3. 测试：让主 Agent 判断是否委派
-    questions = [
-        "请帮我分析这组数据：[12, 45, 23, 67, 34, 89, 56]",
-    ]
-
-    for q in questions:
-        print(f"  【用户】{q}")
-        result = agent.invoke({"messages": [HumanMessage(content=q)]})
-        final_msg = result["messages"][-1]
-        if hasattr(final_msg, 'content') and final_msg.content:
-            print(f"  【回答】{final_msg.content[:150]}...")
-
-        # 查看是否有子代理调用
-        # deepagents 使用名为 "task" 的工具来调用子代理
-        # 参数 subagent_type 对应 SubAgent 的 name（如 "data_analyst"）
-        sub_calls = [
-            m for m in result["messages"]
-            if hasattr(m, 'tool_calls') and m.tool_calls
-            and any(tc.get('name') == 'task' for tc in m.tool_calls)
-        ]
-        if sub_calls:
-            # 提取子代理类型
-            for m in sub_calls:
-                for tc in m.tool_calls:
-                    if tc.get('name') == 'task':
-                        agent_type = tc.get('args', {}).get('subagent_type', 'unknown')
-                        print(f"  【子代理委派】已委派给子代理: {agent_type}")
-        else:
-            print("  【注】主 Agent 直接回答了问题（未委派）")
-        print()
-
-
-# =============================================================================
-# 示例 2: Skills 加载 — 可复用行为模板
+# 示例: Skills 加载 — 可复用行为模板
 # =============================================================================
 
 def skills_loading():
@@ -130,7 +44,7 @@ def skills_loading():
       - 多个 Agent 可共享同一技能
       - 不用重新训练，改文件即改技能
     """
-    print(f"\n-- 示例 2: Skills 加载 — 可复用行为模板")
+    print(f"\n-- 示例: Skills 加载 — 可复用行为模板")
 
     try:
         from deepagents import create_deep_agent
@@ -166,9 +80,9 @@ triggers: 当用户请求审查代码、检查代码质量时
     print(f"  【技能文件】{skill_file}")
     print(f"  【技能内容】代码审查 — 审查代码并指出问题")
 
-    model = get_model("qwen")
+    model = get_qwen_client()
     if model is None:
-        print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
+        print("  【跳过】请先在 .env 配置 ALIYUN_API_KEY")
         return
 
     # 3. 创建 Agent，加载 Skills + 文件后端
@@ -201,27 +115,16 @@ def calculate_average(numbers):
 
     print(f"  【消息流】共 {len(result['messages'])} 条")
 
-    # 清理
-    # try:
-    #     os.remove(skill_file)
-    #     os.rmdir(skills_dir)
-    # except Exception:
-    #     pass
-    # print()
-
 
 if __name__ == '__main__':
     print("\n" + "=" * 70)
-    print("  DeepAgents 进阶 — 子代理 + Skills")
-    print("  理解委派机制和可复用技能")
+    print("  DeepAgents 进阶 — Skills 可复用技能")
+    print("  文件化的可复用行为，Agent 自动发现并加载")
     print("=" * 70 + "\n")
 
-    # subagent_basics()
     skills_loading()
 
     print("=" * 70)
     print("  总结：")
-    print("    Subagent = 独立的专门 Agent，主 Agent 可委派任务")
     print("    Skills = 文件化的可复用行为，Agent 自动发现并加载")
-    print("    两者结合 = 灵活、可扩展的多 Agent 架构")
     print("=" * 70 + "\n")

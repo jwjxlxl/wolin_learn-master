@@ -140,7 +140,7 @@ Conditional  = 老板 → (判断) → 员工A 或 员工B（1对1，选择路�
 Send()       = 老板 → [员工A, 员工B, 员工C]（1对N，同时开工）
 ```
 
-#### 示例 1：并行生成笑话
+#### 示例：并行生成笑话
 
 **流程图：**
 ```
@@ -162,18 +162,6 @@ def planner(state: JokeState):
     return [Send("generate_joke", {"topics": [topic]}) for topic in state["topics"]]
 ```
 
-#### 示例 2：多数据源搜索（无需 LLM）
-
-**流程图：**
-```
-START → dispatcher → Send → search_news
-                             → search_wiki
-                             → search_forum
-                             ↘ aggregator → END
-```
-
-模拟同时查询新闻库、百科库、论坛库，聚合所有匹配结果。用 `time.sleep()` 模拟网络延迟，演示 3 个搜索节点并行执行的效果。
-
 **实际应用场景：**
 - 🔍 **多源聚合搜索**：一个搜索请求 → 同时查数据库/向量库/搜索引擎 → 合并排序
 - 📄 **批量文档处理**：上传 10 个 PDF → 同时做摘要/翻译/关键词提取
@@ -189,7 +177,6 @@ START → dispatcher → Send → search_news
 - 迭代改进循环：生成 → 评估 → 不满意则改进 → 再评估 → ...
 - 使用结构化输出做自动评估（打分 + 具体反馈）
 - 退出保护：`max_iterations` 防止无限循环 + 质量阈值（分数达标即退出）
-- 纯逻辑演示（猜数字游戏），无需 LLM 也能理解循环结构
 
 **流程图：**
 ```
@@ -199,7 +186,7 @@ START → generate → evaluate → (达标?) ──是──→ END
                       └── optimize ←
 ```
 
-#### 示例 1：代码优化器
+#### 示例：代码优化器
 
 让 AI 写一个 Python 函数，然后自动评估质量并改进。每次评估给出**具体反馈**（不只是"不好"，要说"哪里不好"），generate 节点根据反馈重新生成。
 
@@ -224,10 +211,6 @@ graph.add_edge("optimize", "generate")
 **退出条件设计（防止无限循环）：**
 1. ✅ 质量达标（score >= 7）→ 正常退出
 2. ⚠️ 达到最大迭代次数（max_iterations = 3）→ 强制退出
-
-#### 示例 2：猜数字游戏（纯逻辑，无需 LLM）
-
-用简单规则模拟"评估"和"优化"：AI 不断调整猜测直到猜中目标数字。帮助学生理解循环结构本身。
 
 **实际应用场景：**
 - 💻 **代码生成器**：写函数 → 自动评测（正确性/效率/边界）→ 改进 → 再测
@@ -270,11 +253,7 @@ graph.add_edge("optimize", "generate")
 ## 运行方式
 
 ```bash
-# 确保 Ollama 正在运行
-ollama serve
-
-# 下载模型（首次运行）
-ollama pull qwen3.5:2b
+# 复制 .env.example 为 .env，填写 ALIYUN_API_KEY（云端 Qwen）
 
 # 运行各个示例
 python prompt_chain.py

@@ -9,9 +9,8 @@
 #   ✅ 独立完成 Agent 的完整构建流程
 #
 # 运行前检查：
-# 1. 已安装依赖：pip install langgraph langchain-core langchain-ollama
-# 2. 已安装 Ollama 并下载模型：ollama pull qwen3.5:2b
-# 3. （可选）配置 .env 中的 ALIYUN_API_KEY 使用云端模型
+# 1. 已安装依赖：pip install langgraph langchain-core langchain-openai
+# 2. 配置 .env 中的 ALIYUN_API_KEY（使用云端 Qwen 模型）
 # =============================================================================
 
 import sys
@@ -30,7 +29,7 @@ from langchain_core.tools import tool
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
-from utils.model_utils import get_model
+from utils.model_utils import get_qwen_client
 
 
 # =============================================================================
@@ -111,9 +110,9 @@ def search_qa_agent():
     tools_by_name = {t.name: t for t in tools}
 
     # 2. 获取模型并绑定工具
-    model = get_model("qwen")
+    model = get_qwen_client()
     if model is None:
-        print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
+        print("  【跳过】请先在 .env 配置 ALIYUN_API_KEY")
         return
     # 把工具列表绑定到模型上
     model_with_tools = model.bind_tools(tools)
@@ -186,9 +185,8 @@ if __name__ == '__main__':
     print("=" * 70 + "\n")
 
     print("【运行前检查】")
-    print("  1. 已安装依赖：pip install langgraph langchain-core langchain-ollama")
-    print("  2. 已安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
-    print("  3. 云端 API（可选）：代码改用 get_model(use_cloud=True)")
+    print("  1. 已安装依赖：pip install langgraph langchain-core langchain-openai")
+    print("  2. 配置 .env 中的 ALIYUN_API_KEY（使用云端 Qwen 模型）")
     print()
 
     search_qa_agent()

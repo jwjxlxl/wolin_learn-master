@@ -4,13 +4,12 @@
 #
 # 学完本文件你将能够：
 #   ✅ 用 create_deep_agent() 一行创建带完整能力的 Agent
-#   ✅ 添加自定义工具到 DeepAgent
 #   ✅ 配置 FilesystemBackend 让 Agent 读写文件
 #   ✅ 理解 DeepAgent 与 create_react_agent() 的核心区别
 #
 # 运行前检查：
 # 1. 已安装依赖：pip install deepagents langgraph langchain-core
-# 2. 已安装 Ollama 并下载模型：ollama pull qwen3.5:2b
+# 2. 配置 .env 中的 ALIYUN_API_KEY（使用云端 Qwen 模型）
 # =============================================================================
 
 import sys
@@ -23,81 +22,11 @@ if sys.stdout.encoding != 'utf-8':
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 
 from langchain_core.messages import HumanMessage
-from langchain_core.tools import tool
-from utils.model_utils import get_model
+from utils.model_utils import get_qwen_client
 
 
 # =============================================================================
-# 示例 1: 最简 DeepAgent — 一行创建 + 自定义工具
-# =============================================================================
-
-def simplest_deep_agent():
-    """
-    最简 DeepAgent：用 create_deep_agent() 一行创建，
-    加入一个自定义工具，体验完整的 Agent 能力。
-
-    与 create_react_agent() 的区别：
-      - DeepAgent 自动内置了文件系统、任务规划等工具
-      - create_react_agent() 只有纯工具调用循环
-    """
-    print(f"\n-- 示例 1: 最简 DeepAgent — 一行创建 + 自定义工具")
-
-    # 1. 定义自定义工具
-    @tool
-    def calculate(expression: str) -> str:
-        """执行数学表达式计算"""
-        try:
-            result = eval(expression, {"__builtins__": {}}, {})
-            return str(result)
-        except Exception as e:
-            return f"计算错误: {e}"
-
-    # 2. 获取模型
-    model = get_model("qwen")
-    if model is None:
-        print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
-        return
-
-    try:
-        from deepagents import create_deep_agent
-    except ImportError:
-        print("  【跳过】请安装 deepagents：pip install deepagents")
-        return
-
-    # 3. ★ 一行创建 DeepAgent！
-    agent = create_deep_agent(
-        model=model,
-        tools=[calculate],
-        system_prompt="你是一个智能助手。你可以使用计算工具执行数学运算。",
-    )
-
-    # 4. 测试
-    questions = [
-        "123 乘以 456 等于多少？请用计算工具算一下。",
-    ]
-
-    for q in questions:
-        print(f"  【用户】{q}")
-        result = agent.invoke({"messages": [HumanMessage(content=q)]})
-        final_msg = result["messages"][-1]
-        if hasattr(final_msg, 'content') and final_msg.content:
-            print(f"  【回答】{final_msg.content[:120]}...")
-
-        # 展示工具调用
-        tool_calls = [
-            m for m in result["messages"]
-            if hasattr(m, 'tool_calls') and m.tool_calls
-        ]
-        if tool_calls:
-            print(f"  【工具调用】共 {len(tool_calls)} 次工具调用")
-            for m in tool_calls:
-                for tc in m.tool_calls:
-                    print(f"    - {tc['name']}({tc['args']})")
-        print()
-
-
-# =============================================================================
-# 示例 2: 文件操作 — Agent 自主读写文件
+# 示例: 文件操作 — Agent 自主读写文件
 # =============================================================================
 
 def agent_with_filesystem():
@@ -109,7 +38,7 @@ def agent_with_filesystem():
 
     演示：让 Agent 创建一个文件并写入内容。
     """
-    print(f"\n-- 示例 2: 文件操作 — Agent 自主读写文件")
+    print(f"\n-- 示例: 文件操作 — Agent 自主读写文件")
 
     try:
         from deepagents import create_deep_agent
@@ -126,9 +55,9 @@ def agent_with_filesystem():
     # virtual_mode=False: 允许在 root_dir 内使用绝对路径
     backend = FilesystemBackend(root_dir=workspace, virtual_mode=True)
 
-    model = get_model("qwen")
+    model = get_qwen_client()
     if model is None:
-        print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
+        print("  【跳过】请先在 .env 配置 ALIYUN_API_KEY")
         return
 
     # 3. 创建带文件系统的 Agent
@@ -142,7 +71,6 @@ def agent_with_filesystem():
     )
 
     # 4. 让 Agent 创建文件
-    # print("  【用户】请创建一个名为 hello.txt 的文件，里面写一句问候语。")
     result = agent.invoke({
         "messages": [HumanMessage(
             content="在工作目录下创建一个cal.py文件，实现一个冒泡排序的函数"
@@ -159,16 +87,9 @@ def agent_with_filesystem():
         elif hasattr(msg, 'content') and msg.content:
             preview = msg.content
         else:
-            preview = f"(空内容 — 可能模型未响应, 请确认 ollama serve 已启动)"
+            preview = f"(空内容 — 可能模型未响应, 请确认 .env 已配置 ALIYUN_API_KEY)"
         print(f"    [{i}] {msg_type}: {preview}")
 
-    # 清理
-    # try:
-    #     if os.path.exists(created_file):
-    #         os.remove(created_file)
-    #     os.rmdir(workspace)
-    # except Exception:
-    #     pass
     print()
 
 
@@ -178,7 +99,6 @@ if __name__ == '__main__':
     print("  一行创建完整 Agent + 文件系统操作")
     print("=" * 70 + "\n")
 
-    # simplest_deep_agent()
     agent_with_filesystem()
 
     print("=" * 70)

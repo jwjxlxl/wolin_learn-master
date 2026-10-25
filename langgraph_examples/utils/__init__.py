@@ -5,7 +5,7 @@
 - create_router():     条件路由函数工厂
 - build_react_agent(): 一行构建 ReAct Agent
 
-注意：get_model() 在项目根 utils/model_utils.py 中（跨子项目共享）。
+注意：get_model() / get_qwen_client() 都在项目根 utils/model_utils.py 中（跨子项目共享）。
 """
 
 from langgraph_examples.utils.graph_helpers import (

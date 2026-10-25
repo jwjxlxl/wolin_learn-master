@@ -8,9 +8,8 @@
 #   ✅ 掌握与 Agent-as-Tool 的关键区别（控制权归属）
 #
 # 运行前检查：
-# 1. 已安装依赖：pip install langgraph langchain-core langchain-ollama pydantic
-# 2. 已安装 Ollama 并下载模型：ollama pull qwen3.5:2b
-# 3. 示例 1 无需 LLM（纯逻辑演示，可立即运行）
+# 1. 已安装依赖：pip install langgraph langchain-core langchain-openai pydantic
+# 2. 配置 .env 中的 ALIYUN_API_KEY（使用云端 Qwen 模型）
 # =============================================================================
 
 import sys
@@ -68,16 +67,16 @@ def handoff_with_llm():
     分诊护士用结构化输出判断去向，各科室用 LLM 做专业诊断。
 
     """
-    print(f"\n-- 示例 2: LLM 版 — 真正的 Handoff")
+    print(f"\n-- 示例: LLM 版 — 真正的 Handoff")
 
-    from utils.model_utils import get_model
+    from utils.model_utils import get_qwen_client
     from pydantic import BaseModel, Field
     from typing import Literal
 
     # 实例化一个LLM
-    model = get_model("qwen")
+    model = get_qwen_client()
     if model is None:
-        print("  【跳过】请安装 Ollama 并下载模型：ollama pull qwen3.5:2b")
+        print("  【跳过】请先在 .env 配置 ALIYUN_API_KEY")
         return
 
     # ===== 分诊结构化输出 =====

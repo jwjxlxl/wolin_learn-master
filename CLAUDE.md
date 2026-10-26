@@ -133,6 +133,7 @@ MILVUS_DB_NAME=default
 - **合并 create_agent_demo**：删除 `create_agent_demo.py`，其"create_react_agent() vs 手动构建"对比内容并入 `agent_react.py`
 - **模型统一为云端 Qwen**：全部教学文件 `get_model("qwen")` → `get_qwen_client()`（未配置 `ALIYUN_API_KEY` 时打印提示并跳过），修正文件头"默认 Ollama"的误导
 - **修复 graph_helpers**：`build_react_agent()` 的 `system_prompt` 参数由声明未用改为实际生效，并修正 docstring
+- **复用 graph_helpers**：7 处教学文件手写的"保存 PNG"5 行块统一改为 `save_graph_png()`（并把 `get_graph(xray=True)` 统一为 `get_graph()` 避免 PNG 行为差异）；`agent_as_tool.py` 主 Agent 复用 `create_tool_node`/`create_router`（删除手写 `main_tool_node`/`main_router`，节点改名 `tool_node`）
 - **文档同步**：更新各模块 README/.explain.md 对已删示例的描述、顶层 README 文件清单、CLAUDE.md 模块表（5→7 模块、Ollama→云端 Qwen、11→17 测试）
 
 ### 2026-06-13 — langgraph_examples 三阶段重构

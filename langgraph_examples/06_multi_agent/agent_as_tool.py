@@ -22,11 +22,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 
 from typing import Annotated
 from typing_extensions import TypedDict
-from langchain_core.messages import HumanMessage, ToolMessage
+from langchain_core.messages import HumanMessage
 from langchain_core.tools import tool
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
 from utils.model_utils import get_qwen_client
+from langgraph_examples.utils.graph_helpers import build_react_agent, create_tool_node, create_router
 
 
 # =============================================================================
@@ -88,7 +89,6 @@ def agent_as_tool_with_llm():
 
     it_tools = [reset_password, check_system_status]
 
-    from langgraph_examples.utils.graph_helpers import build_react_agent
     it_model = model.bind_tools(it_tools)
     # 用于解决IT系统问题的子Agent
     # 这个子Agent拥有自己的LLM，有自己的工具集，可以解决IT系统相关的问题
@@ -178,28 +178,14 @@ def agent_as_tool_with_llm():
             print(f"  [主 Agent] 需要转接: {[tc['name'] for tc in response.tool_calls]}")
         return {"messages": [response]}
 
-    def main_tool_node(state: MainState):
-        last_msg = state["messages"][-1]
-        results = []
-        for tc in last_msg.tool_calls:
-            func = {t.name: t for t in all_tools}[tc["name"]]
-            result = func.invoke(tc["args"])
-            results.append(ToolMessage(content=str(result), tool_call_id=tc["id"]))
-        return {"messages": results}
-
-    def main_router(state: MainState):
-        last_msg = state["messages"][-1]
-        if hasattr(last_msg, 'tool_calls') and last_msg.tool_calls:
-            return "main_tool"
-        return END
-
+    # 主 Agent 的工具节点和路由复用 graph_helpers（子 Agent 已复用 build_react_agent）
     main_graph = (
         StateGraph(MainState)
         .add_node("main_llm", main_llm)
-        .add_node("main_tool", main_tool_node)
+        .add_node("tool_node", create_tool_node(all_tools))
         .add_edge(START, "main_llm")
-        .add_conditional_edges("main_llm", main_router, ["main_tool", END])
-        .add_edge("main_tool", "main_llm")
+        .add_conditional_edges("main_llm", create_router(), ["tool_node", END])
+        .add_edge("tool_node", "main_llm")
         .compile()
     )
 

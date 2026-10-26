@@ -159,7 +159,7 @@ def save_graph_png(graph, filename: str = "graph.png"):
         save_graph_png(agent, "my_agent.png")
     """
     import os
-    png_data = graph.get_graph(xray=True).draw_mermaid_png()
+    png_data = graph.get_graph().draw_mermaid_png()
 
     # 确保 images 目录存在
     images_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "images")

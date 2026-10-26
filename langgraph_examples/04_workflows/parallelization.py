@@ -28,6 +28,7 @@ from typing_extensions import TypedDict
 from langgraph.graph import StateGraph, START, END
 from langgraph.types import Send
 from utils.model_utils import get_qwen_client
+from langgraph_examples.utils.graph_helpers import save_graph_png
 
 
 # =============================================================================
@@ -134,13 +135,8 @@ def parallel_joke_generation():
         .compile()
     )
 
-    # 保存图为 PNG
-    images_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'images')
-    os.makedirs(images_dir, exist_ok=True)
-    png_path = os.path.join(images_dir, 'parallelization.png')
-    with open(png_path, 'wb') as f:
-        f.write(graph.get_graph().draw_mermaid_png())
-    print(f"  图已保存到: {png_path}\n")
+    # 保存图为 PNG（复用 utils/graph_helpers.py 的 save_graph_png）
+    save_graph_png(graph, "parallelization.png")
 
     # 5. 执行
     print("  【测试：3 个主题并行生成笑话】")

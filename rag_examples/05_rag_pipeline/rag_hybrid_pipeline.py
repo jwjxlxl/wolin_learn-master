@@ -22,7 +22,7 @@ from pymilvus import MilvusClient
 from rag_examples.milvus_config import MILVUS_URI, MILVUS_DB_NAME
 from rag_examples.utils.hybrid_retriever import HybridRetriever
 from rag_examples.embedding_examples.aliyun_embedding import AliyunEmbedding
-from utils.model_utils import get_qwen_client
+from utils.model_utils import get_qwen_client, get_model
 
 # Windows 控制台编码
 if sys.platform == "win32":
@@ -164,7 +164,12 @@ def run_pipeline_demo():
     print(f"  ✓ 知识库已就绪")
 
     # ---- 用来回答问题的模型 ----
-    llm = get_qwen_client()
+    '''
+        get_model()的封装的方法使用的是软件设计模式中的  工厂模式
+        不关心llm 对象创建的过程，只需要获取
+        至于它是怎么创建，我们不关心，由工厂去实现的
+    '''
+    llm = get_model("qwen")
     if llm is None:
         print("\n✗ 未配置 ALIYUN_API_KEY，无法生成答案。")
         return

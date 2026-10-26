@@ -167,7 +167,6 @@ def rrf_fusion():
     print("   - k 值调节：k 大→各方法权重接近；k 小→排名靠前优势大")
 
 
-
 def hybrid_search_best_practices():
     """混合检索最佳实践"""
     print(f"\n-- 示例 4: 混合检索最佳实践")
@@ -223,7 +222,18 @@ def milvus_hybrid_search_demo():
     print(f"\n-- 示例 5: Milvus 原生混合检索")
 
     collection_name = "hybrid_demo"
+    # 实例化一个Milvus的客户端
     client = MilvusClient(uri=MILVUS_URI, db_name=MILVUS_DB_NAME)
+    # 实例化一个阿里云的嵌入模型
+    '''
+        如果是不封装的话：
+        ali_client = TextEmbedding()
+        response = ali_clent.call(
+            model = "text-embedding-v4",
+            text = "你的文本内容"
+        )
+        response.embedding[0].content
+    '''
     emb = AliyunEmbedding()
     # 封装了混合检索的检索器
     retriever = HybridRetriever(client, collection_name, emb)
@@ -286,6 +296,17 @@ def milvus_hybrid_search_demo():
     - 加权：可调节向量/关键字的相对权重，需按业务场景调参
 """)
 
+    # 能不能直接使用混合检索的方式
+    '''
+        检索器的封装，不用关心你的client连接到哪一个Milvus，因为不用关心你的连接方式是什么
+        对用户问题，文档的内容进行向量化的操作也好，交给emb
+        检索器只负责collection的创建
+        各种检索方法的实现
+        
+        体现了软件设计中的高内聚，低耦合原则
+    '''
+    # retriever.retrieve(query=query, top_k=3, ranker="rrf")
+
 
 # =============================================================================
 # 主程序入口
@@ -304,4 +325,3 @@ if __name__ == '__main__':
     # rrf_fusion()
     # hybrid_search_best_practices()
     milvus_hybrid_search_demo()
-

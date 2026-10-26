@@ -138,9 +138,9 @@ def insert_dual_collection_data(emb, doc_retriever, qa_retriever):
     """向两个集合分别插入测试数据（复用 HybridRetriever.insert）"""
     # ── 插入文档切片 ──
     doc_chunks = [
-        {"text": "Milvus 向量数据库支持混合检索，结合稠密向量和稀疏向量提高召回率。", "file_name": "milvus_intro.txt", "chunk_index": 0},
-        {"text": "RAG 系统的核心是检索相关文档片段，然后让 LLM 基于这些片段生成答案。", "file_name": "rag_guide.txt", "chunk_index": 0},
-        {"text": "BM25 算法基于 TF-IDF 改进，考虑了词频饱和度和文档长度归一化。", "file_name": "search_tech.txt", "chunk_index": 0},
+        {"text": "Milvus 向量数据库支持混合检索，结合稠密向量和稀疏向量提高召回率。", "file_name": "milvus_intro.txt", "chunk_index": 1},
+        {"text": "RAG 系统的核心是检索相关文档片段，然后让 LLM 基于这些片段生成答案。", "file_name": "rag_guide.txt", "chunk_index": 2},
+        {"text": "BM25 算法基于 TF-IDF 改进，考虑了词频饱和度和文档长度归一化。", "file_name": "search_tech.txt", "chunk_index": 3},
     ]
 
     doc_retriever.insert(

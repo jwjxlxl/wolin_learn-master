@@ -26,7 +26,7 @@
 
 3. **主 Agent 用 LLM** — `model.bind_tools(all_tools)` 让 LLM 知道有三个工具可用，LLM 自主判断调用哪个。
 
-4. **主 Agent 图结构** — `main_llm → main_router → main_tool_node → main_llm` 循环。
+4. **主 Agent 图结构** — `main_llm → tool_node → main_llm` 循环（工具节点与路由复用 `create_tool_node` / `create_router`）。
 
 ### 流程图
 
@@ -66,7 +66,7 @@ START
                        │ 返回最终回答字符串
                        ▼
 ┌─────────────────────────┐
-│    main_tool_node 节点   │  执行子 Agent 工具，获取返回结果
+│     tool_node 节点        │  执行子 Agent 工具，获取返回结果（create_tool_node）
 └───────────┬─────────────┘
             │
             ▼
@@ -88,7 +88,7 @@ Agent-as-Tool 模式本质：
 
 主 Agent (StateGraph)
   ├── main_llm: 判断需要哪个子 Agent
-  └── main_tool_node: 调用子 Agent 工具
+  └── tool_node（create_tool_node）: 调用子 Agent 工具
         │
         ├── call_it_support() ──→ it_sub_agent.invoke(...) ──→ 返回回答
         ├── call_hr_support() ──→ hr_sub_agent.invoke(...) ──→ 返回回答

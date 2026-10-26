@@ -26,6 +26,7 @@ from langchain_core.messages import HumanMessage, AIMessage
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
 from langgraph.types import Command
+from langgraph_examples.utils.graph_helpers import save_graph_png
 
 
 # =============================================================================
@@ -194,13 +195,8 @@ def handoff_with_llm():
         .compile()
     )
 
-    # 保存图为 PNG
-    images_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'images')
-    os.makedirs(images_dir, exist_ok=True)
-    png_path = os.path.join(images_dir, 'handoff_with_llm.png')
-    with open(png_path, 'wb') as f:
-        f.write(graph.get_graph().draw_mermaid_png())
-    print(f"  图已保存到: {png_path}\n")
+    # 保存图为 PNG（复用 utils/graph_helpers.py 的 save_graph_png）
+    save_graph_png(graph, "handoff_with_llm.png")
 
     # ===== 测试 =====
     cases = [

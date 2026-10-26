@@ -17,6 +17,9 @@ import os
 import io
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+# 确保项目根目录可导入（用于 utils/ 共享模块）
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+from langgraph_examples.utils.graph_helpers import save_graph_png
 
 
 # =============================================================================
@@ -134,13 +137,8 @@ def conditional_branch_graph():
         .compile()
     )
 
-    # 保存图为 PNG
-    images_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'images')
-    os.makedirs(images_dir, exist_ok=True)
-    png_path = os.path.join(images_dir, 'conditional_branch.png')
-    with open(png_path, 'wb') as f:
-        f.write(graph.get_graph().draw_mermaid_png())
-    print(f"  图已保存到: {png_path}\n")
+    # 保存图为 PNG（复用 utils/graph_helpers.py 的 save_graph_png）
+    save_graph_png(graph, "conditional_branch.png")
 
 
     print("【测试 2: 负面输入】")

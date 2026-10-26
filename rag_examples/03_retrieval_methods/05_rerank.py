@@ -66,6 +66,7 @@ def bge_reranker_demo():
     print(f"\n-- 示例 2: 真实 Rerank（BGE-Reranker）")
 
     query = "机器学习需要什么基础？"
+    # 从向量库中检索出的 top-N 候选文档
     candidates = [
         "深度学习是机器学习的子集，使用神经网络。",
         "机器学习通过训练数据让计算机自动学习。",
@@ -168,7 +169,7 @@ def milvus_rerank_pipeline():
     retriever.insert(documents, dense_vectors)
 
     # 2. 召回：先多捞一些候选（Top-N）
-    recall = retriever.retrieve(query, top_k=len(documents))
+    recall = retriever.retrieve(query, top_k=5)
     print(f"\n[召回阶段] 混合检索 Top-{len(recall)}：")
     for c in recall:
         print(f"  [{c['index']}] {c['text']}")

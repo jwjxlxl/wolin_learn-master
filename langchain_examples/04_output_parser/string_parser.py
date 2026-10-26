@@ -35,7 +35,6 @@ def compare_with_without_parser():
 
 
     # 不用 Parser
-    print(f"\n{'─' * 50}")
     print("[不用 Parser]")
     response = model.invoke(question)
     print(f"  返回类型: {type(response).__name__}")

@@ -34,8 +34,6 @@ def ollama_basic():
     """
     from langchain_ollama import ChatOllama
 
-    print(f"\n-- 示例 1: 本地 Ollama 调用")
-
     model = ChatOllama(model="qwen3.5:2b")
     response = model.invoke("你好，请用一句话介绍你自己。")
     print(f"回复: {response.content}")

@@ -28,8 +28,6 @@ def simplest_streaming():
     chunk.content 是当前这一小块的内容。
     """
 
-    print(f"\n-- 示例 1: 最简单的流式调用")
-
     model = get_model("qwen")
     print("AI 正在输入: ", end="", flush=True)
     for chunk in model.stream("请用 50 字左右介绍人工智能。"):
@@ -37,42 +35,9 @@ def simplest_streaming():
     print()
 
 
-# =============================================================================
-# 示例 2: 流式 vs 非流式 — 对比体验
-# =============================================================================
-
-def streaming_vs_invoke():
-    """
-    用计时器直观对比两种模式的差异。
-
-    注意：总耗时差不多，但流式模式"首字延迟"极低——
-    用户 0.5 秒就能看到第一个字，不用干等。
-    """
-    import time
-
-    print(f"\n-- 示例 2: 流式 vs 非流式对比")
-
-    model = get_model("qwen")
-    question = "请用三句话介绍你自己。"
-
-    # 非流式
-    print("[非流式] 开始调用...", end="", flush=True)
-    start = time.time()
-    response = model.invoke(question)
-    print(f" 耗时 {time.time() - start:.1f}秒")
-    print(f"回复: {response.content}\n")
-
-    # 流式
-    print("[流式] AI 正在输入: ", end="", flush=True)
-    start = time.time()
-    for chunk in model.stream(question):
-        time.sleep(0.1)
-        print(chunk.content, end='', flush=True)
-    print(f"\n耗时 {time.time() - start:.1f}秒")
-
 
 # =============================================================================
-# 示例 3: 收集流式输出 — 边显示边保存
+# 示例 2: 收集流式输出 — 边显示边保存
 # =============================================================================
 
 def collect_while_streaming():
@@ -104,4 +69,3 @@ def collect_while_streaming():
 if __name__ == '__main__':
 
     simplest_streaming()
-    streaming_vs_invoke()

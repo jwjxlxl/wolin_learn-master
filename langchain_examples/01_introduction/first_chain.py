@@ -39,13 +39,9 @@ def simplest_call():
     - invoke(): 把消息发给模型，等待完整回复后一次性返回（像发短信—等对方打完再显示）
     - .content: 从模型返回的"信封"中取出"信纸"（纯文本内容）
 
-    生活化比喻：
-    ChatOllama(model="qwen3.5:2b") = 拨通电话给一个叫"qwen3.5:2b"的 AI 客服
-    model.invoke("...")             = 你对着话筒说话
-    response.content               = 听筒里传来的回复
     """
 
-    # 第 1 行：创建模型实例（就像拿起电话拨号）
+    # 第 1 行：创建模型实例
     model = ChatOllama(model="qwen3.5:2b")
 
     # 第 2 行：发送消息并等待回复
@@ -69,14 +65,8 @@ def cloud_api_call():
       （不仅限于 OpenAI，任何兼容 OpenAI 格式的 API 都能用这个接口，如阿里云/DeepSeek）
     - base_url: API 的"门牌号"（不同服务商地址不同）
     - 环境变量: 把 API Key 存在 .env 文件中，代码通过 os.getenv() 读取，避免泄露
-
-    生活化比喻：
-    本地 Ollama = 家里的厨房（免费但菜式有限）
-    云端 API     = 外面的餐厅（付费但选择多、味道好）
     """
-    print("=" * 60)
-    print("示例 2: 使用云端 API（阿里云 Qwen）")
-    print("=" * 60)
+
 
     try:
         from langchain_openai import ChatOpenAI
@@ -89,8 +79,6 @@ def cloud_api_call():
         api_key = os.getenv("ALIYUN_API_KEY")
         if not api_key or api_key == "sk-your-aliyun-api-key-here":
             print("⚠️ 未配置 API Key，跳过此示例")
-            print("提示：复制 .env.example 为 .env，填写你的 ALIYUN_API_KEY")
-            print()
             return
 
         # 创建云端模型实例
@@ -129,13 +117,7 @@ def streaming_call():
     2. 首字延迟低——0.5 秒就能看到第一个字
     3. 体验更好——像真人在打字
 
-    生活化比喻：
-    invoke() = 下载完整个视频再看
-    stream() = 边缓冲边播放（youtube 那样）
     """
-    print("=" * 60)
-    print("示例 3: 流式输出（打字机效果）")
-    print("=" * 60)
 
     model = ChatOllama(model="qwen3.5:9b")
 
@@ -149,68 +131,12 @@ def streaming_call():
 
 
 # =============================================================================
-# 示例 4: 带错误处理的调用 — 写生产代码必需
-# =============================================================================
-
-def call_with_error_handling():
-    """
-    演示如何优雅地处理模型调用可能出现的异常。
-
-    常见失败原因：
-    1. Ollama 服务没启动 → 运行 'ollama serve'
-    2. 模型还没下载 → 运行 'ollama pull qwen3.5:2b'
-    3. 网络问题 → 检查是否能访问 Ollama 端口
-
-    生活化比喻：
-    错误处理 = 汽车的安全气囊
-    平时用不到，但一旦出问题，它能防止"车毁人亡"（程序崩溃）
-    """
-    print("=" * 60)
-    print("示例 4: 带错误处理的调用")
-    print("=" * 60)
-
-    model = ChatOllama(model="qwen3.5:2b")
-
-    try:
-        response = model.invoke("测试消息")
-        print(f"调用成功：{response.content}")
-
-    except Exception as e:
-        # 出了任何问题都进入这里，不会让程序直接崩溃
-        # 改成日志模块进行记录
-        print(f"❌ 调用失败：{e}")
-        print()
-        print("可能的原因：")
-        print("  1. Ollama 服务未启动 → 终端运行 ollama serve")
-        print("  2. 模型未下载 → 终端运行 ollama pull qwen3.5:2b")
-        print("  3. 网络连接问题 → 检查防火墙/代理设置")
-
-    print()
-
-
-# =============================================================================
 # 主程序入口
 # =============================================================================
 
 if __name__ == '__main__':
-    print("\n" + "=" * 70)
-    print("  第一个 LangChain 程序")
-    print("  用最简单的代码体验 LangChain 的核心能力")
-    print("=" * 70 + "\n")
-
-    print("【运行前检查】")
-    print("  1. 已安装 Ollama 服务")
-    print("  2. 已下载模型：ollama pull qwen3.5:2b")
-    print("  3. Ollama 服务正在运行")
-    print()
-
     # ★ 默认运行最简单的示例 — 让学生第一次就成功
     simplest_call()
 
     # 有 API Key 可取消注释体验云端模型
     cloud_api_call()
-
-    print("=" * 70)
-    print("  恭喜！你已完成第一个 LangChain 程序！")
-    print("  接下来学习：02_llm_call/llm_basic.py（深入 LLM 调用）")
-    print("=" * 70 + "\n")

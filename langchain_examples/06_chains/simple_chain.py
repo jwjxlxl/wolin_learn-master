@@ -121,70 +121,9 @@ def translation_chain():
 
 
 # =============================================================================
-# 示例 3: 可复用的 Chain 工厂函数
-# =============================================================================
-
-def reusable_chain_factory():
-    """
-    演示如何把 Chain 封装成函数，方便在多处复用。
-
-    核心概念：
-    - Chain 工厂函数 = 一个"生产 Chain 的函数"
-    - 好处：一次编写，到处使用；修改只需改一处
-
-    生活化比喻：
-    直接创建 Chain = 每次想吃包子就自己和面、调馅、蒸
-    工厂函数       = 写一个"做包子"的菜谱，想吃了照着做就行
-    """
-    print("=" * 60)
-    print("示例 3: 可复用的 Chain 工厂函数")
-    print("=" * 60)
-
-    def create_translator(source_lang: str, target_lang: str):
-        """
-        创建一个特定语言方向的翻译 Chain。
-
-        Args:
-            source_lang: 源语言
-            target_lang: 目标语言
-
-        Returns:
-            一个配置好的翻译 Chain，调用时只需传入 {"text": "..."}
-        """
-        prompt = PromptTemplate.from_template(f"""
-你是一位专业翻译，请将文本从{source_lang}翻译成{target_lang}。
-只输出翻译结果，不要解释。
-
-原文：{{{{text}}}}
-
-译文：""")
-        model = ChatOllama(model="qwen3.5:2b")
-        chain = prompt | model | StrOutputParser()
-        return chain
-
-    # 创建两个不同方向的翻译 Chain
-    en_to_zh = create_translator("英语", "中文")
-    zh_to_en = create_translator("中文", "英语")
-
-    # 使用时只需传 {text}
-    print("英→中:", en_to_zh.invoke({"text": "Artificial intelligence is amazing!"}))
-    print("中→英:", zh_to_en.invoke({"text": "中国的历史文化非常悠久。"}))
-    print()
-
-
-# =============================================================================
 # 主程序入口
 # =============================================================================
 
 if __name__ == '__main__':
-    print("\n" + "=" * 70)
-    print("  简单链 — LCEL Pipeline")
-    print("  用 | 操作符串联 Prompt → Model → Parser")
-    print("=" * 70 + "\n")
-
-    print("【运行前检查】")
-    print("  1. 已安装 Ollama 服务")
-    print("  2. 已下载模型：ollama pull qwen3.5:2b")
-    print()
 
     translation_chain()

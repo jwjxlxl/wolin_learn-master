@@ -49,6 +49,10 @@ class KnowledgeGraphBuilder:
         except Exception:
             return False
 
+    '''
+        添加一个节点和属性
+        实际是创建一个节点和添加属性的组合，也可以修改属性
+    '''
     def add_concept(self, name: str, category: str, description: str):
         """添加一个概念节点"""
         query = """

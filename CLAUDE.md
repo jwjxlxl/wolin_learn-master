@@ -38,7 +38,7 @@
 - 云端 API 示例（`first_chain.cloud_api_call()`、`human_in_the_loop.py`）用 `utils/model_utils.get_qwen_client()` 统一获取客户端。
 - 每个教学文件 2-3 个示例，用 `print(f"\n-- 示例 N: 标题")` 分隔。
 
-### langgraph_examples/ 专属（LangGraph Agent 教程，7 模块）
+### langgraph_examples/ 专属（LangGraph Agent 教程，9 模块）
 
 | # | 模块 | 内容 | 默认模型 |
 |---|------|------|----------|
@@ -49,10 +49,12 @@
 | 05 | `05_practical/` | 智能问答 Agent 综合实战 | 云端 Qwen `qwen-plus` |
 | 06 | `06_multi_agent/` | Agent-as-Tool / Handoff / Supervisor | 云端 Qwen `qwen-plus` |
 | 07 | `07_deep_agents/` | DeepAgents（子代理 / Skills / 文件系统） | 云端 Qwen `qwen-plus` + `deepagents` |
+| 08 | `08_student_helper/` | 学生助手 HITL（interrupt + Checkpointer 长时运行） | 无需模型 |
+| 09 | `09_checkpointing/` | Checkpoint / 断点恢复 / 持久化 / 时间旅行 | 无需模型 |
 
 - **默认使用云端 Qwen 模型**：通过 `utils/model_utils.get_qwen_client()` 获取（默认 `qwen-plus`，需 `ALIYUN_API_KEY`）。
-- 未配置 Key 时：教学文件打印提示并跳过 LLM 调用；纯逻辑示例（01/02）无需 Key。
-- 测试：`tests/`，pytest 框架（17 个测试）。
+- 未配置 Key 时：教学文件打印提示并跳过 LLM 调用；纯逻辑示例（01/02/08/09）无需 Key。
+- 测试：`tests/`，pytest 框架（24 个测试）。
 - 共享工具：`utils/graph_helpers.py`（`create_tool_node` / `create_router` / `build_react_agent` / `save_graph_png`）。
 
 ### rag_examples/ 专属（RAG + Milvus 主课程）

@@ -3,15 +3,11 @@
 ## 学习路线
 
 ```
-01_introduction         02_state_and_branching     03_agent_loop          04_workflows            05_practical            06_multi_agent          07_deep_agents
-    │                        │                         │                      │                      │                      │                      │
-    ▼                        ▼                         ▼                      ▼                      ▼                      ▼                      ▼
- 概念认知  ──────────→  状态+条件分支  ──────────→  ReAct Agent  ──────────→  工作流模式  ──────────→  综合实战  ──────────→  多智能体模式  ──────→  DeepAgents 框架
- (无需API)              (无需API)                 ★核心技能              (需要LLM)              (需要LLM)              (需要LLM)              (需要LLM+deepagents)
-                                                    ├─ agent_react         ├─ prompt_chain          ├─ search_qa_agent       ├─ agent_as_tool
-                                                    │                      ├─ routing                                        ├─ handoffs
-                                                    │                      ├─ parallelization                                └─ supervisor
-                                                    │                      └─ evaluator_optimizer
+01_introduction      02_state_and_branching    03_agent_loop      04_workflows      05_practical      06_multi_agent      07_deep_agents      08_student_helper      09_checkpointing
+     │                       │                      │                 │                 │                   │                   │                    │
+     ▼                       ▼                      ▼                 ▼                 ▼                   ▼                   ▼                    ▼
+  概念认知  ──────────→  状态+条件分支  ──────────→  ReAct Agent  ───→  工作流模式  ───→  综合实战  ───→  多智能体模式  ───→  DeepAgents  ───→  HITL 长时运行  ───→  Checkpoint/断点恢复
+  (无需API)             (无需API)                ★核心技能         (需要LLM)         (需要LLM)         (需要LLM)         (需要LLM+deepagents)   (无需API)            (无需API)
 ```
 
 ## 模块概览
@@ -25,6 +21,8 @@
 | 05 | `05_practical/` | 智能问答 Agent 综合实战 | 知识搜索 + 计算 + 日期 | ✅ |
 | 06 | `06_multi_agent/` | **三大多智能体模式** | Agent-as-Tool / Handoff / Supervisor | ✅ |
 | 07 | `07_deep_agents/` | **DeepAgents 开箱即用框架** | 一行创建 + 文件系统 / 子代理 / Skills | ✅ |
+| 08 | `08_student_helper/` | 学生助手 HITL | interrupt + Checkpointer 长时运行 | ❌ |
+| 09 | `09_checkpointing/` | **Checkpoint / 断点恢复 / 持久化** | 机制讲解 + 崩溃恢复 + 时间旅行 | ❌ |
 
 ## 文件清单
 
@@ -59,7 +57,8 @@ langgraph_examples/
 ├── 06_multi_agent/                     ← 多智能体模式（三大架构）
 │   ├── agent_as_tool.py                Agent-as-Tool（主Agent调用子Agent为工具）
 │   ├── handoffs.py                     Handoff 模式（控制权接力传递）
-│   └── supervisor.py                   Supervisor 模式（主管分配+审查）
+│   ├── supervisor.py                   Supervisor 模式（主管分配+审查）
+│   └── hierarchical.py                 Hierarchical 模式（固定流程 + 模块化子团队）
 │
 ├── 07_deep_agents/                     ← DeepAgents 开箱即用框架
 │   ├── __init__.py
@@ -68,10 +67,21 @@ langgraph_examples/
 │   ├── subagents_and_skills.py         子代理委派 + Skills 加载
 │   └── README.md                       教学大纲
 │
-├── tests/                              ← 测试（pytest，17 个）
+├── 08_student_helper/                  ← 学生助手 HITL（interrupt + Checkpointer）
+│   ├── require.md                      需求说明 + 状态图
+│   └── student_helper.py               长时运行 + 人工介入演示
+│
+├── 09_checkpointing/                   ← ★ Checkpoint / 断点恢复 / 持久化
+│   ├── README.md                       教学大纲 + 5 个核心问题
+│   ├── 01_checkpoint_basics.py         断点续跑 + Checkpoint 机制
+│   ├── 02_persistent_resume.py         状态持久化 + 进程崩溃恢复（SqliteSaver）
+│   └── 03_time_travel_fork.py          改需求恢复：update_state / 时间旅行 / fork
+│
+├── tests/                              ← 测试（pytest，24 个）
 │   ├── __init__.py
 │   ├── test_graph_helpers.py           单元测试（tool_node + router）
-│   └── test_graphs.py                  图结构集成测试
+│   ├── test_graphs.py                  图结构集成测试
+│   └── test_checkpointing.py           Checkpoint 测试（断点恢复 / 持久化 / 时间旅行）
 │
 └── utils/                              ← 共享工具模块
     ├── __init__.py
@@ -86,16 +96,18 @@ langgraph_examples/
    # 模块 06（多智能体）用原生 langgraph 实现，无需额外包
    # 模块 07（DeepAgents）需要额外安装：
    pip install deepagents
+   # 模块 09（Checkpoint 持久化）需要额外安装：
+   pip install langgraph-checkpoint-sqlite
    # 所有模式均用原生 langgraph 实现，教底层原理而非黑盒
    ```
 
 2. **配置阿里云 API Key**（需要 LLM 的模块使用云端 Qwen 模型）：
    ```bash
    # 复制 .env.example 为 .env，填写 ALIYUN_API_KEY
-   # 未配置时示例会打印提示并跳过；纯逻辑示例（01/02）无需 Key
+   # 未配置时示例会打印提示并跳过；纯逻辑示例（01/02/08/09）无需 Key
    ```
 
-4. **运行测试**：
+3. **运行测试**：
    ```bash
    pip install pytest
    pytest langgraph_examples/tests/ -v
@@ -103,7 +115,7 @@ langgraph_examples/
 
 ## 关键规则
 
-- **默认云端 Qwen 模型**：`qwen-plus`，需配置 `ALIYUN_API_KEY`；未配置时示例自动跳过，纯逻辑示例（01/02）无需 Key
+- **默认云端 Qwen 模型**：`qwen-plus`，需配置 `ALIYUN_API_KEY`；未配置时示例自动跳过，纯逻辑示例（01/02/08/09）无需 Key
 - **中文母语学生，Windows 为主**：注释、docstring、打印输出全部中文；变量/函数/类名英文 snake_case
 - **代码即文档**：详细 docstring + 行内注释，每个函数独立可运行
 - **生活化比喻**：StateGraph = "地铁图"、Node = "站点"、Edge = "轨道"、Tool = "员工"、LLM = "老板"

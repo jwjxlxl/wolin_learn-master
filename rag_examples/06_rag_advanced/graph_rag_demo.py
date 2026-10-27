@@ -276,18 +276,21 @@ class GraphRAGSystem:
                 f"规则：\n"
                 f"1. 只能调用 query_graph 工具执行只读 Cypher（MATCH ... RETURN）。\n"
                 f"2. Cypher 中实体名用单引号字面量（如 'BERT'），不要用 $参数。\n"
-                f"3. 查关系示例："
-                f"MATCH (c:Concept {{name: 'BERT'}})-[r:RELATED]->(o:Concept) "
-                f"RETURN c.name, r.type, o.name\n"
-                f"4. 查描述示例："
+                f"3. 【必须】用户问题涉及到的每一个实体，都要生成对应的查询，"
+                f"不能漏掉任何一个。可以一次调用传多条 Cypher，也可以多次调用工具。\n"
+                f"4. 用户问「A 和 B 有什么区别/关系/对比」时，优先查两个实体及它们之间的关系：\n"
+                f"   MATCH (a:Concept {{name: 'A'}})-[r:RELATED]-(b:Concept {{name: 'B'}})\n"
+                f"   RETURN a.name, a.category, a.description, type(r) AS rel, b.name, b.category, b.description\n"
+                f"   同时也要分别查 A、B 各自的描述。\n"
+                f"5. 查描述示例："
                 f"MATCH (c:Concept {{name: 'BERT'}}) RETURN c.name, c.category, c.description\n\n"
-                f"请先根据实体和问题生成合适的 Cypher，然后调用 query_graph 工具执行，"
+                f"请先根据实体和问题生成合适的 Cypher（覆盖全部实体），然后调用 query_graph 工具执行，"
                 f"不要直接回答。"
             )
             human = (
                 f"实体：{state['entities']}\n"
                 f"用户问题：{state['question']}\n\n"
-                f"请生成 Cypher 并调用 query_graph 工具。"
+                f"请为上面【每一个】实体生成 Cypher 并调用 query_graph 工具，确保全部实体都被查询到。"
             )
             resp = self.llm_with_tools.invoke([SystemMessage(content=system),
                                                HumanMessage(content=human)])
@@ -297,13 +300,14 @@ class GraphRAGSystem:
         def execute_query(state: GraphRAGState):
             last = state["messages"][-1]
             tool_messages = []
-            cypher_used = ""
+            cypher_parts = []
 
             if getattr(last, "tool_calls", None):
                 for tc in last.tool_calls:
                     if tc["name"] == "query_graph":
-                        cypher_used = tc["args"].get("cypher", "")
-                        content = self._execute_cypher(cypher_used)
+                        cypher = tc["args"].get("cypher", "")
+                        cypher_parts.append(cypher)
+                        content = self._execute_cypher(cypher)
                         # 模型生成的 Cypher 无效时，退回兜底查询
                         if content.startswith("[错误") or content.startswith("[查询失败"):
                             content = self._fallback_query(state["entities"])
@@ -315,10 +319,22 @@ class GraphRAGSystem:
                 content = self._fallback_query(state["entities"])
                 tool_messages.append(ToolMessage(content=content, tool_call_id="fallback"))
 
+            cypher_used = "\n".join(cypher_parts)
+
+            # 覆盖校验：模型可能漏查某些实体，未覆盖的用兜底查询补齐
+            graph_result = "\n".join(tm.content for tm in tool_messages)
+            missing = [e for e in state["entities"] if e not in graph_result]
+            if missing:
+                extra = self._fallback_query(missing)
+                tool_messages.append(ToolMessage(content=extra, tool_call_id="coverage_fallback"))
+                graph_result = f"{graph_result}\n{extra}"
+
             print(f"  [阶段3 执行查询] cypher = {cypher_used or '（兜底）'}")
+            if missing:
+                print(f"  [阶段3 覆盖兜底] 补查实体：{missing}")
             return {"messages": tool_messages,
                     "cypher": cypher_used,
-                    "graph_result": tool_messages[-1].content}
+                    "graph_result": graph_result}
 
         # —— 阶段 4：组装图谱上下文（代码）——
         def assemble_context(state: GraphRAGState):
@@ -418,9 +434,9 @@ if __name__ == "__main__":
         rag = GraphRAGSystem()
 
         questions = [
-            "BERT 是什么？它和 Transformer 有什么关系？",
+            # "BERT 是什么？它和 Transformer 有什么关系？",
             "GPT 和 BERT 有什么区别？它们的底层架构是什么？",
-            "Agent 需要用到哪些技术？",
+            # "Agent 需要用到哪些技术？",
             "RAG 和 Fine-tuning 有什么区别？",
         ]
 

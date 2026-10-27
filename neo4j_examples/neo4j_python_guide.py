@@ -375,9 +375,9 @@ def main():
     print("删除张小斐后:", client.get_all_persons())
 
     # 示例 5：CSV 批量导入 + 沿图关系扩展上下文
-    print("\n-- 示例 5: CSV 批量导入 + 上下文扩展")
-    print("批量导入电影数:", client.load_movies_from_csv())
-    print("扩展《流浪地球》上下文:", client.expand_context("流浪地球"))
+    # print("\n-- 示例 5: CSV 批量导入 + 上下文扩展")
+    # print("批量导入电影数:", client.load_movies_from_csv())
+    # print("扩展《流浪地球》上下文:", client.expand_context("流浪地球"))
 
     client.close()
     print("\n连接已关闭")

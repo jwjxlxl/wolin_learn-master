@@ -191,16 +191,6 @@ def multi_tool_agent():
 
 
 if __name__ == '__main__':
-    print("\n" + "=" * 70)
-    print("  Agent 循环 — ReAct 模式")
-    print("  理解思考→行动→观察→再思考的核心循环")
-    print("=" * 70 + "\n")
-
     multi_tool_agent()
 
-    print("=" * 70)
-    print("  总结：")
-    print("    本文件手动构建 ReAct Agent，帮助你理解底层原理")
-    print("    生产环境可直接用 create_react_agent(model, tools) 一行搞定")
-    print("  接下来学习：04_workflows/（工作流模式）")
-    print("=" * 70 + "\n")
+

@@ -165,13 +165,5 @@ def prompt_chain_demo():
 
 
 if __name__ == '__main__':
-    print("\n" + "=" * 70)
-    print("  提示链（Prompt Chain）— 顺序执行 + 条件分支")
-    print("  理解工作流（Workflow）的确定性编排")
-    print("=" * 70 + "\n")
 
     prompt_chain_demo()
-
-    print("=" * 70)
-    print("  接下来学习：routing.py（LLM 路由）")
-    print("=" * 70 + "\n")

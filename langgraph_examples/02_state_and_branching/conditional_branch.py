@@ -148,13 +148,4 @@ def conditional_branch_graph():
 
 
 if __name__ == '__main__':
-    print("\n" + "=" * 70)
-    print("  条件分支 — 根据状态选择不同路径")
-    print("  理解条件边（Conditional Edge）的工作原理")
-    print("=" * 70 + "\n")
-
     conditional_branch_graph()
-
-    print("=" * 70)
-    print("  接下来学习：agent_react.py（Agent 循环 — ReAct 模式）")
-    print("=" * 70 + "\n")

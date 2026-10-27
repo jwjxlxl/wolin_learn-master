@@ -117,7 +117,3 @@ def simple_two_node_graph():
 if __name__ == '__main__':
 
     simple_two_node_graph()
-
-    print("=" * 70)
-    print("  接下来学习：conditional_branch.py（条件分支）")
-    print("=" * 70 + "\n")

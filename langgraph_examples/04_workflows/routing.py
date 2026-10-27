@@ -157,13 +157,4 @@ def routing_demo():
 
 
 if __name__ == '__main__':
-    print("\n" + "=" * 70)
-    print("  路由（Routing）— 基于 LLM 判断选择路径")
-    print("  用结构化输出让 LLM 做智能分类")
-    print("=" * 70 + "\n")
-
     routing_demo()
-
-    print("=" * 70)
-    print("  接下来学习：../05_practical/search_qa_agent.py（综合实战）")
-    print("=" * 70 + "\n")

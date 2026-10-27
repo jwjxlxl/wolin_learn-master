@@ -19,9 +19,6 @@ setup_encoding()
 """
 Agent 记忆 vs 手动记忆：
 
-  前面学的（05_memory）: 手动用 list 保存历史
-  Agent 记忆:            InMemorySaver 自动持久化，通过 thread_id 分组
-  
   在LangChain1.0+版本中，Agent 记忆是通过 checkpointer 实现的。
   checkpointer 是 LangChain 1.0 新增的功能，用于持久化 Agent 的状态。
   它可以用于保存 Agent 的历史消息、工具状态等。

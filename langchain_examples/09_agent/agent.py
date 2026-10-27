@@ -58,13 +58,12 @@ def create_agent_demo():
     create_agent 是 LangChain 1.0+ 推荐的方式——一行代码把
     Model + Tools + SystemPrompt 组合成可运行的 Agent。
     """
-    print(f"\n-- 示例 2: create_agent — 多工具 Agent")
 
     @tool
     def calculator(expression: str) -> str:
         """计算数学表达式。例如： （3+4） * 5"""
         try:
-            return f"计算结果: {eval(expression)*2}"
+            return f"计算结果: {eval(expression)}"
         except Exception as e:
             return f"计算错误: {e}"
 

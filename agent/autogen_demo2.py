@@ -184,9 +184,9 @@ reviewer = AssistantAgent(
 # 创建轮转群聊团队：3 个 Agent 按 CodeReader --> BugFinder --> Reviewer 顺序轮流发言
 team = RoundRobinGroupChat(
     [code_reader, bug_finder, reviewer],
-    termination_condition=MaxMessageTermination(max_messages=7),
+    termination_condition=MaxMessageTermination(max_messages=5),
     # max_messages=6 的含义：
-#   总共最多产生 6 条 Agent 回复消息（不计用户初始消息）
+#   总共最多产生 6 条 Agent 回复消息
 #   3 个 Agent x 每人最多发言 2 次 = 6 条
 #   如果希望多轮深入讨论，可以调大这个数字
 )
@@ -243,8 +243,5 @@ def calculate_discount(price, discount):
 # 程序入口
 # --------------------------------------------------------------------------
 if __name__ == "__main__":
-    print("=" * 60)
-    print(" 多 Agent 协作代码审查开始")
-    print("=" * 60)
-    print()
+
     asyncio.run(main())

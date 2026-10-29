@@ -133,9 +133,3 @@ if __name__ == "__main__":
 
     # 启动团队，执行任务
     result = crew.kickoff()
-
-    print("\n" + "=" * 50)
-    print("✅ 创作完成！")
-    print("=" * 50)
-    print("\n最终结果：")
-    print(result)

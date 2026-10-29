@@ -23,6 +23,7 @@ manager = Agent(
 你能根据团队成员的能力，合理分配任务。
 你会监控任务进度，及时处理问题。""",
     verbose=True,
+    # 主Agent可以委派任务给其他的Agent
     allow_delegation=True,  # 允许委派任务
     llm=llm,
 )

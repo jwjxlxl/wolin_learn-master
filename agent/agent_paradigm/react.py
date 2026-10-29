@@ -160,9 +160,6 @@ def react_agent(question: str, max_turns: int = 5) -> str:
 
 
 if __name__ == "__main__":
-    print("=" * 60)
-    print("ReAct Agent 演示 (CoT + 工具)")
-    print("=" * 60)
     q = "小明有100元，买了3本书每本28.5元，又买了2支笔每支4.5元，还剩多少钱？深圳的天气如何"
     result = react_agent(q)
     print(f"问题: {q}")

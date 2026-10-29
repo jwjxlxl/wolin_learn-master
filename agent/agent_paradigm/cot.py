@@ -110,28 +110,22 @@ def fewshot_cot(question: str) -> tuple[str, str]:
 # ──────────────────── 教学演示 ────────────────────
 
 if __name__ == "__main__":
-    print("=" * 60)
-    print("1. Zero-Shot CoT 演示")
-    print("=" * 60)
-    q1 = "一个水池有两个水管，进水管每小时进水6吨，出水管每小时排水4吨。空池容量20吨，几小时能装满？"
-    # thinking, answer = zeroshot_cot(q1)
-    # print(f"问题: {q1}")
-    # print(f"推理: {thinking}")
-    # print(f"答案: {answer}")
 
-    print("\n" + "=" * 60)
-    print("2. Few-Shot CoT 演示")
-    print("=" * 60)
+    q1 = "一个水池有两个水管，进水管每小时进水6吨，出水管每小时排水4吨。空池容量20吨，几小时能装满？"
+    thinking, answer = zeroshot_cot(q1)
+    print(f"问题: {q1}")
+    print(f"推理: {thinking}")
+    print(f"答案: {answer}")
+
+
     q2 = "火车从A到B时速60km，从B到A时速40km，AB距离120km，往返平均时速是多少？"
     # thinking, answer = fewshot_cot(q2)
     # print(f"问题: {q2}")
     # print(f"推理: {thinking}")
     # print(f"答案: {answer}")
 
-    print("\n" + "=" * 60)
-    print("3. ReAct Agent 演示 (CoT + 工具)")
-    print("=" * 60)
+
     q3 = "小明有100元，买了3本书每本28.5元，又买了2支笔每支4.5元，还剩多少钱？"
-    result = react_agent(q3)
-    print(f"问题: {q3}")
-    print(f"最终结果: {result}")
+    # result = react_agent(q3)
+    # print(f"问题: {q3}")
+    # print(f"最终结果: {result}")

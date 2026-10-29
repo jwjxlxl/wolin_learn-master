@@ -6,8 +6,8 @@
 01_introduction      02_state_and_branching    03_agent_loop      04_workflows      05_practical      06_multi_agent      07_deep_agents      08_student_helper      09_checkpointing
      │                       │                      │                 │                 │                   │                   │                    │
      ▼                       ▼                      ▼                 ▼                 ▼                   ▼                   ▼                    ▼
-  概念认知  ──────────→  状态+条件分支  ──────────→  ReAct Agent  ───→  工作流模式  ───→  综合实战  ───→  多智能体模式  ───→  DeepAgents  ───→  HITL 长时运行  ───→  Checkpoint/断点恢复
-  (无需API)             (无需API)                ★核心技能         (需要LLM)         (需要LLM)         (需要LLM)         (需要LLM+deepagents)   (无需API)            (无需API)
+  概念认知  ──────────→  状态+条件分支  ──────────→  ReAct Agent  ───→  工作流模式  ───→  待补充    ───→  多智能体模式  ───→  DeepAgents  ───→  HITL 长时运行  ───→  Checkpoint/断点恢复
+  (无需API)             (无需API)                ★核心技能         (部分需模型)       (暂无源码)         (需要LLM)         (需要LLM+deepagents)   (无需API)            (无需API)
 ```
 
 ## 模块概览
@@ -17,8 +17,8 @@
 | 01 | `01_introduction/` | LangGraph 是什么 + 最简图 | 概念讲解 + 纯代码演示 | ❌ |
 | 02 | `02_state_and_branching/` | 状态管理 + 条件分支 | 关键词匹配路由演示 | ❌ |
 | 03 | `03_agent_loop/` | **ReAct Agent 循环** | 手动构建，理解底层原理 | ✅ |
-| 04 | `04_workflows/` | 四大工作流模式全覆盖 | 提示链 / LLM 路由 / 并行化 / 评估器-优化器 | ✅ |
-| 05 | `05_practical/` | 智能问答 Agent 综合实战 | 知识搜索 + 计算 + 日期 | ✅ |
+| 04 | `04_workflows/` | 三种核心工作流 | LLM 路由 / Send 并行 / 评估器-优化器 | 路由与评估需模型，并行无需模型 |
+| 05 | `05_practical/` | 待补充 | 目前没有教学源码 | — |
 | 06 | `06_multi_agent/` | **三大多智能体模式** | Agent-as-Tool / Handoff / Supervisor | ✅ |
 | 07 | `07_deep_agents/` | **DeepAgents 开箱即用框架** | 一行创建 + 文件系统 / 子代理 / Skills | ✅ |
 | 08 | `08_student_helper/` | 学生助手 HITL | interrupt + Checkpointer 长时运行 | ❌ |
@@ -45,14 +45,12 @@ langgraph_examples/
 ├── 03_agent_loop/                      ← ★ ReAct Agent 循环（LangGraph 核心）
 │   └── agent_react.py                  数学工具 + 多工具组合 + create_react_agent 对比
 │
-├── 04_workflows/                       ← 工作流模式（四大模式全覆盖）
-│   ├── prompt_chain.py                 提示链（生成→评估→改进→润色）
-│   ├── routing.py                      LLM 智能路由（三路分支）
+├── 04_workflows/                       ← 三种核心工作流
+│   ├── routing.py                      LLM 智能路由（售前/售后）
 │   ├── parallelization.py              并行化（Send API 扇出-扇入）
 │   └── evaluator_optimizer.py          评估器-优化器（循环改进）
 │
-├── 05_practical/                       ← 综合实战
-│   └── search_qa_agent.py              知识库 + 计算 + 日期 Agent
+├── 05_practical/                       ← 待补充（目前没有教学源码）
 │
 ├── 06_multi_agent/                     ← 多智能体模式（三大架构）
 │   ├── agent_as_tool.py                Agent-as-Tool（主Agent调用子Agent为工具）

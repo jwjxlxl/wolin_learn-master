@@ -28,6 +28,7 @@ def search_weather(city: str) -> str:
 
     return: str 返回指定城市的天气情况
     """
+
     return f"{city}明天晴，15-25°C"
 
 
@@ -103,6 +104,7 @@ def agent_loop(user_input: str):
         response = client.chat.completions.create(
             model="qwen-plus",
             messages=messages,
+            # 绑定工具列表：一个是查询天气的工具，一个是订票的工具
             tools=TOOLS,
         )
 
@@ -118,8 +120,8 @@ def agent_loop(user_input: str):
                 func = AVAILABLE_FUNCTIONS[func_name]
 
                 print(f"[调用工具] {func_name}({json.dumps(func_args, ensure_ascii=False)})")
-                # search_weather(city="北京")
-                result = func(**func_args)  # result = search_weather(city="北京")
+                # result = search_weather(city="北京")
+                result = func(**func_args)  # 真正的工具对应的函数被调用：result= get_weather("北京")
                 print(f"[工具返回] {result}")
 
                 # 将工具调用和结果追加到上下文
@@ -137,4 +139,5 @@ def agent_loop(user_input: str):
 
 
 # ── 运行 ───────────────────────────────────────────────────
-agent_loop("帮我安排明天去北京出差，我从上海出发")
+# agent_loop("帮我安排明天去北京出差，我从上海出发")
+agent_loop("transformer概念是哪一年提出的？")

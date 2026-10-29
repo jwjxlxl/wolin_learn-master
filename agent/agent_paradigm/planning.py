@@ -110,9 +110,6 @@ def plan_and_execute(task: str, max_steps: int = 5) -> str:
 
 
 if __name__ == "__main__":
-    print("=" * 60)
-    print("Plan-and-Execute Agent 演示")
-    print("=" * 60)
 
     task = "请帮我写一篇关于Python编程语言2025年发展趋势的简短分析报告"
     print(f"任务: {task}")

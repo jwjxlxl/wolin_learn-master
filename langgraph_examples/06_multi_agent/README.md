@@ -251,8 +251,8 @@ Command(goto="目标节点", update={状态更新})
 01_introduction          → LangGraph 是什么
 02_state_and_branching   → 状态管理 + 条件分支
 03_agent_loop            → ReAct Agent 循环（核心）
-04_workflows             → 工作流模式（链/路由/并行/改进）
-05_practical             → 综合实战（智能问答 Agent）
+04_workflows             → 工作流模式（路由/并行/评估循环）
+05_practical             → 待补充（暂无教学源码）
 06_multi_agent           → 多智能体（← 你在这里）
 ```
 

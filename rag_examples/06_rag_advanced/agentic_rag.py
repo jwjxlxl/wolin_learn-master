@@ -213,7 +213,9 @@ def agentic_rag(query, retriever, llm, max_rounds=3, top_k=5):
         contexts = retriever.retrieve(current_query, top_k=top_k)
 
         # ② 反思：让 LLM 当质检员，判断资料够不够回答
-        verdict = llm_judge(llm, query, contexts)
+        # 判断模式使用不同的
+        judge_llm = get_model("deepseek")
+        verdict = llm_judge(judge_llm, query, contexts)
         trace.append({
             "round": round_no,
             "query": current_query,
@@ -273,6 +275,7 @@ Agentic RAG（一个循环）：
 def prepare_documents():
     """准备知识库文档（覆盖检索相关概念，便于演示反思/改写/拆分）。"""
     return [
+        "RRF（倒数排名融合）把多路检索结果的排名取倒数再相加，无需调参就能融合异构分数。",
         "向量检索把文本编码成稠密向量，通过计算余弦相似度查找语义相近的内容，擅长理解同义表达。",
         "BM25 是基于关键词匹配的稀疏检索算法，擅长精确匹配专有名词和术语，但对同义词不敏感。",
         "混合检索同时跑稠密向量检索和 BM25 稀疏检索，把两路结果融合，兼顾语义和关键词，召回率更高。",
@@ -318,14 +321,14 @@ def run_demo():
     """完整演示：一个模糊问题触发「改写」循环 + 一个复合问题触发「拆子问题」。"""
     # 反思/改写/拆分/生成共用同一个模型（默认 Ollama 本地，无需 API Key）
     # 想走云端可改成 get_model("qwen")，但需 ALIYUN_API_KEY
-    llm = get_model()
+    llm = get_model("qwen")
 
     # 检索工具：复用 HybridRetriever（需 Milvus + ALIYUN_API_KEY）
     retriever = setup_retriever()
 
     # ---- 示例 1：模糊问题 → 反思说「不足」→ 改写后重新检索 ----
     print(f"\n-- 示例 1: 模糊问题 → 触发「改写」循环")
-    q1 = "那个把两边结果合起来的方法，怎么让它召回更好？"
+    q1 = "两个结果整合后的方法是什么"
     print(f"\n  用户问题：{q1}")
     answer1, trace1 = agentic_rag(q1, retriever, llm, max_rounds=3, top_k=5)
     print_trace(trace1)
@@ -349,7 +352,7 @@ if __name__ == "__main__":
     print("  Agentic RAG — 反思型循环检索")
     print("=" * 70)
 
-    explain_agentic_rag()
+    # explain_agentic_rag()
 
     try:
         run_demo()

@@ -10,7 +10,7 @@ AutoGen 是微软开源的多 Agent 对话框架，核心理念是让多个 AI A
   - 人类参与（Human-in-the-loop）：关键时刻由人类介入决策
 
 本 Demo 展示了最基础的多 Agent 对话模式：
-  1. 创建两个性格迥异的 Agent（胜宇 vs 春生）
+  1. 创建两个性格迥异的 Agent（国涛 VS 柏霖）
   2. 用 RoundRobinGroupChat 组织轮转群聊
   3. 用 MaxMessageTermination 控制对话轮数
   4. 用 Console 实时打印对话流
@@ -61,9 +61,9 @@ model_client = OpenAIChatCompletionClient(
 #   - model_client：绑定的 LLM 客户端
 #   - system_message：角色设定（决定说话风格和行为模式）
 dougen = AssistantAgent(
-    name="spring",
+    name="guotao",
     model_client=model_client,
-    system_message="""你是一个暴躁的贴吧老哥，你叫春生。
+    system_message="""你是一个暴躁的贴吧老哥，你叫国涛。
 你的任务：
 - 疯狂的贬低对方
 - 每次发言不超过 50 字
@@ -75,9 +75,9 @@ dougen = AssistantAgent(
 # 两个 Agent 共享同一个 model_client，但 system_message 不同
 # 这就是多 Agent 协作的核心：不同角色 + 不同提示 = 不同行为
 penggen = AssistantAgent(
-    name="shengyu",
+    name="bolin",
     model_client=model_client,
-    system_message="""你是一个知乎的海龟精英， 你叫胜宇。
+    system_message="""你是一个知乎的海龟精英， 你叫柏霖。
 你的任务：
 - 喜欢阴阳人
 - 每次发言不超过 50 字

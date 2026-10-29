@@ -221,8 +221,8 @@ graph.invoke({
 01_introduction          → 了解 LangGraph 是什么、StateGraph 的基础用法
 02_state_and_branching   → 状态管理 + 条件分支（← 你在这里）
 03_agent_loop            → ReAct Agent 循环（条件分支 + 循环 = Agent）
-04_workflows             → 五种工作流模式（组合使用分支、并行、循环）
-05_practical             → 综合实战
+04_workflows             → 三种核心工作流（LLM 路由、并行、评估循环）
+05_practical             → 待补充（暂无教学源码）
 ```
 
 **承上启下：**

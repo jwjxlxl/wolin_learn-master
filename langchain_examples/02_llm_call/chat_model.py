@@ -89,4 +89,5 @@ def multiturn_demo():
 if __name__ == '__main__':
     print("\n>>> 02_llm_call/chat_model — 消息类型详解\n")
 
-    system_message_demo()
+    # system_message_demo()
+    multiturn_demo()

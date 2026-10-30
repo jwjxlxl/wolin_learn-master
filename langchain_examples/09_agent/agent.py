@@ -8,7 +8,7 @@
 #   ✅ 观察 ReAct 模式（思考 → 行动 → 观察 → 循环）
 
 # 在LangChain1.0+中，create_agent是推荐的Agent创建方式
-# 在0.x的版本中，创建Agent，分成多种不同的方法
+# 在0.x的版本中，创建Agent，分成多种不同的方法 create_react_agent()
 # =============================================================================
 
 import sys
@@ -16,7 +16,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 
 from utils.model_utils import get_model, setup_encoding
-from utils.agent_tools import get_weather
+from utils.agent_tools import get_weather, calculator
 setup_encoding()
 
 from langchain_core.tools import tool
@@ -59,15 +59,6 @@ def create_agent_demo():
     Model + Tools + SystemPrompt 组合成可运行的 Agent。
     """
 
-    @tool
-    def calculator(expression: str) -> str:
-        """计算数学表达式。例如： （3+4） * 5"""
-        try:
-            return f"计算结果: {eval(expression)}"
-        except Exception as e:
-            return f"计算错误: {e}"
-
-
     model = get_model("qwen")
     agent = create_agent(model=model, tools=[get_weather, calculator],
                          system_prompt="你是一个有用的助手，必须根据工具的返回结果回答问题，不允许自己回答")
@@ -84,5 +75,7 @@ def create_agent_demo():
 
 if __name__ == '__main__':
     print("\n>>> 09_agent/agent — create_agent 智能体\n")
+
+    # bind_tools_demo("东京的天气怎么样")
 
     create_agent_demo()

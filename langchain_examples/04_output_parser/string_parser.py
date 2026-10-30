@@ -61,10 +61,13 @@ def pipeline_with_batch():
     """
     print(f"\n-- 示例 2: 三段式 Pipeline + 批量处理")
 
+    # 初始化提示词
     prompt = PromptTemplate.from_template("用{num}个字介绍{topic}。")
+    # 初始化模型
     model = get_model("qwen")
-
+    # 初始化输出解析器
     output_parser = StrOutputParser()
+    # 组装成一个chain
     chain = prompt | model | output_parser
 
     # 批量输入
@@ -84,5 +87,5 @@ def pipeline_with_batch():
 
 if __name__ == '__main__':
     print("\n>>> 04_output_parser/string_parser — StrOutputParser\n")
-
-    pipeline_with_batch()
+    compare_with_without_parser()
+    # pipeline_with_batch()

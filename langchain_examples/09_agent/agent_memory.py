@@ -62,19 +62,17 @@ def simple_memory_demo():
     config: RunnableConfig = {"configurable": {"thread_id": "1"}}
 
     # 第 1 轮: 告诉 Agent 用户信息
-    r = agent.invoke({"messages": [HumanMessage("你好，我叫小明，我在北京。")]}, config)
+    r = agent.invoke({"messages": [HumanMessage("你好，我叫俊耿，我在深圳。")]}, config)
     print(f"[第1轮] {r['messages'][-1].content}")
 
     # 第 2 轮: Agent 应该记住名字和城市
     r = agent.invoke({"messages": [HumanMessage("我所在城市天气怎么样？")]}, config)
     print(f"[第2轮] {r['messages'][-1].content}")
-    print("  ↑ Agent 记住了'北京'，自动查了天气！")
 
     # 换个线程 —— Agent 不记得小明
     other_config: RunnableConfig = {"configurable": {"thread_id": "2"}}
     r = agent.invoke({"messages": [HumanMessage("还记得我的名字吗？")]},  other_config)
     print(f"[线程2] {r['messages'][-1].content}")
-    print("  ↑ 不同线程，记忆隔离")
 
 
 # =============================================================================
@@ -130,5 +128,5 @@ def trim_messages_demo():
 
 if __name__ == '__main__':
     print("\n>>> 09_agent/agent_memory — Agent 记忆管理\n")
-
+    # simple_memory_demo()
     trim_messages_demo()

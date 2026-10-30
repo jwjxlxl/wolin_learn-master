@@ -106,6 +106,8 @@ def translation_chain():
     model = get_model("qwen")
 
     chain = prompt | model | StrOutputParser()
+    #
+    # prompt.invoke({"source_lang": "英语", "target_lang": "中文", "text": "Hello, world!"})
 
     # 同一个 Chain，不同参数 → 不同翻译方向
     tasks = [

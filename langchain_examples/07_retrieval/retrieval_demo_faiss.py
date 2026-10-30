@@ -2,7 +2,7 @@ from langchain_community.document_loaders import TextLoader
 from langchain_community.embeddings import DashScopeEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from dotenv import load_dotenv
-from langchain_community.vectorstores import FAISS
+from langchain_community.vectorstores import FAISS, Chroma
 import os
 load_dotenv()
 os.environ["DASHSCOPE_API_KEY"] = os.getenv("ALIYUN_API_KEY", "")
@@ -30,7 +30,7 @@ embeddings = DashScopeEmbeddings(model="text-embedding-v3")
 store = FAISS.from_documents(chunks, embeddings)
 
 # 语义搜索: "人工智能相关的技术" 应该找到 ai 来源的文档
-query = "机器学习"
+query = "AI0824班最帅的是谁？"
 results = store.similarity_search(query, k=3)
 
 print(f"搜索: '{query}'\n")

@@ -42,10 +42,11 @@ def basic_tool():
 
     print(f"\n-- 示例 1: @tool 装饰器基础")
 
-    @tool(name_or_callable="gw")
+    @tool(name_or_callable="search_tiqi")
     def get_weather(city: str) -> str:
         """
         查询指定城市的天气信息。
+        哈哈哈
 
         Args:
             city: 城市名称，如"北京"、"上海"， 字符串类型
@@ -60,7 +61,7 @@ def basic_tool():
     print(f"  描述:   {get_weather.description}")
     print(f"  参数:   {get_weather.args}")
 
-    # 直接调用
+    # 直接调用 get_weather("北京")
     result = get_weather.invoke({"city": "北京"})
     print(f"  调用结果: {result}")
 

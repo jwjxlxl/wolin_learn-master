@@ -45,6 +45,22 @@ def ollama_basic():
 def ollama_multiturn():
     """
     使用消息列表实现多轮对话。
+    没有使用LangChain的时候，如何定义消息的角色和内容：
+    [
+        {"role": "system", "content": "你是一位友好的助手，说话简洁。"},
+        {"role": "user", "content": "我叫小明，今年 10 岁。"},
+        {"role": "assistant", "content": "你好小明！很高兴认识你。有什么问题吗？"},
+        {"role": "user", "content": "你还记得我叫什么吗？"},
+    ]
+
+    [
+        ("system", "你是一位友好的助手，说话简洁。"),
+        ("user", "我叫小明，今年 10 岁。")
+    ]
+    {"role": "system", "content": "你是一位友好的助手，说话简洁。"},
+    ("system", "你是一位友好的助手，说话简洁。"),
+    封装成内置的SystemMessage类
+
 
     核心概念：
     - SystemMessage: 设定 AI 的角色和行为准则（像导演给演员剧本）
@@ -60,7 +76,9 @@ def ollama_multiturn():
 
     print(f"\n-- 示例 2: 多轮对话（带消息历史）")
 
+    # 实例化一个模型
     model = get_model("qwen")
+
     # 构建消息列表：有系统提示、用户输入、AI 回复
     messages = [
         SystemMessage(content="你是一位友好的助手，说话简洁。"),

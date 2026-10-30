@@ -9,7 +9,7 @@ load_dotenv()
 # 把从.env文件中读取的阿里云的API key写入环境变量
 os.environ["DASHSCOPE_API_KEY"] = os.getenv("ALIYUN_API_KEY", "")
 
-# 1. 加载文档
+# 1. 加载文档, 解析文档
 loader = TextLoader("test_doc.txt", encoding="utf-8")
 documents = loader.load()
 

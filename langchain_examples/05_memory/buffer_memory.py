@@ -18,6 +18,7 @@ setup_encoding()
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.messages.utils import trim_messages
 
+
 # =============================================================================
 # 示例 1: 完整记忆 — 保存所有对话
 # =============================================================================
@@ -70,6 +71,10 @@ def window_memory_demo():
         HumanMessage(content="第5轮：好的谢谢"),
         AIMessage(content="不客气，玩得开心！"),
     ]
+
+    # 当消息条数超过10条时，自动修剪：保留第一条，和最近的三条
+    if len(history) > 10:
+        history = [history[0]] + history[-4:]
 
     trimmed = trim_messages(
         history,

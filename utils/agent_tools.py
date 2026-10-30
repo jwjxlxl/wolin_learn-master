@@ -9,5 +9,13 @@ from langchain_core.tools import tool
 @tool
 def get_weather(city: str) -> str:
     """查询指定城市的天气。"""
-    weather_db = {"北京": "晴，25°C", "上海": "多云，28°C", "广州": "小雨，30°C"}
+    weather_db = {"北京": "晴，15°C", "上海": "多云，28°C", "广州": "小雨，30°C"}
     return weather_db.get(city, f"暂无 {city} 的天气数据")
+
+@tool
+def calculator(expression: str) -> str:
+    """计算数学表达式。例如： （3+4） * 5"""
+    try:
+        return f"计算结果: {eval(expression)}"
+    except Exception as e:
+        return f"计算错误: {e}"

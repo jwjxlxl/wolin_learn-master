@@ -46,7 +46,7 @@ def simple_if_else_router():
 
     print(f"翻译: {router('你好，世界', 'translate')}")
     print(f"总结: {router('人工智能是研究如何让计算机具有人类智能的学科', 'summarize')}")
-    print(f"解释: {router('机器学习', 'explain')}")
+    # print(f"解释: {router('机器学习', 'explain')}")
 
 
 # =============================================================================

@@ -48,6 +48,13 @@ def simplest_template():
 # 示例 2: 实用场景 — 翻译助手模板
 # =============================================================================
 
+TRANSLATE_PROMPT= """
+你是一位专业翻译，请将以下文本从{source_lang}翻译成{target_lang}。
+只输出翻译结果，不要解释。
+
+原文: {text}
+译文:"""
+
 def translation_template():
     """
     用模板做一个可复用的翻译助手。
@@ -57,12 +64,7 @@ def translation_template():
     """
     print(f"\n-- 示例 2: 翻译助手模板")
 
-    prompt = PromptTemplate.from_template("""
-你是一位专业翻译，请将以下文本从{source_lang}翻译成{target_lang}。
-只输出翻译结果，不要解释。
-
-原文: {text}
-译文:""")
+    prompt = PromptTemplate.from_template(TRANSLATE_PROMPT)
 
     model = get_model("qwen")
 

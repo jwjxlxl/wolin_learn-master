@@ -122,10 +122,13 @@ def streaming_call():
     model = ChatOllama(model="qwen3.5:9b")
 
     # stream() 返回一个生成器，每次 yield 一小块内容
+    import time
+
     print("AI 正在输入：", end="", flush=True)
     for chunk in model.stream("请用 50 字左右介绍人工智能。"):
         # chunk.content: 当前这一小块文本
-        print(chunk.content, end='', flush=True)
+        time.sleep(0.1)
+        print(chunk.content, end="", flush=True)
 
     print("\n")
 
@@ -136,7 +139,9 @@ def streaming_call():
 
 if __name__ == '__main__':
     # ★ 默认运行最简单的示例 — 让学生第一次就成功
-    simplest_call()
+    # simplest_call()
 
     # 有 API Key 可取消注释体验云端模型
-    cloud_api_call()
+    # cloud_api_call()
+
+    streaming_call()

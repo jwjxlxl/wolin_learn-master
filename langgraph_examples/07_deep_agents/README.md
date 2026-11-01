@@ -99,26 +99,37 @@ agent = create_deep_agent(
 
 #### 示例：Skills 加载
 
-创建 `SKILL.md` 文件：
+**目录结构（关键：每个技能一个子目录，SKILL.md 放子目录内）：**
+```
+skills_dir/
+└── code-review/        <- 子目录名必须与 frontmatter 的 name 一致
+    └── SKILL.md
+```
+> ⚠️ 直接把 `SKILL.md` 放在 `skills_dir/` 根目录会被 deepagents **静默跳过**（它只扫描子目录），技能根本不加载。
+
+创建 `code-review/SKILL.md`（遵循 Agent Skills 标准）：
 ```markdown
 ---
-name: 代码审查
-description: 审查代码并指出潜在问题
-triggers: 当用户请求审查代码时
+name: code-review
+description: 审查代码并指出潜在 bug、改进建议。当用户请求审查代码、检查代码质量时使用。
 ---
 
 # 代码审查技能
 你是一个资深的代码审查员...
 ```
+> ⚠️ frontmatter 规范：`name` 只能用小写字母/数字/连字符且须与子目录同名；**没有 `triggers` 字段**，触发条件要写进 `description`（否则被静默丢弃）。
+
+> 💡 **技能正文写法技巧**：对小模型（如 qwen-plus），松散的编号清单（"请：1… 2… 3…"）约束力不足，模型常答到"主要"几点就收尾、漏掉后面的要求。把正文写成**强制分节模板**（必填 Markdown 小标题 + "缺一不可"措辞），让模型从"记清单"变成"填模板"，遵循率显著提升。示例中 code-review 技能即采用此写法。
 
 加载方式：
 ```python
 agent = create_deep_agent(
     model=model,
-    skills=["./skills/"],  # Agent 自动扫描 SKILL.md 文件
-    backend=FilesystemBackend(root_dir="./workspace"),
+    backend=FilesystemBackend(root_dir="./skills_dir", virtual_mode=True),
+    skills=["/"],  # 技能源=虚拟根目录，自动扫描其下子目录中的 SKILL.md
 )
 ```
+> ⚠️ **Windows 必须 `virtual_mode=True`**：deepagents 的 `read_file` 等工具拒绝 Windows 绝对路径（`C:/...`）。用 `virtual_mode=False` 时技能虽能被发现，但提示词里注入的是 `C:/...` 路径，模型无法读取 SKILL.md 全文，只能靠 description 瞎猜。虚拟模式下路径为 `/code-review/SKILL.md`，全链路才通。
 
 **Skills vs 子代理的区别：**
 | | Skills | 子代理 |

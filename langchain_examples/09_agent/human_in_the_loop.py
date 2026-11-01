@@ -133,5 +133,5 @@ def run():
 
 
 if __name__ == '__main__':
-    print("\n>>> 09_agent/human_in_the_loop — 人在回路审批\n")
+
     run()

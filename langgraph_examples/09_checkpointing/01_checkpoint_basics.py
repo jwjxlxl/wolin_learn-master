@@ -106,7 +106,7 @@ if __name__ == "__main__":
 
     # 编译：必须挂 Checkpointer，图才有「记忆」，才能断点续跑
     graph = build_graph(checkpointer=InMemorySaver())
-    save_graph_png(graph, "09_checkpoint_basics.png")
+    # save_graph_png(graph, "09_checkpoint_basics.png")
 
     # thread_id 标识一次会话；同一 thread_id 的多次 invoke 共享同一份状态
     config = {"configurable": {"thread_id": "order-001"}}

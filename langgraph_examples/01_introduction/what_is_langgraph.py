@@ -111,7 +111,6 @@ def langgraph_applications():
 
 
 if __name__ == '__main__':
-    print("\n>>> 什么是 LangGraph？—— 在写代码之前先建立整体认知\n")
 
     without_langgraph()
     what_is_langgraph()

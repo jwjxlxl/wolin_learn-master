@@ -146,7 +146,17 @@ def multi_tool_agent():
     model_with_tools = model.bind_tools(tools)
 
     # 2. 定义图和节点
+    # AgentState 是整张图的“共享数据容器”（状态契约）：
+    # - 每个节点的入参是它、返回值也会写回它（见下方 return {"messages": [...]}）
+    # - StateGraph(AgentState) 靠它知道状态有哪些字段、各字段如何合并
     class AgentState(TypedDict):
+        # messages 存完整的对话轨迹：HumanMessage -> AIMessage -> ToolMessage -> ...
+        # Annotated[list, add_messages] 中：
+        #   list          = 字段类型（消息列表）
+        #   add_messages  = reducer（更新策略）：节点返回新消息时是“追加”而非“覆盖”
+        #     这样 llm_call / tool_node 轮流执行时，历史消息会累积，
+        #     LLM 才能看到前面的提问和工具返回值，完成 (3+4)×5 这类多步工具调用。
+        #     另外 add_messages 还支持按消息 id 去重/更新，比手写 append 更稳妥。
         messages: Annotated[list, add_messages]
 
     def llm_call(state: AgentState):

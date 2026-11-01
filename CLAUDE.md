@@ -129,6 +129,23 @@ MILVUS_DB_NAME=default
 
 ## 改造历史
 
+### 2026-11-01 — 07_deep_agents/subagents_and_skills.py Skills 示例修复（技能从未生效）
+
+- **根因 1 — 目录结构错误（技能 0 加载）**：deepagents 的 `SkillsMiddleware` 只扫描技能源目录下的**子目录**（`_list_skills_with_errors` 中 `if not item.get("is_dir"): continue`），原示例把 `SKILL.md` 直接写在 `skills_dir` 根目录 → 被静默跳过（无报错、无日志）→ 系统提示词渲染为 "(No skills available yet)"，模型完全不知道技能存在。修复：`SKILL.md` 移入子目录 `code-review/`
+- **根因 2 — frontmatter 不符规范**：`name: 代码审查` 违反 Agent Skills 规范（要求小写字母/数字/连字符且与子目录同名，中文仅告警不阻断但不规范）；`triggers` 字段不在规范内（解析时静默丢弃，触发信息根本到不了模型），触发条件按规范并入 `description`
+- **根因 3 — Windows 路径与文件工具冲突**：`FilesystemBackend(virtual_mode=False)` 下技能路径以 Windows 绝对路径（`C:/...`）注入提示词，但 `read_file` 工具层的 `validate_path()` 明确拒绝 Windows 绝对路径 → 模型渐进式披露读全文时必然失败（实测模型 4 次工具调用全部无效后靠 description 瞎猜）。修复：`virtual_mode=True` + `skills=["/"]`，技能路径变为 `/code-review/SKILL.md`
+- **可观测性增强**：示例末尾打印中间工具调用轨迹（技能生效时可见 `read_file('/code-review/SKILL.md')`），原"共 N 条消息"对学员完全不透明，正是此 bug 难以发现的原因
+- **技能遵循度增强（后续修复）**：技能加载修好后实测发现 qwen-plus 输出漏掉 SKILL.md 三条要求中的"评估时间/空间复杂度"——松散编号清单对小模型约束力不足（答到"主要"几点就收尾）。修复：正文改为**强制分节输出模板**（三个必填 Markdown 小标题 + "缺一不可"措辞），模型从"记清单"变"填模板"；连续 2 次端到端运行三节全部输出
+- **文档同步**：07_deep_agents/README.md 的 Skills 示例同步修正（目录结构图 + frontmatter 规范 + Windows virtual_mode 警告）
+- 已在 ai80 环境（deepagents 0.6.11 + qwen-plus）端到端验证：模型成功 `read_file` 读取 SKILL.md 全文，回答显式遵循技能三条要求（bug/边界、风格改进、复杂度），中文输出
+
+### 2026-11-01 — 09_agent/middleware.py 教学示例重写
+
+- **示例 1（装饰器中间件）重设计为确定性触发**：原版靠 system_prompt 强迫模型输出"万岁"再过滤，实测 qwen3.5:2b 遵循率仅 ~75% 且偶发空 content，演示随机失效；改为两次 invoke 对照——正常问题放行 + `after_model` 加盖审核标记（演示 `RemoveMessage` 删原消息），敏感问题在 `before_model(can_jump_to=["end"])` 拦截（零模型调用，演示省钱拦截）
+- **示例 2 拆分为摘要 + 限次两个示例，保证"必然触发且可见"**：原 `trigger=('tokens',400)` / `run_limit=3` 在单轮短问答下永远不触发，只是"配置了"而看不到"作用"。摘要示例改为预构造 7 条历史 + `trigger=('messages',4)`，invoke 后打印消息列表对比（7→4，摘要消息带 `lc_source=summarization` 标记）；限次示例 `run_limit=1` + 必调工具的任务，展示中间件注入的超限说明消息，并挂手写 `@wrap_model_call` 计数中间件呼应"内置与手写是同一套机制"
+- **规范修复**：`jump_to` 按官方文档显式声明 `can_jump_to`；删除示例 2 本地重复定义的 `get_weather`（反模式 #3）改用 `utils/agent_tools` 共享版；主模型从云端 `get_model("qwen")` 改回 Ollama 默认（无需 API Key）；修正 `run_limit=3` 注释写"10 次"的矛盾及"真个/声明周期"等笔误；恢复被注释停用的示例 1 入口
+- 已在本机 Ollama qwen3.5:2b 端到端运行验证三个示例全部按预期触发
+
 ### 2026-10-25 — langgraph_examples 精简 + 云端模型统一
 
 - **删除死代码**：6 个注释掉的示例函数（`simple_math_agent`、`agent_with_prebuilt`、`multi_source_search`、`evaluator_optimizer_no_llm`、`simplest_deep_agent`、`subagent_basics`）及多余注释块

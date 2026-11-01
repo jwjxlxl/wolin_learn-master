@@ -213,10 +213,6 @@ def hierarchical_demo():
         "final_report": "",
     })
 
-    print("\n" + "=" * 60)
-    print("【最终报告】")
-    print(result["final_report"])
-    print("=" * 60)
 
 
 if __name__ == '__main__':

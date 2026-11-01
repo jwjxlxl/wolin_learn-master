@@ -14,6 +14,9 @@
 
 import sys
 import io
+
+from langgraph_examples.utils import save_graph_png
+
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
@@ -106,8 +109,8 @@ def simple_two_node_graph():
         .compile()
     )
 
+    save_graph_png(graph, "simple_two_node_graph.png")
     # 4. 执行图
-    print("【执行图】")
     result = graph.invoke({"messages": [], "step_count": 0})
     print(f"  最终消息: {result['messages']}")
     print(f"  总步骤数: {result['step_count']}")

@@ -208,11 +208,3 @@ if __name__ == '__main__':
     print("=" * 70 + "\n")
 
     supervisor_with_llm()
-
-    print("=" * 70)
-    print("  回顾：Supervisor = 包工头派活，工人干完回来汇报，包工头再派下一个")
-    print("  三种多 Agent 模式对比：")
-    print("    Agent-as-Tool  — 主 Agent 掌控全程，子 Agent 当工具调用")
-    print("    Handoff        — 控制权接力传递，交出就不管了")
-    print("    Supervisor     — 主管分配+审查，工人完成后回到主管")
-    print("=" * 70)

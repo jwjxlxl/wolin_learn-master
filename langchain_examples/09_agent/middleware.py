@@ -172,7 +172,7 @@ def summarization_middleware_demo():
     ]
     question = HumanMessage("用一句话概括我们刚才聊的共同主题。")
 
-    model = get_model()  # 本地模型既当对话模型，也当摘要模型
+    model = get_model("qwen")  # 本地模型既当对话模型，也当摘要模型
 
     agent = create_agent(
         model=model,
@@ -229,7 +229,7 @@ def call_limit_middleware_demo():
         print(f"  [计数中间件] 第 {call_count} 次模型调用")
         return handler(request)
 
-    model = get_model()
+    model = get_model("qwen")
     agent = create_agent(
         model=model,
         tools=[get_weather],
@@ -262,5 +262,6 @@ if __name__ == '__main__':
     print("\n>>> 09_agent/middleware — 中间件拦截器\n")
 
     # decorator_middleware_demo()
-    summarization_middleware_demo()
-    # call_limit_middleware_demo()
+    # langchain 内置的用来汇总历史对话消息的中间件
+    # summarization_middleware_demo()
+    call_limit_middleware_demo()

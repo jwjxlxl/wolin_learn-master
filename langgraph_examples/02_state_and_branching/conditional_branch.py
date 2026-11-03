@@ -140,6 +140,10 @@ def conditional_branch_graph():
     # 保存图为 PNG（复用 utils/graph_helpers.py 的 save_graph_png）
     save_graph_png(graph, "conditional_branch.png")
 
+    print("【测试 1: 正面输入】")
+    r1 = graph.invoke({"text": "今天的体验非常好，很开心。", "category": "", "reply": ""})
+    print(f"  回复: {r1['reply']}\n")
+
 
     print("【测试 2: 负面输入】")
     r2 = graph.invoke({"text": "今天的体验太差了，很失望。", "category": "", "reply": ""})

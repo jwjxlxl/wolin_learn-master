@@ -17,6 +17,9 @@
 import sys
 import os
 import io
+
+from langgraph_examples.utils import save_graph_png
+
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 # 确保项目根目录可导入（用于 utils/ 共享模块）
@@ -28,13 +31,13 @@ from langchain_core.messages import HumanMessage, ToolMessage
 from langchain_core.tools import tool
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
-from utils.model_utils import get_qwen_client
-
+from utils.model_utils import get_qwen_client, get_model
 
 # =============================================================================
 # 核心概念：ReAct Agent 循环
 # =============================================================================
 """
+    LangChain中创建Agent的方式统一为：create_agent()
 什么是 ReAct Agent？
 
   ReAct = Reasoning（推理） + Acting（行动）
@@ -65,9 +68,9 @@ from utils.model_utils import get_qwen_client
 """
 两种构建 ReAct Agent 的方式
 
-方式 A：预构建 create_react_agent()（推荐入门）
+方式 A：使用LangChain框架构建 create_agent()（推荐入门）
   from langgraph.prebuilt import create_react_agent
-  agent = create_react_agent(model, tools)
+  agent = create_agent(model, tools)
   result = agent.invoke({"messages": [HumanMessage("...")]})
   一行搞定！
 
@@ -88,7 +91,7 @@ create_react_agent() 底层做的事（就是下方示例手动写的代码）�
   5. 编译成 graph
 
 何时用哪种？
-  用 create_react_agent()：
+  用 create_agent()：
     - 快速原型开发
     - 标准的 ReAct Agent（不需要自定义逻辑）
     - 只想关注 Tool 定义，不想管图结构
@@ -139,11 +142,15 @@ def multi_tool_agent():
     tools = [add, multiply, divide]
     tools_by_name = {t.name: t for t in tools}
 
+    # 实例化模型
     model = get_qwen_client()
     if model is None:
         print("  【跳过】请先在 .env 配置 ALIYUN_API_KEY")
         return
     model_with_tools = model.bind_tools(tools)
+
+    # 实例化一个备用的模型
+    model_backup = get_model("ollama")
 
     # 2. 定义图和节点
     # AgentState 是整张图的“共享数据容器”（状态契约）：
@@ -158,6 +165,7 @@ def multi_tool_agent():
         #     LLM 才能看到前面的提问和工具返回值，完成 (3+4)×5 这类多步工具调用。
         #     另外 add_messages 还支持按消息 id 去重/更新，比手写 append 更稳妥。
         messages: Annotated[list, add_messages]
+        # 其他自定义字段...
 
     def llm_call(state: AgentState):
         messages = state["messages"]
@@ -170,6 +178,7 @@ def multi_tool_agent():
         for tc in last_msg.tool_calls:
             func = tools_by_name[tc["name"]]
             results.append(ToolMessage(
+                # func.invoke 相当于  func("北京")
                 content=str(func.invoke(tc["args"])),
                 tool_call_id=tc["id"]
             ))
@@ -185,11 +194,15 @@ def multi_tool_agent():
         StateGraph(AgentState)
         .add_node("llm_call", llm_call)
         .add_node("tool_node", tool_node)
+        # .add_node("backup_llm", model_backup)
         .add_edge(START, "llm_call")
         .add_conditional_edges("llm_call", should_continue, ["tool_node", END])
         .add_edge("tool_node", "llm_call")
         .compile()
     )
+
+    # 保存图为 PNG（复用 utils/graph_helpers.py 的 save_graph_png）
+    save_graph_png(agent, "agent_react.png")
 
     # 3. 测试复杂问题（需要多次工具调用）
     print("【用户提问】(3 + 4) × 5 等于多少？")
@@ -202,5 +215,3 @@ def multi_tool_agent():
 
 if __name__ == '__main__':
     multi_tool_agent()
-
-

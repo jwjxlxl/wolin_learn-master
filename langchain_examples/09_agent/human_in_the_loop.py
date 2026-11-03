@@ -12,6 +12,9 @@
 
 import sys
 import os
+
+from utils.agent_tools import get_weather
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 
 from langchain.agents import create_agent
@@ -69,6 +72,7 @@ def human_decision(interrupt) -> dict:
     print(f"{'─' * 40}")
 
     while True:
+        # input 函数： 等待人类在控制台输入
         choice = input("\n👤 你的决定 > ").strip().lower()
 
         if choice in ("a", "approve") and "approve" in allowed:
@@ -105,7 +109,7 @@ def run():
         print("未配置 ALIYUN_API_KEY，跳过本示例")
         return
 
-    agent = create_agent(model=model, tools=[send_email],
+    agent = create_agent(model=model, tools=[send_email, get_weather],
                          system_prompt="你是一个邮件助手，帮用户发送邮件。也可以回答一些用户问题",
                          # InMemorySaver 只在进程内可恢复；生产环境需换成持久化检查点
                          # （如 langgraph.checkpoint.sqlite.SqliteSaver）才能真正跨进程/跨重启重放

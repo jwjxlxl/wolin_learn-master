@@ -71,6 +71,8 @@ def simple_two_node_graph():
     #    TypedDict 是 Python 的类型提示，LangGraph 用它定义"贯穿整张图的状态"
     class GraphState(TypedDict):
         """
+            GraphState: 图中各个节点之间进行数据传输的结构，完全可以自己定义
+            跟langchain中的AgentState类似, 不一样
             图的状态：存储消息和步骤计数
             messages: 消息列表
             step_count: 步骤计数
@@ -99,7 +101,7 @@ def simple_two_node_graph():
     # 3. 构建图：连接节点
     graph = (
         StateGraph(GraphState)
-        # 添加节点
+        # 添加节点， 第一个参数是节点的名称，第二个参数是这个节点对应的函数
         .add_node("greet", greet)
         .add_node("respond", respond)
         # 添加边

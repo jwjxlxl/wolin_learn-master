@@ -145,6 +145,7 @@ if __name__ == "__main__":
     # ---------------------------------------------------------------------
     print(f"\n-- 示例: 断点续跑 — Command(resume=...) 从暂停处继续")
     # 模拟外部确认：支付 yes，图从 confirm 节点恢复并继续走到结束
+    # answer = input("请确认是否支付：")
     result = graph.invoke(Command(resume={"answer": "yes"}), config=config)
     print(f"  恢复后：stage = {result.get('stage')!r}，price = {result.get('price')}")
     print(f"  恢复后 notes = {result.get('notes')}")

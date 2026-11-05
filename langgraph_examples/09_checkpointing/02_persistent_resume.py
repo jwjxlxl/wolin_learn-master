@@ -35,6 +35,7 @@ DB_PATH = os.path.join(os.path.dirname(__file__), "checkpoints.sqlite")
 
 # 该会话的 thread_id（两次运行必须一致，才能找回同一份状态）
 CONFIG = {"configurable": {"thread_id": "task-001"}}
+CONFIG02 = {"configurable": {"thread_id": "task-002"}}
 
 
 class TaskState(TypedDict):

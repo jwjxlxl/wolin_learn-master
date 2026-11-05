@@ -55,7 +55,7 @@ def code_optimizer(provider: str = "ollama"):
     def generate(state: OptimizerState):
         """写稿/改稿：首轮从零写，之后带着上一轮的 issues 改。"""
         if state["iteration"] == 0:
-            prompt = f"写一个 Python 函数：{state['task']}。只输出完整代码。"
+            prompt = f"输写一个 Python 函数：{state['task']}。只出完整代码。"
         else:
             prompt = (
                 f"根据反馈改进以下 Python 函数，只输出完整代码。\n"

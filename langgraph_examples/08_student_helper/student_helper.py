@@ -246,6 +246,8 @@ def run_demo():
         print(f"💬 {result.get('encourage_message', '')}")
 
         # —— 学生作答（演示用预置答案；真实项目替换为 input() / API 调用）——
+        # answer = input("请输入答案：")
+        answer = input("请输入答案：")
         print(f"🧑 学生答案：{answer}")
         result = graph.invoke(Command(resume={"answer": answer}), config=config)
 

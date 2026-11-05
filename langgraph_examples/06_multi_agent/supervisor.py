@@ -64,6 +64,7 @@ def supervisor_with_llm():
         )
         reasoning: str = Field(description="为什么分配给这个工人")
 
+    # 模型在被invoke的时候，输出结果会自动转换为SupervisorDecision的实例
     supervisor_model = model.with_structured_output(SupervisorDecision)
 
     # ===== Supervisor 状态 =====
@@ -100,6 +101,9 @@ def supervisor_with_llm():
             f"reviewer（审查验收）、FINISH（任务完成）。说明理由。"
         )
 
+        '''
+            decision.next_worker只会有四种结果，单独把Finish拿出来
+        '''
         if decision.next_worker == "FINISH":
             print(f"    决定: 任务完成！理由: {decision.reasoning}")
             return Command(goto=END, update={

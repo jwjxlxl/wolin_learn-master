@@ -65,6 +65,7 @@ from typing import Annotated, TypedDict
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
 
+from langgraph_examples.utils import save_graph_png
 
 # 模拟三个外部数据源（真实场景就是订单库 / 物流接口 / 售后接口）
 ORDER_DATA = {
@@ -101,6 +102,12 @@ def parallel_order_lookup():
 
         返回 Send 列表是本模式的核心——LangGraph 会为列表中每一项并行创建一个
         lookup 任务实例，各自带着不同的 source 独立执行。
+        例如："sources": ["订单", "物流"]
+        [
+            Send("lookup", {"order_id": "ORD-001", "source": "订单"}),
+            Send("lookup", {"order_id": "ORD-001", "source": "物流"}),
+            Send("lookup", {"order_id": "ORD-001", "source": "售后"}),
+        ]
         """
         return [
             Send("lookup", {"order_id": state["order_id"], "source": source})
@@ -134,6 +141,9 @@ def parallel_order_lookup():
         .add_edge("summarize", END)
         .compile()
     )
+
+    # 保存图为 PNG（复用 utils/graph_helpers.py 的 save_graph_png）
+    save_graph_png(graph, "parallization_workflow.png")
 
     # 初始状态必须把所有字段都给全，尤其 results 要给空列表作为汇聚起点
     result = graph.invoke({

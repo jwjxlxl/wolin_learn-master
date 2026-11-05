@@ -25,7 +25,7 @@ DeepAgents = "batteries-included" Agent 框架
 
   手动 StateGraph        ← 最底层，完全控制（03_agent_loop 学过）
         ↑
-  create_react_agent()   ← 封装了标准 ReAct 循环（一行创建 Agent）
+  create_agent()        ← 封装了标准 ReAct 循环（一行创建 Agent）
         ↑
   create_deep_agent()    ← 再封装：内置文件系统、任务规划、子代理、Skills 等
 

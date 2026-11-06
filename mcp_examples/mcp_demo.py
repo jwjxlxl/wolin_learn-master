@@ -320,7 +320,7 @@ def multi_server_mcp_demo():
                 system_prompt="你是一个智能助手，可以使用可用工具来回答问题。",
             )
 
-            question = "今天东京的天气怎么样？"
+            question = "今天深圳的天气怎么样？"
             print(f"【用户提问】{question}")
 
             result = await agent.ainvoke(
@@ -397,6 +397,7 @@ def multi_server_mcp_demo():
    - 数据库：查询数据库数据
    - 浏览器：网页截图和交互
    - 搜索引擎：互联网信息检索
+   - "streamable_http"
 """
 
 
@@ -422,6 +423,6 @@ if __name__ == '__main__':
     print()
     print("=" * 70 + "\n")
 
-    # local_mcp_demo("东京的天气怎么样，空气质量好不好？")
+    # local_mcp_demo("深圳的天气怎么样，空气质量好不好？")
     # remote_mcp_demo()
     multi_server_mcp_demo()

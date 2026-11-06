@@ -211,6 +211,7 @@ def create_mcp_server(student_api: StudentManagementAPI):
         student = student_api.get_student(student_id)
         if not student:
             return f"未找到学号 {student_id} 的记录。请确认学号是否正确。"
+        # 在工具中可以对数据进行脱敏
         return (
             f"学生 {student.get('name', '未知')}（ID: {student.get('id', student_id)}）详情：\n"
             f"  班级：{student.get('class_id', '未分配')}\n"
@@ -387,7 +388,7 @@ def demo_student_mcp_agent():
         # 场景 2：查询不存在的记录（测试 Agent 错误处理）
         "学号 99999 的学生是谁？",
         # 场景 3：新增学生
-        "请帮我录入一个新学生：姓名李小红，班级 ID 为 1，专业软件工s程，学历本科",
+        "请帮我录入一个新学生：姓名俊耿，班级 ID 为 1，专业软件工程，学历本科",
     ]
 
     for i, question in enumerate(conversations, 1):

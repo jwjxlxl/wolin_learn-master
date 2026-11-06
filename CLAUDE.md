@@ -129,6 +129,16 @@ MILVUS_DB_NAME=default
 
 ## 改造历史
 
+### 2026-11-06 — 09_agent/agent_mcp.py 配置文件接入高德 MCP（工具加载不到修复）
+
+- **现象**：学员在 `09_agent/` 放了 `mcp_config.json`，但 Agent 读不到工具（零工具状态）
+- **根因 1 — 没有任何加载代码**：`agent_mcp.py` 当时只是 `agent.py` 的拷贝，全目录 grep `MultiServerMCPClient`/`langchain_mcp_adapters` 零匹配，配置文件不会自动生效，必须由 `langchain-mcp-adapters` 显式加载
+- **根因 2 — 配置字段名错误**：`mcp_config.json` 写的是 `"type": "sse"`，但 `MultiServerMCPClient` 认的键名是 `"transport"`（`type` 是 Claude Desktop 配置风格）→ 修正为 `"transport": "sse"`
+- **根因 3 — 硬编码 Key（违反反模式 #5）**：配置里明文写了高德 Key → 改为 `${AMAP_KEY}` 占位符，代码用 `os.path.expandvars()` 展开；`.env` 已有 `AMAP_KEY`（与原明文值一致，功能不变），`langchain_examples/.env.example` 补充 `AMAP_KEY` 说明。**注意：此 Key 已在对话中暴露，建议去 lbs.amap.com 作废重置**
+- **实现**：`load_mcp_tools()` 读配置→展开环境变量→`get_tools()`（异步）；示例 1 打印 15 个高德工具清单，示例 2 用 MCP 工具 + 本地 `calculator` 混合建 `create_agent`，打印工具调用轨迹（对学员透明化 Agent 内部行为，呼应 deep_agents 修复经验）；入口 `asyncio.run()` + `agent.ainvoke()`（因 `get_tools()`/`ainvoke()` 均为异步）
+- **降级**：未配置 `AMAP_KEY` 时打印获取指引并跳过（与 langgraph_examples 约定一致）
+- 已在本机 qwen-plus + 高德 SSE 端点端到端验证：15 工具全部加载，Agent 正确调用 `maps_weather` + `calculator` 回答复合问题
+
 ### 2026-11-01 — 07_deep_agents/subagents_and_skills.py Skills 示例修复（技能从未生效）
 
 - **根因 1 — 目录结构错误（技能 0 加载）**：deepagents 的 `SkillsMiddleware` 只扫描技能源目录下的**子目录**（`_list_skills_with_errors` 中 `if not item.get("is_dir"): continue`），原示例把 `SKILL.md` 直接写在 `skills_dir` 根目录 → 被静默跳过（无报错、无日志）→ 系统提示词渲染为 "(No skills available yet)"，模型完全不知道技能存在。修复：`SKILL.md` 移入子目录 `code-review/`

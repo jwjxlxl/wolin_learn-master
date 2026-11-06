@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "amap": {
+      "transport": "sse",
+      "url": "https://mcp.amap.com/sse?key=${AMAP_KEY}"
+    }
+  }
+}

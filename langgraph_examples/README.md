@@ -10,6 +10,8 @@
   (无需API)             (无需API)                ★核心技能         (部分需模型)       (暂无源码)         (需要LLM)         (需要LLM+deepagents)   (无需API)            (无需API)
 ```
 
+> **10_memory**（三层记忆 + 置信度机制）是 09 的进阶延续：09 解决「一次会话内怎么接着上次继续」，10 解决「跨会话怎么记得学生是谁、学到哪、哪些还不确定」。建议在 09 之后学习；其中 `06` 为 ★进阶可选（Milvus 向量后端）。
+
 ## 模块概览
 
 | # | 模块 | 内容 | 教学方式 | API Key |
@@ -23,6 +25,7 @@
 | 07 | `07_deep_agents/` | **DeepAgents 开箱即用框架** | 一行创建 + 文件系统 / 子代理 / Skills | ✅ |
 | 08 | `08_student_helper/` | 学生助手 HITL | interrupt + Checkpointer 长时运行 | ❌ |
 | 09 | `09_checkpointing/` | **Checkpoint / 断点恢复 / 持久化** | 机制讲解 + 崩溃恢复 + 时间旅行 | ❌ |
+| 10 | `10_memory/` | **三层记忆 + 置信度机制** | 短/中/长期记忆 + Store + 置信度 + Milvus 进阶 | 示例1多无需，部分需 Key/Milvus |
 
 ## 文件清单
 
@@ -75,11 +78,22 @@ langgraph_examples/
 │   ├── 02_persistent_resume.py         状态持久化 + 进程崩溃恢复（SqliteSaver）
 │   └── 03_time_travel_fork.py          改需求恢复：update_state / 时间旅行 / fork
 │
-├── tests/                              ← 测试（pytest，24 个）
+├── 10_memory/                          ← ★ 三层记忆 + 置信度机制（09 的进阶延续）
+│   ├── README.md                       教学大纲 + 6 个核心问题 + 常见坑 8 条
+│   ├── memory_store.py                 模块内共享库（带置信度的记忆封装，被 03/04/05/06 复用）
+│   ├── 01_memory_layers.py             三层架构 + 短期管理（裁剪/摘要/RemoveMessage 压缩）
+│   ├── 02_store_basics.py              InMemoryStore 基础 + namespace + filter 踩坑
+│   ├── 03_confidence_decay.py          置信度：来源打分/时间衰减/状态分级/LLM 关系判断
+│   ├── 04_longterm_agent.py            Agent 长期记忆：工具路线 vs Hook 路线 + 语义索引
+│   ├── 05_learning_assistant.py        ★综合：手写 5 节点 StateGraph 三层贯通
+│   └── 06_milvus_longterm_advanced.py  ★进阶可选：Milvus 向量长期记忆后端
+│
+├── tests/                              ← 测试（pytest，74 个）
 │   ├── __init__.py
 │   ├── test_graph_helpers.py           单元测试（tool_node + router）
 │   ├── test_graphs.py                  图结构集成测试
-│   └── test_checkpointing.py           Checkpoint 测试（断点恢复 / 持久化 / 时间旅行）
+│   ├── test_checkpointing.py           Checkpoint 测试（断点恢复 / 持久化 / 时间旅行）
+│   └── test_memory.py                  三层记忆 + 置信度测试（50 个确定性用例）
 │
 └── utils/                              ← 共享工具模块
     ├── __init__.py
@@ -96,6 +110,8 @@ langgraph_examples/
    pip install deepagents
    # 模块 09（Checkpoint 持久化）需要额外安装：
    pip install langgraph-checkpoint-sqlite
+   # 模块 10（三层记忆）的 06 进阶示例需要额外安装（且需一个可连通的 Milvus 服务）：
+   pip install pymilvus
    # 所有模式均用原生 langgraph 实现，教底层原理而非黑盒
    ```
 

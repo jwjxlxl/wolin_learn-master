@@ -18,3 +18,9 @@ __pycache__/
 .env
 *.log
 *.sqlite
+
+# 本地 Python 环境、测试缓存与 DeepEval 评估产物
+.venv/
+.pytest_cache/
+.deepeval/
+/reports/deepeval/

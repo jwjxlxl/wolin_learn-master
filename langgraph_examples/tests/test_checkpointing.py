@@ -8,11 +8,21 @@
 
 import os
 import tempfile
+import pytest
 from typing_extensions import TypedDict
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.types import interrupt, Command
-from langgraph.checkpoint.sqlite import SqliteSaver
+
+# SqliteSaver 属于可选依赖 langgraph-checkpoint-sqlite；未安装时直接顶层导入会让
+# pytest 收集整个 tests/ 目录报 collect error（连带 test_memory.py 等也无法运行）。
+# 这里 try/except 导入 + 下方相关用例 skipif，缺失时优雅跳过而非阻断整目录。
+try:
+    from langgraph.checkpoint.sqlite import SqliteSaver
+    _SQLITE_AVAILABLE = True
+except ImportError:
+    SqliteSaver = None
+    _SQLITE_AVAILABLE = False
 
 
 def _build_interrupt_graph(checkpointer):
@@ -104,6 +114,8 @@ class TestCheckpointBasics:
         assert all("source" in h.metadata for h in history)
 
 
+@pytest.mark.skipif(not _SQLITE_AVAILABLE,
+                    reason="需要 langgraph-checkpoint-sqlite（pip install langgraph-checkpoint-sqlite）")
 class TestSqlitePersistence:
     """02_persistent_resume.py 对应：SqliteSaver 落盘 + 崩溃恢复"""
 

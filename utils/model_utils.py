@@ -12,12 +12,13 @@ from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 
 
-def get_qwen_client(model_name="qwen-plus"):
+def get_qwen_client(model_name="qwen-plus", **model_options):
     """
     获取阿里云通义千问 (Qwen) 大模型客户端实例。
 
     Args:
         model_name: 模型名称，默认为 qwen-plus
+        model_options: 可选客户端参数，如 temperature、timeout、max_retries
 
     Returns:
         ChatOpenAI 实例，如果配置无效则返回 None
@@ -30,23 +31,24 @@ def get_qwen_client(model_name="qwen-plus"):
         print("提示：请在 .env 文件中配置你的阿里云 DashScope API Key")
         return None
 
-    return ChatOpenAI(
-        model=model_name,
-        api_key=api_key,
-        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
-    )
+    return ChatOpenAI(**{
+        "model": model_name,
+        "api_key": api_key,
+        "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        **model_options,
+    })
 
 
-def get_model(provider: str = None):
+def get_model(provider: str = None, **model_options):
     """
         根据服务商名称返回对应的模型实例。
         默认使用 Ollama 本地模型（qwen3.5:2b）。
 
-        好处：切换模型只改一行参数，不需要到处改代码。
+        model_options 可传模型名称、温度、超时等客户端参数，省略时保持原有默认值。
         """
     if provider is None or provider == "ollama":
         from langchain_ollama import ChatOllama
-        return ChatOllama(model="qwen3.5:2b")
+        return ChatOllama(**{"model": "qwen3.5:2b", **model_options})
 
     elif provider == "qwen":
         import os
@@ -54,22 +56,24 @@ def get_model(provider: str = None):
         from langchain_openai import ChatOpenAI
         load_dotenv()
 
-        return ChatOpenAI(
-            model="qwen-plus",
-            api_key=os.getenv("ALIYUN_API_KEY"),
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-        )
+        return ChatOpenAI(**{
+            "model": "qwen-plus",
+            "api_key": os.getenv("ALIYUN_API_KEY"),
+            "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+            **model_options,
+        })
 
     elif provider == "deepseek":
         import os
         from dotenv import load_dotenv
         from langchain_openai import ChatOpenAI
         load_dotenv()
-        return ChatOpenAI(
-            model="deepseek-chat",
-            api_key=os.getenv("DEEPSEEK_API_KEY"),
-            base_url="https://api.deepseek.com",
-        )
+        return ChatOpenAI(**{
+            "model": "deepseek-chat",
+            "api_key": os.getenv("DEEPSEEK_API_KEY"),
+            "base_url": "https://api.deepseek.com",
+            **model_options,
+        })
 
     else:
         raise ValueError(f"不支持的服务商: {provider}")
